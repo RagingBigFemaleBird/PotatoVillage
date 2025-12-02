@@ -97,6 +97,7 @@
     <Compile Include="Core\UserAction.cs" />
     <Compile Include="LangRenSha\LangRen.cs" />
     <Compile Include="LangRenSha\LangRenSha.cs" />
+    <Compile Include="LangRenSha\NvWu.cs" />
     <Compile Include="LangRenSha\PingMin.cs" />
     <Compile Include="LangRenSha\Role.cs" />
     <Compile Include="LangRenSha\ShouWei.cs" />

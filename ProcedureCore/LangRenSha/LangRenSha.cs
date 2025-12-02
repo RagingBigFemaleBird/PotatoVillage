@@ -19,6 +19,7 @@ namespace ProcedureCore.LangRenSha
             players.Add((2, new LangRen()));
             players.Add((3, new LangRen()));
             players.Add((4, new PingMin()));
+            players.Add((5, new NvWu()));
         }
 
         public static string dictPlayers = "players";
@@ -53,7 +54,10 @@ namespace ProcedureCore.LangRenSha
                     ((Dictionary<string, object>)((Dictionary<string, object>)update[dictPlayers])[position.ToString()])[dictRole] = role.Name;
                     ((Dictionary<string, object>)((Dictionary<string, object>)update[dictPlayers])[position.ToString()])[dictRoleVersion] = role.Version;
                     ((Dictionary<string, object>)((Dictionary<string, object>)update[dictPlayers])[position.ToString()])[dictAlive] = 1;
-                    ((Dictionary<string, object>)((Dictionary<string, object>)update[dictPlayers])[position.ToString()])[YuYanJia.dictYuYanJiaResult] = role.RoleDict[YuYanJia.dictYuYanJiaResult];
+                    foreach (var rd in role.RoleDict)
+                    {
+                        ((Dictionary<string, object>)((Dictionary<string, object>)update[dictPlayers])[position.ToString()])[rd.Key] = role.RoleDict[rd.Key];
+                    }
                 }
                 update[dictNightOrders] = new List<int>();
                 update[dictDay] = 0;
@@ -154,5 +158,35 @@ namespace ProcedureCore.LangRenSha
             update[dictAboutToDie] = aboutToDie;
             return true;
         }
+
+        public static List<int> GetListIntGameDictionaryProperty(Game game, string key)
+        {
+            var list = new List<int>();
+            if (game.StateDictionary.ContainsKey(key))
+            {
+                list = (List<int>)game.StateDictionary[key];
+            }
+            return list;
+        }
+
+        public static T GetPlayerProperty<T>(Game game, int player, string key, T defaultValue)
+        {
+            var players = (Dictionary<string, object>)(game.StateDictionary[LangRenSha.dictPlayers]);
+            if (!((Dictionary<string, object>)players[player.ToString()]).ContainsKey(key))
+            {
+                return defaultValue;
+            }
+            return (T)((Dictionary<string, object>)players[player.ToString()])[key];
+        }
+
+        public static void SetPlayerProperty<T>(Game game, int player, string key, T value, Dictionary<string, object> update)
+        {
+            var players = (Dictionary<string, object>)(game.StateDictionary[LangRenSha.dictPlayers]);
+
+            ((Dictionary<string, object>)players[player.ToString()])[key] = value;
+
+            update[LangRenSha.dictPlayers] = players;
+        }
+
     }
 }

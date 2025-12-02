@@ -62,16 +62,8 @@ namespace ProcedureCore.LangRenSha
         public static string dictAttackTarget = "attack_target";
         public void Sha(Game game, List<int> targets, Dictionary<string, object> update)
         {
-            var attackTarget = new List<int>();
-            var aboutToDie = new List<int>();
-            if (game.StateDictionary.ContainsKey(dictAttackTarget))
-            {
-                attackTarget = (List<int>)game.StateDictionary[dictAttackTarget];
-            }
-            if (game.StateDictionary.ContainsKey(LangRenSha.dictAboutToDie))
-            {
-                aboutToDie = (List<int>)game.StateDictionary[LangRenSha.dictAboutToDie];
-            }
+            var attackTarget = LangRenSha.GetListIntGameDictionaryProperty(game, dictAttackTarget);
+            var aboutToDie = LangRenSha.GetListIntGameDictionaryProperty(game, LangRenSha.dictAboutToDie);
             foreach (var target in targets)
             {
                 attackTarget.Add(target);

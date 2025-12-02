@@ -33,6 +33,8 @@ void InputLoop(Game game)
 game.Actions.Add(new LangRenSha());
 game.Actions.Add(new LangRen());
 game.Actions.Add(new YuYanJia());
+game.Actions.Add(new NvWu());
+
 Thread input = new Thread(() => InputLoop(game));
 input.Start();
 game.ActionLoop();

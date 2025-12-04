@@ -10,7 +10,8 @@ namespace ProcedureCore.LangRenSha
 {
     public class YuYanJia : Role
     {
-        public static Dictionary<string, object> roleDict;
+        private static Dictionary<string, object> roleDict;
+        private static List<int> actionOrders;
 
         public YuYanJia()
         {
@@ -18,6 +19,8 @@ namespace ProcedureCore.LangRenSha
             {
                 { YuYanJia.dictYuYanJiaResult, 1 },
             };
+            actionOrders = new List<int> { 150 };
+
         }
         public Dictionary<string, object> RoleDict
         {
@@ -43,11 +46,11 @@ namespace ProcedureCore.LangRenSha
             }
         }
 
-        public int ActionOrder
+        public List<int> ActionOrders
         {
             get
             {
-                return 150;
+                return actionOrders;
             }
         }
 
@@ -63,7 +66,8 @@ namespace ProcedureCore.LangRenSha
 
         public void ChaYan(Game game, int target, Dictionary<string, object> update)
         {
-            update[dictYuYanJiaResult] = ((Dictionary<string, object>)((Dictionary<string, object>)game.StateDictionary[LangRenSha.dictPlayers])[target.ToString()])[dictYuYanJiaResult];
+            var result = LangRenSha.GetPlayerProperty(game, target, dictYuYanJiaResult, 1);
+            update[dictYuYanJiaResult] = result;
         }
 
         public GameActionResult GenerateStateDiff(Game game, Dictionary<string, object> update)
@@ -71,24 +75,20 @@ namespace ProcedureCore.LangRenSha
             if (game.StateSequenceNumber == 1)
             {
 
-                var players = (Dictionary<string, object>)(game.StateDictionary[LangRenSha.dictPlayers]);
-                foreach (var player in players)
+                var addSelf = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == Name);
+                if (addSelf.Count > 0)
                 {
-                    if (((Dictionary<string, object>)((Dictionary<string, object>)game.StateDictionary[LangRenSha.dictPlayers])[player.Key])[LangRenSha.dictRole].ToString() == Name)
-                    {
-                        // TODO: version mismatch
-                        update[LangRenSha.dictNightOrders] = (List<int>)game.StateDictionary[LangRenSha.dictNightOrders];
-                        ((List<int>)update[LangRenSha.dictNightOrders]).Add(ActionOrder);
-                        break;
-                    }
+                    var no = Game.GetGameDictionaryProperty(game, LangRenSha.dictNightOrders, new List<int>());
+                    no.AddRange(ActionOrders);
+                    update[LangRenSha.dictNightOrders] = no;
                 }
                 return GameActionResult.Continue;
             }
 
-            if ((int)game.StateDictionary[LangRenSha.dictAction] == ActionOrder)
+            if (Game.GetGameDictionaryProperty(game, LangRenSha.dictAction, 0) == ActionOrders[0])
             {
                 var yuYanJia = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == Name);
-                var alivePlyaers = LangRenSha.GetPlayers(game, x => (int)x[LangRenSha.dictAlive] == 1);
+                var alivePlayers = LangRenSha.GetPlayers(game, x => (int)x[LangRenSha.dictAlive] == 1);
                 if (UserAction.EndUserAction(game, update))
                 {
                     LangRenSha.AdvanceAction(game, update);
@@ -98,7 +98,7 @@ namespace ProcedureCore.LangRenSha
                 {
                     if (UserAction.StartUserAction(game, ActionDuration, update))
                     {
-                        update[UserAction.dictUserActionTargets] = LangRenSha.GetPlayers(game, x => (int)x[LangRenSha.dictAlive] == 1);
+                        update[UserAction.dictUserActionTargets] = alivePlayers;
                         update[UserAction.dictUserActionUsers] = yuYanJia;
                         update[UserAction.dictUserActionTargetsCount] = 1;
                         update[UserAction.dictUserActionTargetsHint] = 2;
@@ -106,7 +106,7 @@ namespace ProcedureCore.LangRenSha
                     }
                     else
                     {
-                        (var inputValid, var input) = UserAction.GetUserResponse(game, true, update);
+                        (var inputValid, var input) = UserAction.GetUserResponse(game, true, yuYanJia, update);
                         if (inputValid)
                         {
                             var targets = UserAction.TallyUserInput(input, 0, UserAction.UserInputMode.VoteMost);

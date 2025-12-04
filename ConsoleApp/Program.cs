@@ -19,11 +19,15 @@ void InputLoop(Game game)
         {
             string result = string.Join(", ", targets.Select(n => n.ToString()));
             Console.WriteLine("Provide target among " + result);
-            var response = Console.ReadLine();
             List<int> ret = new List<int>();
-            if (response != null)
+            for (int i = 0; i < targets_count; i++)
             {
-                ret.Add(int.Parse(response));
+                Console.WriteLine("Targets " + i + " of " + targets_count + " -------:");
+                var response = Console.ReadLine();
+                if (response != null)
+                {
+                    ret.Add(int.Parse(response));
+                }
             }
             UserAction.UserActionRespond(game, owner, ret);
         }
@@ -34,6 +38,8 @@ game.Actions.Add(new LangRenSha());
 game.Actions.Add(new LangRen());
 game.Actions.Add(new YuYanJia());
 game.Actions.Add(new NvWu());
+game.Actions.Add(new WuZhe());
+game.Actions.Add(new JiaMian());
 
 Thread input = new Thread(() => InputLoop(game));
 input.Start();

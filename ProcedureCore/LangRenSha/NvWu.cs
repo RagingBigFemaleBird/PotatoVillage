@@ -9,14 +9,18 @@ namespace ProcedureCore.LangRenSha
 {
     public class NvWu : Role
     {
-        public static Dictionary<string, object> roleDict;
+        private static Dictionary<string, object> roleDict;
+        private static List<int> actionOrders;
 
         public NvWu()
         {
             roleDict = new Dictionary<string, object>()
             {
                 { YuYanJia.dictYuYanJiaResult, 1 },
+                { LangRenSha.dictPlayerAlliance, 1 },
             };
+            actionOrders = new List<int> { 120 };
+
         }
         public Dictionary<string, object> RoleDict
         {
@@ -42,11 +46,11 @@ namespace ProcedureCore.LangRenSha
             }
         }
 
-        public int ActionOrder
+        public List<int> ActionOrders
         {
             get
             {
-                return 110;
+                return actionOrders;
             }
         }
 
@@ -65,27 +69,25 @@ namespace ProcedureCore.LangRenSha
 
         public void Poison(Game game, int target, Dictionary<string, object> update)
         {
-            var players = (Dictionary<string, object>)(game.StateDictionary[LangRenSha.dictPlayers]);
-            var aboutToDie = LangRenSha.GetListIntGameDictionaryProperty(game, LangRenSha.dictAboutToDie); ;
+            var aboutToDie = Game.GetGameDictionaryProperty(game, LangRenSha.dictAboutToDie, new List<int>()); ;
             var nvWu = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == Name);
 
             // TODO: lie ren, she meng
-            if (LangRenSha.GetPlayerProperty(game, target, dictCannotBePoisoned, 0) != 0)
+            if (LangRenSha.GetPlayerProperty(game, target, dictCannotBePoisoned, 0) == 0)
             {
                 if (!aboutToDie.Contains(target))
                 {
                     aboutToDie.Add(target);
                     update[LangRenSha.dictAboutToDie] = aboutToDie;
-                    LangRenSha.SetPlayerProperty(game, nvWu[0], dictPoisonUsed, 1, update);
                 }
             }
+            LangRenSha.SetPlayerProperty(game, nvWu[0], dictPoisonUsed, 1, update);
         }
 
         public void Save(Game game, Dictionary<string, object> update)
         {
-            var players = (Dictionary<string, object>)(game.StateDictionary[LangRenSha.dictPlayers]);
-            var attackTarget = LangRenSha.GetListIntGameDictionaryProperty(game, LangRen.dictAttackTarget);
-            var aboutToDie = LangRenSha.GetListIntGameDictionaryProperty(game, LangRenSha.dictAboutToDie);
+            var attackTarget = Game.GetGameDictionaryProperty(game, LangRen.dictAttackTarget, new List<int>());
+            var aboutToDie = Game.GetGameDictionaryProperty(game, LangRenSha.dictAboutToDie, new List<int>());
             var nvWu = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == Name);
             if (attackTarget.Count > 0)
             {
@@ -103,25 +105,20 @@ namespace ProcedureCore.LangRenSha
         {
             if (game.StateSequenceNumber == 1)
             {
-                var players = (Dictionary<string, object>)(game.StateDictionary[LangRenSha.dictPlayers]);
-                foreach (var player in players)
+                var addSelf = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == Name);
+                if (addSelf.Count > 0)
                 {
-                    if (((Dictionary<string, object>)((Dictionary<string, object>)game.StateDictionary[LangRenSha.dictPlayers])[player.Key])[LangRenSha.dictRole].ToString() == Name)
-                    {
-                        // TODO: version mismatch
-                        update[LangRenSha.dictNightOrders] = (List<int>)game.StateDictionary[LangRenSha.dictNightOrders];
-                        ((List<int>)update[LangRenSha.dictNightOrders]).Add(ActionOrder);
-                        break;
-                    }
+                    var no = Game.GetGameDictionaryProperty(game, LangRenSha.dictNightOrders, new List<int>());
+                    no.AddRange(ActionOrders);
+                    update[LangRenSha.dictNightOrders] = no;
                 }
                 return GameActionResult.Continue;
             }
 
-            if ((int)game.StateDictionary[LangRenSha.dictAction] == ActionOrder)
+            if (Game.GetGameDictionaryProperty(game, LangRenSha.dictAction, 0) == ActionOrders[0])
             {
-                var players = (Dictionary<string, object>)(game.StateDictionary[LangRenSha.dictPlayers]);
                 var nvWu = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == Name);
-                var alivePlyaers = LangRenSha.GetPlayers(game, x => (int)x[LangRenSha.dictAlive] == 1);
+                var alivePlayers = LangRenSha.GetPlayers(game, x => (int)x[LangRenSha.dictAlive] == 1);
 
                 if (UserAction.EndUserAction(game, update))
                 {
@@ -135,7 +132,7 @@ namespace ProcedureCore.LangRenSha
                         bool saveUsed = false;
                         bool poisonUsed = false;
                         bool selfAttacked = false;
-                        var attackTarget = LangRenSha.GetListIntGameDictionaryProperty(game, LangRen.dictAttackTarget);
+                        var attackTarget = Game.GetGameDictionaryProperty(game, LangRen.dictAttackTarget, new List<int>());
                         if (attackTarget.Count > 0 && attackTarget[0] == nvWu[0])
                         {
                             selfAttacked = true;
@@ -155,7 +152,7 @@ namespace ProcedureCore.LangRenSha
                         }
                         if (!poisonUsed)
                         {
-                            targets.AddRange(alivePlyaers);
+                            targets.AddRange(alivePlayers);
                         }
                         update[UserAction.dictUserActionTargets] = targets;
                         update[UserAction.dictUserActionUsers] = nvWu;
@@ -165,7 +162,7 @@ namespace ProcedureCore.LangRenSha
                     }
                     else
                     {
-                        (var inputValid, var input) = UserAction.GetUserResponse(game, true, update);
+                        (var inputValid, var input) = UserAction.GetUserResponse(game, true, nvWu, update);
                         if (inputValid)
                         {
                             var targets = UserAction.TallyUserInput(input, 0, UserAction.UserInputMode.VoteMost);

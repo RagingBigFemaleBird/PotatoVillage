@@ -10,7 +10,7 @@ namespace ProcedureCore.LangRenSha
     public interface Role : GameAction
     {
         string Name { get; }
-        int ActionOrder { get; }
+        List<int> ActionOrders { get; }
         int ActionDuration { get; }
         Dictionary<string, object> RoleDict { get; }
     }

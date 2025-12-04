@@ -95,12 +95,14 @@
     <Compile Include="Core\Game.cs" />
     <Compile Include="Core\GameAction.cs" />
     <Compile Include="Core\UserAction.cs" />
+    <Compile Include="LangRenSha\JiaMian.cs" />
     <Compile Include="LangRenSha\LangRen.cs" />
     <Compile Include="LangRenSha\LangRenSha.cs" />
     <Compile Include="LangRenSha\NvWu.cs" />
     <Compile Include="LangRenSha\PingMin.cs" />
     <Compile Include="LangRenSha\Role.cs" />
     <Compile Include="LangRenSha\ShouWei.cs" />
+    <Compile Include="LangRenSha\WuZhe.cs" />
     <Compile Include="LangRenSha\YuYanJia.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

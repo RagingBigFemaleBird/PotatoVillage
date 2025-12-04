@@ -14,6 +14,7 @@ namespace ProcedureCore.Core
         private Game()
         {
             StateDictionary = new Dictionary<string, object>();
+            PrivateStateDictionary = new Dictionary<string, object>();
             StateJournal = new List<Dictionary<string, object>>();
             StateSequenceNumber = 0;
             Actions = new List<GameAction>();
@@ -34,7 +35,8 @@ namespace ProcedureCore.Core
             }
         }
 
-        public Dictionary<string, object> StateDictionary { get; private set; }
+        protected Dictionary<string, object> StateDictionary { get; set; }
+        protected Dictionary<string, object> PrivateStateDictionary { get; set; }
 
         public readonly object stateLock = new object();
         public List<Dictionary<string, object>> StateJournal { get; private set; }
@@ -68,7 +70,7 @@ namespace ProcedureCore.Core
                 }
             }
             LogDict("Game state update:", stateDiff);
-            LogDict("Current game state:", StateDictionary);
+            //LogDict("Current game state:", StateDictionary);
             return 0;
         }
 
@@ -110,6 +112,29 @@ namespace ProcedureCore.Core
                     }
                 }
             }
+        }
+
+        public static T GetGameDictionaryProperty<T>(Game game, string key, T defaultValue)
+        {
+            if (game.StateDictionary.ContainsKey(key))
+            {
+                return (T)game.StateDictionary[key];
+            }
+            return defaultValue;
+        }
+
+        public static T GetPrivateGameDictionaryProperty<T>(Game game, string key, T defaultValue)
+        {
+            if (game.PrivateStateDictionary.ContainsKey(key))
+            {
+                return (T)game.PrivateStateDictionary[key];
+            }
+            return defaultValue;
+        }
+
+        public static void SetPrivateGameDictionaryProperty<T>(Game game, string key, T value)
+        {
+            game.PrivateStateDictionary[key] = value;
         }
 
         public void LogDict(string reason, Dictionary<string, object> dict)

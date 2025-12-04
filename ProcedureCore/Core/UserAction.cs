@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ProcedureCore.LangRenSha;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -30,30 +31,20 @@ namespace ProcedureCore.Core
 
         public GameActionResult GenerateStateDiff(Game game, Dictionary<string, object> update)
         {
-            Dictionary<string, object> selects = null;
-            if (game.StateDictionary.ContainsKey(dictUserActionSelects))
-            {
-                selects = (Dictionary<string, object>)game.StateDictionary[dictUserActionSelects];
-                game.StateDictionary.Remove(dictUserActionSelects);
-            }
-            if ((int)game.StateDictionary[dictUserAction] == 0)
+            var selects = Game.GetPrivateGameDictionaryProperty(game, dictUserActionSelects, new Dictionary<string, object>());
+            Game.SetPrivateGameDictionaryProperty(game, dictUserActionSelects, new Dictionary<string, object>());
+            if (Game.GetGameDictionaryProperty(game, dictUserAction, 0) == 0)
             {
                 return GameActionResult.NotExecuted;
             }
-            if (selects != null)
+            if (selects.Count > 0)
             {
-                if (game.StateDictionary.ContainsKey(dictUserActionResponse))
+                var ur = Game.GetGameDictionaryProperty(game, dictUserActionResponse, new Dictionary<string, object>());
+                foreach (var entry in selects)
                 {
-                    update[dictUserActionResponse] = game.StateDictionary[dictUserActionResponse];
+                    ur[entry.Key] = entry.Value;
                 }
-                else
-                {
-                    update[dictUserActionResponse] = new Dictionary<string, object>();
-                }
-                    foreach (var entry in selects)
-                    {
-                        ((Dictionary<string, object>)update[dictUserActionResponse])[entry.Key] = entry.Value;
-                    }
+                update[dictUserActionResponse] = ur;
                 return GameActionResult.Restart;
             }
             game.Log("User wait idle.");
@@ -64,7 +55,7 @@ namespace ProcedureCore.Core
         public static bool StartUserAction(Game game, int duration_seconds, Dictionary<string, object> update)
         {
             int now = (int)DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-            if ((int)game.StateDictionary[dictUserAction] == 0)
+            if (Game.GetGameDictionaryProperty(game, dictUserAction, 0) == 0)
             {
                 update[dictUserAction] = now + duration_seconds;
                 return true;
@@ -75,7 +66,8 @@ namespace ProcedureCore.Core
         public static bool EndUserAction(Game game, Dictionary<string, object> update, bool force = false)
         {
             int now = (int)DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-            if ((int)game.StateDictionary[dictUserAction] != 0 && ((int)game.StateDictionary[dictUserAction] <= now || force))
+            var ua = Game.GetGameDictionaryProperty(game, dictUserAction, 0);
+            if (ua != 0 && (ua <= now || force))
             {
                 update[dictUserAction] = 0;
                 return true;
@@ -85,14 +77,14 @@ namespace ProcedureCore.Core
 
         public static (bool, List<int>, int) UserActionTargets(Game game, int player)
         {
-            if ((int)game.StateDictionary[Game.dictStateSequence] <= 2)
+            if (Game.GetGameDictionaryProperty(game, Game.dictStateSequence, 0) <= 2)
             {
                 return (false, null, 0);
             }
             var ret = new List<int>();
-            var users = game.StateDictionary.ContainsKey(dictUserActionUsers) ? (List<int>)game.StateDictionary[dictUserActionUsers] : new List<int>();
-            var targets = game.StateDictionary.ContainsKey(dictUserActionTargets) ? (List<int>)game.StateDictionary[dictUserActionTargets] : null;
-            var targets_count = game.StateDictionary.ContainsKey(dictUserActionTargetsCount) ? (int)game.StateDictionary[dictUserActionTargetsCount] : 0;
+            var users = Game.GetGameDictionaryProperty(game, dictUserActionUsers, new List<int>());
+            var targets = Game.GetGameDictionaryProperty(game, dictUserActionTargets, new List<int>());
+            var targets_count = Game.GetGameDictionaryProperty(game, dictUserActionTargetsCount, 0);
 
             if (users.Contains(player))
             {
@@ -103,26 +95,48 @@ namespace ProcedureCore.Core
 
         public static void UserActionRespond(Game game, int player, List<int> targets)
         {
-            lock (game.stateLock)
-            {
-                game.StateDictionary[dictUserActionSelects] = new Dictionary<string, object>();
-                ((Dictionary<string, object>)game.StateDictionary[dictUserActionSelects])[player.ToString()] = targets;
-            }
+            var response = new Dictionary<string, object>();
+            response[player.ToString()] = targets;
+            Game.SetPrivateGameDictionaryProperty(game, dictUserActionSelects, response);
         }
 
-        public static (bool, Dictionary<string, object>) GetUserResponse(Game game, bool clearResponse, Dictionary<string, object> update)
+        public static (bool, Dictionary<string, object>) GetUserResponse(Game game, bool clearResponse, List<int> users, Dictionary<string, object> update)
         {
-            Dictionary<string, object> ret = null;
-            if (game.StateDictionary.ContainsKey(dictUserActionResponse))
+            var ret = new Dictionary<string, object>();
+            users = Game.GetGameDictionaryProperty(game, dictUserActionUsers, new List<int>());
+            var targets = Game.GetGameDictionaryProperty(game, dictUserActionTargets, new List<int>());
+            var uar = Game.GetGameDictionaryProperty(game,dictUserActionResponse, new Dictionary<string, object>());
+            if (uar.Count > 0)
             {
                 if (clearResponse)
                 {
                     update[dictUserActionResponse] = null;
                 }
-                ret = (Dictionary<string, object>)game.StateDictionary[dictUserActionResponse];
+                foreach (var rp in uar)
+                {
+                    if (users.Contains(int.Parse(rp.Key)))
+                    {
+                        var l = new List<int>();
+                        foreach (var p in (List<int>)rp.Value)
+                        {
+                            if (targets.Contains(p))
+                            {
+                                l.Add(p);
+                            }
+                        }
+                        if (l.Count > 0)
+                        {
+                            ret[rp.Key] = l;
+                        }
+                    }
+                }
+                if (ret.Count == 0)
+                {
+                    return (false, null);
+                }
                 return (true, ret);
             }
-            return (false, ret);
+            return (false, null);
         }
 
         public enum UserInputMode
@@ -130,6 +144,7 @@ namespace ProcedureCore.Core
             VoteMost, //Most vote counts.
             VoteMajor, //Major vote (>= half) counts.
             UniaminousVote,  //Everyone must agree.
+            Input, //Simply take the input.
         }
         public static List<int> TallyUserInput(Dictionary<string, object> UserInput, int totalPlayers, UserInputMode mode)
         {
@@ -140,6 +155,10 @@ namespace ProcedureCore.Core
                 var player = int.Parse(entry.Key);
                 var targets = (List<int>)entry.Value;
                 var target = targets[0];
+                if (mode == UserInputMode.Input)
+                {
+                    return targets;
+                }
                 if (!vote.ContainsKey(target))
                 {
                     vote[target] = 0;

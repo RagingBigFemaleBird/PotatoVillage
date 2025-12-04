@@ -9,14 +9,18 @@ namespace ProcedureCore.LangRenSha
 {
     public class PingMin : Role
     {
-        public static Dictionary<string, object> roleDict;
+        private static Dictionary<string, object> roleDict;
+        private static List<int> actionOrders;
 
         public PingMin()
         {
             roleDict = new Dictionary<string, object>()
             {
                 { YuYanJia.dictYuYanJiaResult, 1 },
+                { LangRenSha.dictPlayerAlliance, 1 },
             };
+            actionOrders = new List<int> ();
+
         }
 
         public Dictionary<string, object> RoleDict
@@ -42,11 +46,11 @@ namespace ProcedureCore.LangRenSha
             }
         }
 
-        public int ActionOrder
+        public List<int> ActionOrders
         {
             get
             {
-                return -1;
+                return actionOrders;
             }
         }
 

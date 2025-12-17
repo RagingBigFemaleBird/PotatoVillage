@@ -265,7 +265,14 @@ namespace ProcedureCore.LangRenSha
                 if (Game.GetGameDictionaryProperty(game, dictDay, 0) == 0)
                 {
                     var dp = Game.GetGameDictionaryProperty(game, dictDeadPlayerAction, new List<int>());
-                    return HandleRoundTableSpeak(game, dp, update, 30);
+                    if (dp.Count > 0)
+                    {
+                        return HandleRoundTableSpeak(game, dp, update, 30);
+                    }
+                    else
+                    {
+                        update[dictSpeak] = 30;
+                    }
                 }
                 else
                 {

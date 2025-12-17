@@ -20,6 +20,7 @@ namespace ProcedureCore.Core
             Actions = new List<GameAction>();
             StateDictionary[dictStateSequence] = StateSequenceNumber;
             StateDictionary[UserAction.dictUserAction] = 0;
+            StateDictionary[dictRandomSeed] = new System.Random().Next();
             Actions.Add(new UserAction());
         }
 
@@ -42,6 +43,7 @@ namespace ProcedureCore.Core
         public List<Dictionary<string, object>> StateJournal { get; private set; }
 
         public static string dictStateSequence = "sequence";
+        public static string dictRandomSeed = "random";
         public int StateSequenceNumber { get; set; }
 
         public List<GameAction> Actions { get; private set; }

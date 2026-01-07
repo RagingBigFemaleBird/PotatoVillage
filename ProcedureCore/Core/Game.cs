@@ -139,6 +139,17 @@ namespace ProcedureCore.Core
             game.PrivateStateDictionary[key] = value;
         }
 
+        public int GetRandomNumber()
+        {
+            return (int)StateDictionary[dictRandomSeed];
+        }
+        public int UseRandomNumber(Dictionary<string, object> update)
+        {
+            var ret = (int)StateDictionary[dictRandomSeed];
+            StateDictionary[dictRandomSeed] = new System.Random(ret).Next();
+            return ret;
+        }
+
         public void LogDict(string reason, Dictionary<string, object> dict)
         {
             string jsonString = JsonSerializer.Serialize(dict);

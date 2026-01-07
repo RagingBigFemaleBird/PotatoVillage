@@ -51,7 +51,7 @@ namespace ProcedureCore.LangRenSha
             }
         }
 
-        public static int actionDuraionPlayerReact = 10;
+        public static int actionDuraionPlayerReact = 15;
         public static int actionDurationPlayerSpeak = 2;
 
         public GameActionResult GenerateStateDiff(Game game, Dictionary<string, object> update)
@@ -158,7 +158,7 @@ namespace ProcedureCore.LangRenSha
             if (Game.GetGameDictionaryProperty(game, dictSpeak, 0) == 1)
             {
                 var sheriffPlayers = Game.GetGameDictionaryProperty(game, dictSheriff, new List<int>());
-                return HandleRoundTableSpeak(game, sheriffPlayers, update, 2);
+                return HandleRoundTableSpeak(game, sheriffPlayers, game.GetRandomNumber() % sheriffPlayers.Count, (game.GetRandomNumber() % 2) == 1, update, 2);
             }
             if (Game.GetGameDictionaryProperty(game, dictSpeak, 0) == 2)
             {
@@ -209,14 +209,18 @@ namespace ProcedureCore.LangRenSha
             if (Game.GetGameDictionaryProperty(game, dictSpeak, 0) == 3)
             {
                 var pkPlayers = Game.GetGameDictionaryProperty(game, dictPk, new List<int>());
-                return HandleRoundTableSpeak(game, pkPlayers, update, 4);
+                var sheriffPlayers = Game.GetGameDictionaryProperty(game, dictSheriff, new List<int>());
+                var first = sheriffPlayers[game.GetRandomNumber() % sheriffPlayers.Count];
+                bool directionPlus = (game.GetRandomNumber() % 2) == 0;
+                var nextPlayer = NextPlayer(pkPlayers, allPlayers.Count, first, directionPlus);
+                return HandleRoundTableSpeak(game, pkPlayers, pkPlayers.IndexOf(nextPlayer), directionPlus, update, 4);
             }
 
             if (Game.GetGameDictionaryProperty(game, dictSpeak, 0) == 4)
             {
                 var pkPlayers = Game.GetGameDictionaryProperty(game, dictPk, new List<int>());
                 var votePlayers = new List<int>();
-                votePlayers.AddRange(pkPlayers);
+                votePlayers.AddRange(allPlayers);
                 votePlayers.RemoveAll(x => pkPlayers.Contains(x));
 
                 if (UserAction.EndUserAction(game, update))
@@ -257,6 +261,7 @@ namespace ProcedureCore.LangRenSha
                 KillDeadPlayers(game, update);
                 // TODO: skill
                 update[dictSpeak] = 20;
+                game.UseRandomNumber(update);
                 return GameActionResult.Restart;
             }
 
@@ -267,7 +272,7 @@ namespace ProcedureCore.LangRenSha
                     var dp = Game.GetGameDictionaryProperty(game, dictDeadPlayerAction, new List<int>());
                     if (dp.Count > 0)
                     {
-                        return HandleRoundTableSpeak(game, dp, update, 30);
+                        return HandleRoundTableSpeak(game, dp, game.GetRandomNumber() % dp.Count, game.GetRandomNumber() % 2 == 1, update, 30);
                     }
                     else
                     {
@@ -284,7 +289,22 @@ namespace ProcedureCore.LangRenSha
             if (Game.GetGameDictionaryProperty(game, dictSpeak, 0) == 30)
             {
                 var ap = LangRenSha.GetPlayers(game, x => (int)x[LangRenSha.dictAlive] == 1);
-                return HandleRoundTableSpeak(game, alivePlayers, update, 40);
+                var sheriff = Game.GetGameDictionaryProperty(game, dictCurrentSheriff, 0);
+                int first = 0;
+                if (sheriff != 0)
+                {
+                    first = ap.IndexOf(sheriff);
+                }
+                else
+                {
+                    first = game.GetRandomNumber() % ap.Count;
+                }
+                bool dir = false;
+                if (sheriff == 0)
+                {
+                    dir = (game.GetRandomNumber() % 2) == 1;
+                }
+                return HandleRoundTableSpeak(game, ap, first, dir, update, 40);
             }
 
             if (Game.GetGameDictionaryProperty(game, dictSpeak, 0) >= 40)
@@ -297,7 +317,31 @@ namespace ProcedureCore.LangRenSha
             return GameActionResult.NotExecuted;
         }
 
-        public static GameActionResult HandleRoundTableSpeak(Game game, List<int> players, Dictionary<string, object> update, int nextSpeak)
+        public static int NextPlayer(List<int> players, int totalPlayers, int startingPlayer, bool directionPlus)
+        {
+            int next = startingPlayer;
+            do
+            {
+                if (directionPlus)
+                {
+                    next++;
+                    if (next > totalPlayers)
+                    {
+                        next = 0;
+                    }
+                }
+                else
+                {
+                    next--;
+                    if (next <= 0)
+                    {
+                        next = totalPlayers;
+                    }
+                }
+            } while (!players.Contains(next));
+            return next;
+        }
+        public static GameActionResult HandleRoundTableSpeak(Game game, List<int> players, int startingPlayer, bool directionPlus, Dictionary<string, object> update, int nextSpeak)
         {
             var speakers = Game.GetGameDictionaryProperty(game, dictSpeaker, new List<int>());
             var allPlayers = LangRenSha.GetPlayers(game, x => true);
@@ -317,21 +361,30 @@ namespace ProcedureCore.LangRenSha
                 {
                     if (speakers.Count == 0)
                     {
-                        // TODO: random
-                        speakers.Add(players[0]);
+                        speakers.Add(players[startingPlayer]);
                     }
                     else
                     {
                         var last = speakers.Last();
                         var first = speakers.First();
-                        // TODO: ccw or cw
                         var next = last;
                         do
                         {
-                            next++;
-                            if (next > allPlayers.Count)
+                            if (directionPlus)
                             {
-                                next = 1;
+                                next++;
+                                if (next > allPlayers.Count)
+                                {
+                                    next = 1;
+                                }
+                            }
+                            else
+                            {
+                                next--;
+                                if (next <= 0)
+                                {
+                                    next = allPlayers.Count;
+                                }
                             }
                             if (players.Contains(next))
                             {

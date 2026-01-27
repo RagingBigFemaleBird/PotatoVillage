@@ -103,11 +103,11 @@ namespace ProcedureCore.LangRenSha
                     }
                     else
                     {
-                        (var inputValid, var input) = UserAction.GetUserResponse(game, true, jiaMian, update);
+                        (var inputValid, var input, var input_others) = UserAction.GetUserResponse(game, true, jiaMian, update);
                         if (inputValid)
                         {
                             var danced = Game.GetGameDictionaryProperty(game, WuZhe.dictDanced, new List<int>());
-                            var targets = UserAction.TallyUserInput(input, 0, UserAction.UserInputMode.VoteMost);
+                            var targets = UserAction.TallyUserInput(input, 0, UserAction.UserInputMode.VoteMost, -1);
                             if (danced.Contains(targets[0]))
                             {
                                 update[dictJiaMianChaYan] = 1;
@@ -147,10 +147,10 @@ namespace ProcedureCore.LangRenSha
                     }
                     else
                     {
-                        (var inputValid, var input) = UserAction.GetUserResponse(game, true, jiaMian, update);
+                        (var inputValid, var input, var input_others) = UserAction.GetUserResponse(game, true, jiaMian, update);
                         if (inputValid)
                         {
-                            var targets = UserAction.TallyUserInput(input, 0, UserAction.UserInputMode.VoteMost);
+                            var targets = UserAction.TallyUserInput(input, 0, UserAction.UserInputMode.VoteMost, -1);
                             update[dictJiaMianReversed] = targets[0];
                             UserAction.EndUserAction(game, update, true);
                             LangRenSha.AdvanceAction(game, update);

@@ -66,6 +66,27 @@ namespace ProcedureCore.LangRenSha
         public static string dictAttackTarget = "attack_target";
         public static string dictSuceession = "lang_succession";
 
+        public static GameActionResult RevealSelf(Game game, int player, List<int> targets, Dictionary<string, object> update)
+        {
+            if (Game.GetGameDictionaryProperty(game, LangRenSha.dictSpeak, 0) == 1 || Game.GetGameDictionaryProperty(game, LangRenSha.dictSpeak, 0) == 30)
+            {
+                var langRen = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == "LangRen" && (int)x[LangRenSha.dictAlive] == 1);
+                if (langRen.Contains(player))
+                {
+                    if (targets.Contains(-10))
+                    {
+                        update[LangRenSha.dictSpeak] = 0;
+                        var players = Game.GetGameDictionaryProperty(game, LangRenSha.dictPlayers, new Dictionary<string, object>());
+                        ((Dictionary<string, object>)players[player.ToString()])[LangRenSha.dictAlive] = 0;
+                        update[LangRenSha.dictPlayers] = players;
+                        LangRenSha.AdvanceAction(game, update);
+                        return GameActionResult.Restart;
+                    }    
+                }
+            }
+            return GameActionResult.NotExecuted;
+        }
+
         public void Sha(Game game, List<int> targets, Dictionary<string, object> update)
         {
             var attackTarget = Game.GetGameDictionaryProperty(game, dictAttackTarget, new List<int>());
@@ -114,10 +135,10 @@ namespace ProcedureCore.LangRenSha
                 var alivePlayers = LangRenSha.GetPlayers(game, x => (int)x[LangRenSha.dictAlive] == 1);
                 if (UserAction.EndUserAction(game, update))
                 {
-                    (var inputValid, var input) = UserAction.GetUserResponse(game, true, langRen, update);
+                    (var inputValid, var input, var input_others) = UserAction.GetUserResponse(game, true, langRen, update);
                     if (inputValid)
                     {
-                        var targets = UserAction.TallyUserInput(input, 0, UserAction.UserInputMode.VoteMost);
+                        var targets = UserAction.TallyUserInput(input, 0, UserAction.UserInputMode.VoteMost, -1);
                         var choose = new List<int>();
                         if (targets.Count > 0)
                         {
@@ -140,7 +161,7 @@ namespace ProcedureCore.LangRenSha
                     }
                     else
                     {
-                        (var inputValid, var input) = UserAction.GetUserResponse(game, false, langRen, update);
+                        (var inputValid, var input, var input_others) = UserAction.GetUserResponse(game, false, langRen, update);
                         if (inputValid)
                         {
                             bool allResponded = true;
@@ -154,8 +175,8 @@ namespace ProcedureCore.LangRenSha
                             }
                             if (allResponded)
                             {
-                                (inputValid, input) = UserAction.GetUserResponse(game, true, langRen, update);
-                                var targets = UserAction.TallyUserInput(input, 0, UserAction.UserInputMode.VoteMost);
+                                (inputValid, input, input_others) = UserAction.GetUserResponse(game, true, langRen, update);
+                                var targets = UserAction.TallyUserInput(input, 0, UserAction.UserInputMode.VoteMost, -1);
                                 var choose = new List<int>();
                                 if (targets.Count > 0)
                                 {

@@ -111,10 +111,10 @@ namespace ProcedureCore.LangRenSha
                     }
                     else
                     {
-                        (var inputValid, var input) = UserAction.GetUserResponse(game, true, wuZhe, update);
+                        (var inputValid, var input, var input_others) = UserAction.GetUserResponse(game, true, wuZhe, update);
                         if (inputValid)
                         {
-                            var targets = UserAction.TallyUserInput(input, 0, UserAction.UserInputMode.Input);
+                            var targets = UserAction.TallyUserInput(input, 0, UserAction.UserInputMode.Input, -1);
                             if (targets.Count == 3 && targets[0] != targets[1] && targets[1] != targets[2] && targets[2] != targets[0])
                             {
                                 var danced = LangRenSha.GetPlayerProperty(game, wuZhe[0], dictDanced, new List<int>());

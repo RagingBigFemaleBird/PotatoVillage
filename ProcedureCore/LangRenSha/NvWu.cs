@@ -162,10 +162,10 @@ namespace ProcedureCore.LangRenSha
                     }
                     else
                     {
-                        (var inputValid, var input) = UserAction.GetUserResponse(game, true, nvWu, update);
+                        (var inputValid, var input, var input_others) = UserAction.GetUserResponse(game, true, nvWu, update);
                         if (inputValid)
                         {
-                            var targets = UserAction.TallyUserInput(input, 0, UserAction.UserInputMode.VoteMost);
+                            var targets = UserAction.TallyUserInput(input, 0, UserAction.UserInputMode.VoteMost, -1);
                             if (targets[0] > 0)
                             {
                                 Poison(game, targets[0], update);

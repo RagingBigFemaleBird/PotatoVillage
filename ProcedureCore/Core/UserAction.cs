@@ -100,9 +100,10 @@ namespace ProcedureCore.Core
             Game.SetPrivateGameDictionaryProperty(game, dictUserActionSelects, response);
         }
 
-        public static (bool, Dictionary<string, object>) GetUserResponse(Game game, bool clearResponse, List<int> users, Dictionary<string, object> update)
+        public static (bool, Dictionary<string, object>, Dictionary<string, object>) GetUserResponse(Game game, bool clearResponse, List<int> users, Dictionary<string, object> update)
         {
             var ret = new Dictionary<string, object>();
+            var ret_others = new Dictionary<string, object>();
             users = Game.GetGameDictionaryProperty(game, dictUserActionUsers, new List<int>());
             var targets = Game.GetGameDictionaryProperty(game, dictUserActionTargets, new List<int>());
             var uar = Game.GetGameDictionaryProperty(game,dictUserActionResponse, new Dictionary<string, object>());
@@ -117,26 +118,39 @@ namespace ProcedureCore.Core
                     if (users.Contains(int.Parse(rp.Key)))
                     {
                         var l = new List<int>();
+                        var m = new List<int>();
                         foreach (var p in (List<int>)rp.Value)
                         {
                             if (targets.Contains(p))
                             {
                                 l.Add(p);
                             }
+                            else
+                            {
+                                m.Add(p);
+                            }
                         }
                         if (l.Count > 0)
                         {
                             ret[rp.Key] = l;
                         }
+                        if (m.Count > 0)
+                        {
+                            ret_others[rp.Key] = m;
+                        }
+                    }
+                    else
+                    {
+                        ret_others[rp.Key] = rp.Value;
                     }
                 }
-                if (ret.Count == 0)
+                if (ret.Count == 0 && ret_others.Count == 0)
                 {
-                    return (false, null);
+                    return (false, null, null);
                 }
-                return (true, ret);
+                return (true, ret, ret_others);
             }
-            return (false, null);
+            return (false, null, null);
         }
 
         public enum UserInputMode
@@ -146,7 +160,7 @@ namespace ProcedureCore.Core
             UniaminousVote,  //Everyone must agree.
             Input, //Simply take the input.
         }
-        public static List<int> TallyUserInput(Dictionary<string, object> UserInput, int totalPlayers, UserInputMode mode)
+        public static List<int> TallyUserInput(Dictionary<string, object> UserInput, int totalPlayers, UserInputMode mode, int halfVoteWeightedPlayer)
         {
             var ret = new List<int>();
             var vote = new Dictionary<int, int>();
@@ -163,7 +177,12 @@ namespace ProcedureCore.Core
                 {
                     vote[target] = 0;
                 }
-                vote[target] += 1;
+                vote[target] += 2;
+                if (player == halfVoteWeightedPlayer)
+                {
+                    vote[target] += 1;
+                }
+
             }
             var result = vote.OrderByDescending(pair => pair.Value);
             var max = result.FirstOrDefault();

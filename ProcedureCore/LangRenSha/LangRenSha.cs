@@ -523,6 +523,7 @@ namespace ProcedureCore.LangRenSha
                 else
                 {
                     update[dictSpeak] = 30;
+                    return GameActionResult.Restart;
                 }
             }
 

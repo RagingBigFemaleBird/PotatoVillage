@@ -5,13 +5,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Text.Json;
+using System.Collections.Concurrent;
 
 namespace ProcedureCore.Core
 {
     public class Game
     {
-        private static Game instance;
-        private Game()
+        public Game(Action<Game, Dictionary<string, object>> stateUpdateCallback)
         {
             StateDictionary = new Dictionary<string, object>();
             PrivateStateDictionary = new Dictionary<string, object>();
@@ -22,20 +22,12 @@ namespace ProcedureCore.Core
             StateDictionary[UserAction.dictUserAction] = 0;
             StateDictionary[dictRandomSeed] = new System.Random().Next();
             Actions.Add(new UserAction());
+            PlayerToId = new ConcurrentDictionary<string, int>();
+            IdToPlayer = new ConcurrentDictionary<int, string>();
+            StateUpdateCallback = stateUpdateCallback;
         }
 
-        public static Game Instance
-        {
-            get
-            {
-                if (instance == null)
-                {
-                    instance = new Game();
-                }
-                return instance;
-            }
-        }
-
+        private Action<Game, Dictionary<string, object>> StateUpdateCallback;
         protected Dictionary<string, object> StateDictionary { get; set; }
         protected Dictionary<string, object> PrivateStateDictionary { get; set; }
 
@@ -46,7 +38,12 @@ namespace ProcedureCore.Core
         public static string dictRandomSeed = "random";
         public int StateSequenceNumber { get; set; }
 
+        private AutoResetEvent userWait = new(false);
+
         public List<GameAction> Actions { get; private set; }
+        public int TotalPlayers { get; set; }
+        public ConcurrentDictionary<string, int> PlayerToId { get; private set; }
+        public ConcurrentDictionary<int, string> IdToPlayer { get; private set; }
 
         public int StateUpdate(Dictionary<string, object> stateDiff)
         {
@@ -72,6 +69,7 @@ namespace ProcedureCore.Core
                 }
             }
             LogDict("Game state update:", stateDiff);
+            StateUpdateCallback(this, stateDiff);
             //LogDict("Current game state:", StateDictionary);
             return 0;
         }
@@ -159,6 +157,21 @@ namespace ProcedureCore.Core
         public void Log(string log)
         {
             Console.WriteLine(log);
+        }
+
+        public void UserWait(int utcSeconds)
+        {
+            var now = (int)DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            if (utcSeconds <= now)
+            {
+                return;
+            }
+            userWait.WaitOne((utcSeconds - now) * 1000);
+        }
+
+        public void UserWakeup()
+        {
+            userWait.Set();
         }
     }
 }

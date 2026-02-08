@@ -166,6 +166,10 @@ namespace ProcedureCore.LangRenSha
                         if (inputValid)
                         {
                             var targets = UserAction.TallyUserInput(input, 0, UserAction.UserInputMode.VoteMost, -1);
+                            if (targets.Count == 0)
+                            {
+                                return GameActionResult.NotExecuted;
+                            }
                             if (targets[0] > 0)
                             {
                                 Poison(game, targets[0], update);

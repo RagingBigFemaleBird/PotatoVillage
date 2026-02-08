@@ -151,6 +151,10 @@ namespace ProcedureCore.LangRenSha
                         if (inputValid)
                         {
                             var targets = UserAction.TallyUserInput(input, 0, UserAction.UserInputMode.VoteMost, -1);
+                            if (targets.Count == 0)
+                            {
+                                return GameActionResult.NotExecuted;
+                            }
                             update[dictJiaMianReversed] = targets[0];
                             UserAction.EndUserAction(game, update, true);
                             LangRenSha.AdvanceAction(game, update);

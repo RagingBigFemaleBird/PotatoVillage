@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -28,27 +29,61 @@ namespace ProcedureCore.Core
         public static string dictUserActionTargetsHint = "user_targets_hint";
         public static string dictUserActionResponse = "user_response";
         public static string dictUserActionSelects = "user_selects";
+        public static string dictUserActionSelectsUpdate = "user_selects_update";
+        public static object uarLock = new object();
 
         public GameActionResult GenerateStateDiff(Game game, Dictionary<string, object> update)
         {
-            var selects = Game.GetPrivateGameDictionaryProperty(game, dictUserActionSelects, new Dictionary<string, object>());
-            Game.SetPrivateGameDictionaryProperty(game, dictUserActionSelects, new Dictionary<string, object>());
             if (Game.GetGameDictionaryProperty(game, dictUserAction, 0) == 0)
             {
                 return GameActionResult.NotExecuted;
             }
-            if (selects.Count > 0)
+            bool doWait = false;
+            lock (uarLock)
             {
-                var ur = Game.GetGameDictionaryProperty(game, dictUserActionResponse, new Dictionary<string, object>());
-                foreach (var entry in selects)
+                var uasu = Game.GetPrivateGameDictionaryProperty(game, dictUserActionSelectsUpdate, new Dictionary<string, object>());
+                if (uasu.Count > 0)
                 {
-                    ur[entry.Key] = entry.Value;
+                    var uas = Game.GetPrivateGameDictionaryProperty(game, dictUserActionSelects, new Dictionary<string, object>());
+                    foreach (var entry in uasu)
+                    {
+                        if (uas.ContainsKey(entry.Key))
+                        {
+                            uas.Remove(entry.Key);
+                        }
+                    }
+                    Game.SetPrivateGameDictionaryProperty(game, dictUserActionSelects, uas);
+                    Game.SetPrivateGameDictionaryProperty(game, dictUserActionSelectsUpdate, new Dictionary<string, object>());
+                    return GameActionResult.NotExecuted;
                 }
-                update[dictUserActionResponse] = ur;
-                return GameActionResult.Restart;
+                var selects = Game.GetPrivateGameDictionaryProperty(game, dictUserActionSelects, new Dictionary<string, object>());
+                if (selects.Count == 0)
+                {
+                    doWait = true;
+                }
             }
-            game.Log("User wait idle.");
-            Thread.Sleep(1000);
+            if (doWait)
+            {
+                game.Log("User wait idle.");
+                game.UserWait(Game.GetGameDictionaryProperty(game, dictUserAction, 0));
+            }
+            lock (uarLock)
+            {
+                var selects = Game.GetPrivateGameDictionaryProperty(game, dictUserActionSelects, new Dictionary<string, object>());
+                if (selects.Count > 0)
+                {
+                    var uasu = new Dictionary<string, object>();
+                    var ur = Game.GetGameDictionaryProperty(game, dictUserActionResponse, new Dictionary<string, object>());
+                    foreach (var entry in selects)
+                    {
+                        uasu[entry.Key] = entry.Value;
+                        ur[entry.Key] = entry.Value;
+                    }
+                    Game.SetPrivateGameDictionaryProperty(game, dictUserActionSelectsUpdate, uasu);
+                    update[dictUserActionResponse] = ur;
+                    return GameActionResult.Restart;
+                }
+            }
             return GameActionResult.NotExecuted;
         }
 
@@ -95,9 +130,13 @@ namespace ProcedureCore.Core
 
         public static void UserActionRespond(Game game, int player, List<int> targets)
         {
-            var response = new Dictionary<string, object>();
-            response[player.ToString()] = targets;
-            Game.SetPrivateGameDictionaryProperty(game, dictUserActionSelects, response);
+            lock (uarLock)
+            {
+                var response = Game.GetPrivateGameDictionaryProperty(game, dictUserActionSelects, new Dictionary<string, object>());
+                response[player.ToString()] = targets;
+                Game.SetPrivateGameDictionaryProperty(game, dictUserActionSelects, response);
+                game.UserWakeup();
+            }
         }
 
         public static (bool, Dictionary<string, object>, Dictionary<string, object>) GetUserResponse(Game game, bool clearResponse, List<int> users, Dictionary<string, object> update)
@@ -107,6 +146,7 @@ namespace ProcedureCore.Core
             users = Game.GetGameDictionaryProperty(game, dictUserActionUsers, new List<int>());
             var targets = Game.GetGameDictionaryProperty(game, dictUserActionTargets, new List<int>());
             var uar = Game.GetGameDictionaryProperty(game,dictUserActionResponse, new Dictionary<string, object>());
+            game.Log("UAR" + string.Join(", ", uar.Select(kv => kv.Key + ":" + string.Join("|", (List<int>)kv.Value))));
             if (uar.Count > 0)
             {
                 if (clearResponse)

@@ -107,6 +107,7 @@ namespace ProcedureCore.LangRenSha
                     else
                     {
                         (var inputValid, var input, var input_others) = UserAction.GetUserResponse(game, true, yuYanJia, update);
+                        game.Log("YuYanJia user input: " + (inputValid ? string.Join(",", input) : "invalid"));
                         if (inputValid)
                         {
                             var targets = UserAction.TallyUserInput(input, 0, UserAction.UserInputMode.VoteMost, -1);

@@ -1,46 +1,95 @@
 ﻿using ProcedureCore.Core;
 using ProcedureCore.LangRenSha;
+using Microsoft.AspNetCore.SignalR.Client;
 
-var game = Game.Instance;
+var hubUrl = args.Length > 0 ? args[0] : "http://localhost:5269/gamehub";
 
-void InputLoop(Game game)
+var connection = new HubConnectionBuilder()
+    .WithUrl(hubUrl)
+    .WithAutomaticReconnect()
+    .Build();
+
+bool gameRunning = true;
+int registeredPlayerId = 0;
+
+connection.On<int, int>("Registered", (gameId, playerId) =>
 {
-    while (true)
+    Console.WriteLine($"Registered in Game {gameId} as player {playerId}");
+    registeredPlayerId = playerId;
+});
+
+connection.On<string>("GameStateUpdate", (stateDiff) =>
+{
+    Console.WriteLine($"Game state updated:" + stateDiff);
+});
+
+Console.CancelKeyPress += (s, e) =>
+{
+    Console.WriteLine("Shutting down...");
+};
+
+await connection.StartAsync();
+Console.WriteLine("Connected to server.");
+
+Console.WriteLine("Enter game id:");
+var line = Console.ReadLine();
+if (line == null || !int.TryParse(line.Trim(), out int gameId))
+{
+    Console.WriteLine("Invalid game id, exiting.");
+    return 1;
+}
+
+Console.WriteLine("Enter player id:");
+line = Console.ReadLine();
+if (line == null || !int.TryParse(line.Trim(), out int playerId))
+{
+    Console.WriteLine("Invalid player id, exiting.");
+    return 1;
+}
+
+await connection.InvokeAsync("Register", gameId, playerId);
+Console.WriteLine("Starting game...");
+await connection.InvokeAsync("StartGame", gameId);
+Console.WriteLine("Game started.");
+
+while (gameRunning)
+{
+    Console.WriteLine("Enter targets (comma separated):");
+    line = Console.ReadLine();
+    if (line == null)
     {
-        var input = Console.ReadLine();
-        if (input == null)
+        Console.WriteLine("Input error.");
+        continue;
+    }
+
+    var targets = new List<int>();
+    foreach (var part in line.Split(','))
+    {
+        if (int.TryParse(part.Trim(), out int target))
         {
-            continue;
+            targets.Add(target);
         }
-        int owner = int.Parse(input);
-        Console.WriteLine("Acting as player " + owner);
-        (var doInput, var targets, var targets_count) = UserAction.UserActionTargets(game, owner);
-        if (doInput)
+        else
         {
-            string result = string.Join(", ", targets.Select(n => n.ToString()));
-            Console.WriteLine("Provide target among " + result);
-            List<int> ret = new List<int>();
-            for (int i = 0; i < targets_count; i++)
-            {
-                Console.WriteLine("Targets " + i + " of " + targets_count + " -------:");
-                var response = Console.ReadLine();
-                if (response != null)
-                {
-                    ret.Add(int.Parse(response));
-                }
-            }
-            UserAction.UserActionRespond(game, owner, ret);
+            Console.WriteLine($"Invalid target: {part}, skipping.");
         }
+    }
+    Console.WriteLine(
+        $"Submitting targets: {string.Join(", ", targets)}");
+    await connection.InvokeAsync("UserAction", gameId, registeredPlayerId, targets);
+}
+
+await connection.StopAsync();
+return 0;
+
+// Local proxy of the server DTO (keeps client decoupled from server implementation file)
+internal static class GameHubProxy
+{
+    public class TargetsDto
+    {
+        public bool DoInput { get; set; }
+        public List<int> Targets { get; set; } = new();
+        public int TargetsCount { get; set; }
     }
 }
 
-game.Actions.Add(new LangRenSha());
-game.Actions.Add(new LangRen());
-game.Actions.Add(new YuYanJia());
-game.Actions.Add(new NvWu());
-game.Actions.Add(new WuZhe());
-game.Actions.Add(new JiaMian());
-
-Thread input = new Thread(() => InputLoop(game));
-input.Start();
-game.ActionLoop();

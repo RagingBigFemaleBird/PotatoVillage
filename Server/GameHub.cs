@@ -63,14 +63,15 @@ namespace Server
                     }
                 }
             }
-            return Clients.Caller.SendAsync("Registered", gameId, playerId);
+            var dict = games[gameId].GetGameDictionary();
+            string dictString = JsonSerializer.Serialize(dict);
+            return Clients.Caller.SendAsync("Registered", gameId, playerId, dictString);
         }
 
         public void GameActionCallback(Game game, Dictionary<string, object> stateDiff)
         {
             IHubContext<GameHub> hubContext = Server.Controllers.HomeController.GetGameHubContext();
             string updateString = JsonSerializer.Serialize(stateDiff);
-            Console.WriteLine("Game state update: " + updateString);
             var gameId = 0;
             foreach (var g in games)
             {

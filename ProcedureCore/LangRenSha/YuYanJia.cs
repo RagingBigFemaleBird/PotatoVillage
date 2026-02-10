@@ -10,17 +10,17 @@ namespace ProcedureCore.LangRenSha
 {
     public class YuYanJia : Role
     {
-        private static Dictionary<string, object> roleDict;
-        private static List<int> actionOrders;
+        public static string dictYuYanJiaResult = "chayan";
 
-        public YuYanJia()
-        {
-            roleDict = new Dictionary<string, object>()
+        private static Dictionary<string, object> roleDict = new()
             {
                 { YuYanJia.dictYuYanJiaResult, 1 },
             };
-            actionOrders = new List<int> { 150 };
+        private static List<int> actionOrders = new()
+            { 150 };
 
+        public YuYanJia()
+        {
         }
         public Dictionary<string, object> RoleDict
         {
@@ -61,8 +61,6 @@ namespace ProcedureCore.LangRenSha
                 return 30;
             }
         }
-
-        public static string dictYuYanJiaResult = "chayan";
 
         public void ChaYan(Game game, int target, Dictionary<string, object> update)
         {
@@ -107,7 +105,6 @@ namespace ProcedureCore.LangRenSha
                     else
                     {
                         (var inputValid, var input, var input_others) = UserAction.GetUserResponse(game, true, yuYanJia, update);
-                        game.Log("YuYanJia user input: " + (inputValid ? string.Join(",", input) : "invalid"));
                         if (inputValid)
                         {
                             var targets = UserAction.TallyUserInput(input, 0, UserAction.UserInputMode.VoteMost, -1);

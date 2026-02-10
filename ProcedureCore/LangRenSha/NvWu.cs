@@ -9,18 +9,16 @@ namespace ProcedureCore.LangRenSha
 {
     public class NvWu : Role
     {
-        private static Dictionary<string, object> roleDict;
-        private static List<int> actionOrders;
-
-        public NvWu()
-        {
-            roleDict = new Dictionary<string, object>()
+        private static Dictionary<string, object> roleDict = new()
             {
                 { YuYanJia.dictYuYanJiaResult, 1 },
                 { LangRenSha.dictPlayerAlliance, 1 },
             };
-            actionOrders = new List<int> { 120 };
+        private static List<int> actionOrders = new()
+            { 120 };
 
+        public NvWu()
+        {
         }
         public Dictionary<string, object> RoleDict
         {

@@ -9,19 +9,17 @@ namespace ProcedureCore.LangRenSha
 {
     public class JiaMian : Role
     {
-        private static Dictionary<string, object> roleDict;
-        private static List<int> actionOrders;
-        public JiaMian()
-        {
-            roleDict = new Dictionary<string, object>()
+        private static Dictionary<string, object> roleDict = new()
             {
                 { YuYanJia.dictYuYanJiaResult, 2 },
                 { LangRenSha.dictPlayerAlliance, 2 },
                 { NvWu.dictCannotBePoisoned, 1 },
                 { LangRen.dictSuceession, 1 },
             };
-            actionOrders = new List<int> { 70, 71 };
-
+        private static List<int> actionOrders = new()
+            { 70, 71 };
+        public JiaMian()
+        {
         }
 
         public Dictionary<string, object> RoleDict

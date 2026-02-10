@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="PotatoVillage.GameView">
+
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="✕" Clicked="OnDisconnectClicked" Priority="1" />
+    </ContentPage.ToolbarItems>
+
+    <VerticalStackLayout Padding="20" Spacing="12">
+        <!-- Header with countdown timer in top right -->
+        <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto">
+            <VerticalStackLayout Grid.Column="0" Spacing="8">
+                <HorizontalStackLayout Spacing="12">
+                    <Label Text="Player ID:" FontAttributes="Bold" />
+                    <Label x:Name="PlayerIdLabel" Text="" />
+                </HorizontalStackLayout>
+
+                <HorizontalStackLayout Spacing="12">
+                    <Label Text="Day:" FontAttributes="Bold" />
+                    <Label x:Name="DayLabel" Text="0" />
+                </HorizontalStackLayout>
+
+                <Label Text="Game Status" FontAttributes="Bold" FontSize="16" />
+                <Label x:Name="GameStatusLabel" Text="" LineBreakMode="WordWrap" />
+            </VerticalStackLayout>
+
+            <!-- Countdown timer in top right -->
+            <Label x:Name="CountdownLabel" 
+                   Grid.Column="1"
+                   Text=""
+                   FontSize="14"
+                   FontAttributes="Bold"
+                   TextColor="Red"
+                   VerticalOptions="Start"
+                   HorizontalTextAlignment="End" />
+        </Grid>
+
+        <!-- Self player status -->
+        <Label Text="Your Status" FontAttributes="Bold" FontSize="16" />
+        <Label x:Name="SelfPlayerStatusLabel" Text="Waiting for game..." />
+
+        <!-- Target selection area (initially hidden) -->
+        <Frame x:Name="TargetSelectionContainer" 
+               IsVisible="False"
+               Padding="12"
+               CornerRadius="8"
+               BackgroundColor="#F0F0F0"
+               HasShadow="True">
+            <StackLayout Spacing="12">
+                <Label Text="Select Targets" FontAttributes="Bold" FontSize="14" />
+                <Label x:Name="TargetInstructionLabel" 
+                       Text="" 
+                       FontSize="12"
+                       TextColor="#666666" />
+                
+                <!-- Target buttons container -->
+                <FlexLayout x:Name="TargetButtonsContainer"
+                            Wrap="Wrap"
+                            JustifyContent="Start"
+                            AlignItems="Center"
+                            Margin="0,8,0,0" />
+                
+                <!-- Confirm button -->
+                <Button x:Name="ConfirmButton"
+                        Text="Confirmed"
+                        IsVisible="False"
+                        Clicked="OnConfirmClicked"
+                        Margin="0,12,0,0"
+                        BackgroundColor="#007AFF"
+                        TextColor="White" />
+            </StackLayout>
+        </Frame>
+    </VerticalStackLayout>
+
+</ContentPage>

@@ -9,18 +9,16 @@ namespace ProcedureCore.LangRenSha
 {
     public class WuZhe : Role
     {
-        private static Dictionary<string, object> roleDict;
-        private static List<int> actionOrders;
-        public WuZhe()
-        {
-            roleDict = new Dictionary<string, object>()
+        private static Dictionary<string, object> roleDict = new()
             {
                 { YuYanJia.dictYuYanJiaResult, 1 },
                 { LangRenSha.dictPlayerAlliance, 1 },
                 { NvWu.dictCannotBePoisoned, 1 },
             };
-            actionOrders = new List<int> { 60, 130 };
-
+        private static List<int> actionOrders = new()
+            { 60, 130 };
+        public WuZhe()
+        {
         }
 
         public Dictionary<string, object> RoleDict

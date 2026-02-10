@@ -14,17 +14,12 @@ namespace ProcedureCore.LangRenSha
     public class LangRenSha : GameAction
     {
         private List<(int, Role)> players;
-        private static List<Func<Game, int, List<int>, Dictionary<string, object>, GameActionResult>> interruptHandlers;
+        private static List<Func<Game, int, List<int>, Dictionary<string, object>, GameActionResult>> interruptHandlers = new()
+            { LangRen.RevealSelf, LangRenSha.WithdrawSheriff };
         public static List<Func<Game, int, List<int>, Dictionary<string, object>, GameActionResult>> InterruptHandlers
         {
             get
             {
-                if (interruptHandlers == null)
-                {
-                    interruptHandlers = new List<Func<Game, int, List<int>, Dictionary<string, object>, GameActionResult>>();
-                    interruptHandlers.Add(LangRen.RevealSelf);
-                    interruptHandlers.Add(LangRenSha.WithdrawSheriff);
-                }
                 return interruptHandlers;
             }
         }
@@ -236,7 +231,7 @@ namespace ProcedureCore.LangRenSha
                         update[UserAction.dictUserActionTargets] = sheriffPlayers;
                         update[UserAction.dictUserActionUsers] = votePlayers;
                         update[UserAction.dictUserActionTargetsCount] = 1;
-                        update[UserAction.dictUserActionTargetsHint] = 102;
+                        update[UserAction.dictUserActionTargetsHint] = 103;
                         return GameActionResult.Restart;
                     }
                 }
@@ -341,7 +336,7 @@ namespace ProcedureCore.LangRenSha
                 }
                 return HandleRoundTableSpeak(game, ap, first, dir, update, 34);
             }
-            // Sheriff vote
+            // Sheriff recommend vote
             if (Game.GetGameDictionaryProperty(game, dictSpeak, 0) == 34)
             {
                 var sheriff = Game.GetGameDictionaryProperty(game, dictCurrentSheriff, 0);
@@ -355,8 +350,11 @@ namespace ProcedureCore.LangRenSha
                         (var inputValid, var input, var input_others) = UserAction.GetUserResponse(game, true, sheriffArray, update);
                         if (inputValid)
                         {
-                            var targets = (List<int>)input[sheriff.ToString()];
-                            update[dictSheriffVote] = targets;
+                            if (input.ContainsKey(sheriff.ToString()))
+                            {
+                                var targets = (List<int>)input[sheriff.ToString()];
+                                update[dictSheriffVote] = targets;
+                            }
                         }
                         update[dictSpeak] = 35;
                         return GameActionResult.Restart;
@@ -420,7 +418,7 @@ namespace ProcedureCore.LangRenSha
                         update[UserAction.dictUserActionTargets] = alivePlayersNow;
                         update[UserAction.dictUserActionUsers] = alivePlayersNow;
                         update[UserAction.dictUserActionTargetsCount] = 1;
-                        update[UserAction.dictUserActionTargetsHint] = 101;
+                        update[UserAction.dictUserActionTargetsHint] = 111;
                         return GameActionResult.Restart;
                     }
                 }
@@ -470,7 +468,7 @@ namespace ProcedureCore.LangRenSha
                         update[UserAction.dictUserActionTargets] = voteout;
                         update[UserAction.dictUserActionUsers] = alivePlayersNow;
                         update[UserAction.dictUserActionTargetsCount] = 1;
-                        update[UserAction.dictUserActionTargetsHint] = 101;
+                        update[UserAction.dictUserActionTargetsHint] = 111;
                         return GameActionResult.Restart;
                     }
                 }
@@ -494,6 +492,7 @@ namespace ProcedureCore.LangRenSha
                 if (voteout.Count == 1)
                 {
                     var interrupted = new Dictionary<string, object>();
+                    update[dictDeadPlayerAction] = voteout;
 
                     interrupted[dictSpeak] = 40;
                     update[dictSpeak] = 100;
@@ -622,7 +621,7 @@ namespace ProcedureCore.LangRenSha
                     update[UserAction.dictUserActionTargets] = new List<int> { -1, 0 };
                     update[UserAction.dictUserActionUsers] = allPlayers;
                     update[UserAction.dictUserActionTargetsCount] = 1;
-                    update[UserAction.dictUserActionTargetsHint] = 101;
+                    update[UserAction.dictUserActionTargetsHint] = 102;
                     return GameActionResult.Restart;
                 }
                 else

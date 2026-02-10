@@ -110,7 +110,7 @@ namespace ProcedureCore.Core
             return false;
         }
 
-        public static (bool, List<int>, int) UserActionTargets(Game game, int player)
+        public static (bool, List<int>?, int) UserActionTargets(Game game, int player)
         {
             if (Game.GetGameDictionaryProperty(game, Game.dictStateSequence, 0) <= 2)
             {
@@ -146,7 +146,6 @@ namespace ProcedureCore.Core
             users = Game.GetGameDictionaryProperty(game, dictUserActionUsers, new List<int>());
             var targets = Game.GetGameDictionaryProperty(game, dictUserActionTargets, new List<int>());
             var uar = Game.GetGameDictionaryProperty(game,dictUserActionResponse, new Dictionary<string, object>());
-            game.Log("UAR" + string.Join(", ", uar.Select(kv => kv.Key + ":" + string.Join("|", (List<int>)kv.Value))));
             if (uar.Count > 0)
             {
                 if (clearResponse)
@@ -186,11 +185,11 @@ namespace ProcedureCore.Core
                 }
                 if (ret.Count == 0 && ret_others.Count == 0)
                 {
-                    return (false, null, null);
+                    return (false, new Dictionary<string, object>(), new Dictionary<string, object>());
                 }
                 return (true, ret, ret_others);
             }
-            return (false, null, null);
+            return (false, new Dictionary<string, object>(), new Dictionary<string, object>());
         }
 
         public enum UserInputMode

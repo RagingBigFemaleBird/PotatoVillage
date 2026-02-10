@@ -12,9 +12,9 @@ var connection = new HubConnectionBuilder()
 bool gameRunning = true;
 int registeredPlayerId = 0;
 
-connection.On<int, int>("Registered", (gameId, playerId) =>
+connection.On<int, int, string>("Registered", (gameId, playerId, gameDict) =>
 {
-    Console.WriteLine($"Registered in Game {gameId} as player {playerId}");
+    Console.WriteLine($"Registered in Game {gameId} as player {playerId}, current state: {gameDict}");
     registeredPlayerId = playerId;
 });
 

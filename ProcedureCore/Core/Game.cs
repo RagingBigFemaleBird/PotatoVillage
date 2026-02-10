@@ -114,6 +114,11 @@ namespace ProcedureCore.Core
             }
         }
 
+        public Dictionary<string, object> GetGameDictionary()
+        {
+            return StateDictionary;
+        }
+
         public static T GetGameDictionaryProperty<T>(Game game, string key, T defaultValue)
         {
             if (game.StateDictionary.ContainsKey(key))

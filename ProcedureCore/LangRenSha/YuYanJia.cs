@@ -17,7 +17,7 @@ namespace ProcedureCore.LangRenSha
                 { YuYanJia.dictYuYanJiaResult, 1 },
             };
         private static List<int> actionOrders = new()
-            { 150 };
+            { 150 , 151 };
 
         public YuYanJia()
         {
@@ -108,6 +108,10 @@ namespace ProcedureCore.LangRenSha
                         if (inputValid)
                         {
                             var targets = UserAction.TallyUserInput(input, 0, UserAction.UserInputMode.VoteMost, -1);
+                            if (targets.Count == 0)
+                            {
+                                return GameActionResult.NotExecuted;
+                            }
                             ChaYan(game, targets[0], update);
                             UserAction.EndUserAction(game, update, true);
                             LangRenSha.AdvanceAction(game, update);
@@ -117,6 +121,46 @@ namespace ProcedureCore.LangRenSha
                 }
                 return GameActionResult.NotExecuted;
             }
+
+            if (Game.GetGameDictionaryProperty(game, LangRenSha.dictAction, 0) == ActionOrders[1])
+            {
+                var yuYanJia = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == Name);
+                var alivePlayers = LangRenSha.GetPlayers(game, x => (int)x[LangRenSha.dictAlive] == 1);
+                if (UserAction.EndUserAction(game, update))
+                {
+                    LangRenSha.AdvanceAction(game, update);
+                    return GameActionResult.Restart;
+                }
+                else
+                {
+                    if (UserAction.StartUserAction(game, 5, update))
+                    {
+                        update[UserAction.dictUserActionTargets] = new List<int>() { 0 };
+                        update[UserAction.dictUserActionUsers] = yuYanJia;
+                        update[UserAction.dictUserActionTargetsCount] = 1;
+                        update[UserAction.dictUserActionTargetsHint] = 7;
+                        update[UserAction.dictUserActionInfo] = $"{Game.GetGameDictionaryProperty(game, dictYuYanJiaResult, 0)}";
+                        return GameActionResult.Restart;
+                    }
+                    else
+                    {
+                        (var inputValid, var input, var input_others) = UserAction.GetUserResponse(game, true, yuYanJia, update);
+                        if (inputValid)
+                        {
+                            var targets = UserAction.TallyUserInput(input, 0, UserAction.UserInputMode.VoteMost, -1);
+                            if (targets.Count == 0)
+                            {
+                                return GameActionResult.NotExecuted;
+                            }
+                            UserAction.EndUserAction(game, update, true);
+                            LangRenSha.AdvanceAction(game, update);
+                            return GameActionResult.Restart;
+                        }
+                    }
+                }
+                return GameActionResult.NotExecuted;
+            }
+
             return GameActionResult.NotExecuted;
         }
 

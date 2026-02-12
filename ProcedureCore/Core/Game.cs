@@ -44,6 +44,7 @@ namespace ProcedureCore.Core
         public int TotalPlayers { get; set; }
         public ConcurrentDictionary<string, int> PlayerToId { get; private set; }
         public ConcurrentDictionary<int, string> IdToPlayer { get; private set; }
+        public Dictionary<string, int> RoleConfiguration { get; set; } = new();
 
         public int StateUpdate(Dictionary<string, object> stateDiff)
         {

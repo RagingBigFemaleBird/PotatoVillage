@@ -156,6 +156,8 @@ namespace ProcedureCore.LangRenSha
                         update[UserAction.dictUserActionUsers] = nvWu;
                         update[UserAction.dictUserActionTargetsCount] = 1;
                         update[UserAction.dictUserActionTargetsHint] = 3;
+                        var at = attackTarget.Count > 0 ? attackTarget[0] : 0;
+                        update[UserAction.dictUserActionInfo] = $"{(saveUsed ? 0 : at)}";
                         return GameActionResult.Restart;
                     }
                     else

@@ -60,6 +60,14 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <None Remove="Resources\Translations\translations.json" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <EmbeddedResource Include="Resources\Translations\translations.json" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.8" />
 		<PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.8" />

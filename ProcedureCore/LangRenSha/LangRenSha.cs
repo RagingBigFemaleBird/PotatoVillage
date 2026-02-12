@@ -26,13 +26,21 @@ namespace ProcedureCore.LangRenSha
         public LangRenSha()
         {
             players = new List<(int, Role)>();
-            players.Add((1, new YuYanJia()));
-            players.Add((2, new LangRen()));
-            players.Add((3, new LangRen()));
-            players.Add((4, new LangRen()));
-            players.Add((5, new NvWu()));
-            players.Add((6, new WuZhe()));
-            players.Add((7, new JiaMian()));
+            // Players will be initialized dynamically in GenerateStateDiff based on roleDict
+        }
+
+        private Role CreateRoleInstance(string roleName)
+        {
+            return roleName switch
+            {
+                "LangRen" => new LangRen(),
+                "YuYanJia" => new YuYanJia(),
+                "NvWu" => new NvWu(),
+                "WuZhe" => new WuZhe(),
+                "JiaMian" => new JiaMian(),
+                "PingMin" => new PingMin(),
+                _ => throw new ArgumentException($"Unknown role: {roleName}")
+            };
         }
 
         public static string dictPlayers = "players";
@@ -71,6 +79,12 @@ namespace ProcedureCore.LangRenSha
             // Game init
             if (game.StateSequenceNumber == 0)
             {
+                // Initialize players from roleDict if not already done
+                if (players.Count == 0)
+                {
+                    InitializePlayersFromRoleDict(game);
+                }
+
                 // Add people
                 update[dictPlayers] = new Dictionary<string, object>();
                 foreach (var player in players)
@@ -105,6 +119,62 @@ namespace ProcedureCore.LangRenSha
                 }
             }
             return GameActionResult.NotExecuted;
+        }
+
+        private void InitializePlayersFromRoleDict(Game game)
+        {
+            var roleList = new List<Role>();
+            
+            // If roleDict is configured, use it; otherwise use defaults
+            if (game.RoleConfiguration != null && game.RoleConfiguration.Count > 0)
+            {
+                foreach (var roleEntry in game.RoleConfiguration)
+                {
+                    string roleName = roleEntry.Key;
+                    int count = roleEntry.Value;
+
+                    for (int i = 0; i < count; i++)
+                    {
+                        try
+                        {
+                            var role = CreateRoleInstance(roleName);
+                            roleList.Add(role);
+                        }
+                        catch (ArgumentException ex)
+                        {
+                            Console.WriteLine($"Warning: {ex.Message}");
+                        }
+                    }
+                }
+            }
+            else
+            {
+                roleList.Add(new YuYanJia());
+            }
+
+            // Shuffle the roles randomly
+            ShuffleRoles(roleList);
+
+            // Assign shuffled roles to positions
+            for (int position = 1; position <= roleList.Count; position++)
+            {
+                players.Add((position, roleList[position - 1]));
+            }
+        }
+
+        private void ShuffleRoles(List<Role> roles)
+        {
+            Random random = new Random();
+            int count = roles.Count;
+            
+            // Fisher-Yates shuffle algorithm
+            for (int i = count - 1; i > 0; i--)
+            {
+                int randomIndex = random.Next(i + 1);
+                
+                // Swap
+                (roles[randomIndex], roles[i]) = (roles[i], roles[randomIndex]);
+            }
         }
 
         public static GameActionResult WithdrawSheriff(Game game, int player, List<int> targets, Dictionary<string, object> update)

@@ -27,6 +27,7 @@ namespace ProcedureCore.Core
         public static string dictUserActionTargets = "user_targets";
         public static string dictUserActionTargetsCount = "user_targets_count";
         public static string dictUserActionTargetsHint = "user_targets_hint";
+        public static string dictUserActionInfo = "user_info";
         public static string dictUserActionResponse = "user_response";
         public static string dictUserActionSelects = "user_selects";
         public static string dictUserActionSelectsUpdate = "user_selects_update";
@@ -104,6 +105,7 @@ namespace ProcedureCore.Core
             var ua = Game.GetGameDictionaryProperty(game, dictUserAction, 0);
             if (ua != 0 && (ua <= now || force))
             {
+                update[dictUserActionInfo] = null;
                 update[dictUserAction] = 0;
                 return true;
             }

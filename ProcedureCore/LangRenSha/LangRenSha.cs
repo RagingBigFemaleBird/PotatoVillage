@@ -107,7 +107,7 @@ namespace ProcedureCore.LangRenSha
                 return GameActionResult.Restart;
             }
             if (game.StateSequenceNumber >= 2)
-            {                
+            {
                 if (Game.GetGameDictionaryProperty(game, dictAction, 0) == 0 && Game.GetGameDictionaryProperty(game, dictPhase, 0) == 0)
                 {
                     AdvanceAction(game, update);
@@ -124,7 +124,7 @@ namespace ProcedureCore.LangRenSha
         private void InitializePlayersFromRoleDict(Game game)
         {
             var roleList = new List<Role>();
-            
+
             // If roleDict is configured, use it; otherwise use defaults
             if (game.RoleConfiguration != null && game.RoleConfiguration.Count > 0)
             {
@@ -166,12 +166,12 @@ namespace ProcedureCore.LangRenSha
         {
             Random random = new Random();
             int count = roles.Count;
-            
+
             // Fisher-Yates shuffle algorithm
             for (int i = count - 1; i > 0; i--)
             {
                 int randomIndex = random.Next(i + 1);
-                
+
                 // Swap
                 (roles[randomIndex], roles[i]) = (roles[i], roles[randomIndex]);
             }
@@ -818,5 +818,33 @@ namespace ProcedureCore.LangRenSha
             update[LangRenSha.dictPlayers] = players;
         }
 
+        public static GameActionResult AnnouncerAction(Game game, Dictionary<string, object> update, bool skipDay0, int announcerActionIdIn, int announcerActionIdOut, int announcerHintIn, int announcerHintOut, string announcerInfo, int announcerDelay)
+        {
+            var action = Game.GetGameDictionaryProperty(game, LangRenSha.dictAction, 0);
+            if (action == announcerActionIdIn || action == announcerActionIdOut)
+            {
+                if ((skipDay0 && Game.GetGameDictionaryProperty(game, LangRenSha.dictDay, 0) == 0) || UserAction.EndUserAction(game, update))
+                {
+                    update[UserAction.dictUserActionUsers] = new List<int>();
+                    update[UserAction.dictUserActionInfo] = null;
+                    LangRenSha.AdvanceAction(game, update);
+                    return GameActionResult.Restart;
+                }
+                else
+                {
+                    if (UserAction.StartUserAction(game, announcerDelay, update))
+                    {
+                        update[UserAction.dictUserActionTargets] = new List<int>();
+                        update[UserAction.dictUserActionUsers] = new List<int>() { -1 };
+                        update[UserAction.dictUserActionTargetsCount] = 0;
+                        update[UserAction.dictUserActionTargetsHint] = action == announcerActionIdIn ? announcerHintIn : announcerHintOut;
+                        update[UserAction.dictUserActionInfo] = announcerInfo;
+                        return GameActionResult.Restart;
+                    }
+                }
+                return GameActionResult.NotExecuted;
+            }
+            return GameActionResult.NotExecuted;
+        }
     }
 }

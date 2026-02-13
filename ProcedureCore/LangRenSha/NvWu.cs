@@ -15,7 +15,7 @@ namespace ProcedureCore.LangRenSha
                 { LangRenSha.dictPlayerAlliance, 1 },
             };
         private static List<int> actionOrders = new()
-            { 120 };
+            { 119, 120, 121 };
 
         public NvWu()
         {
@@ -113,7 +113,13 @@ namespace ProcedureCore.LangRenSha
                 return GameActionResult.Continue;
             }
 
-            if (Game.GetGameDictionaryProperty(game, LangRenSha.dictAction, 0) == ActionOrders[0])
+            if (LangRenSha.AnnouncerAction(game, update, false, ActionOrders[0], ActionOrders[2], 50, 51, Name, 4) == GameActionResult.Restart)
+            {
+                return GameActionResult.Restart;
+            }
+
+
+            if (Game.GetGameDictionaryProperty(game, LangRenSha.dictAction, 0) == ActionOrders[1])
             {
                 var nvWu = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == Name);
                 var alivePlayers = LangRenSha.GetPlayers(game, x => (int)x[LangRenSha.dictAlive] == 1);

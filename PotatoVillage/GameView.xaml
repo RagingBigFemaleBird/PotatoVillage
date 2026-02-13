@@ -87,7 +87,7 @@
                         <StackLayout Spacing="8">
                             <Label x:Name="TargetInstructionLabel" 
                                    Text="" 
-                                   FontSize="11"
+                                   FontSize="15"
                                    TextColor="#666666" />
                             
                             <!-- Target buttons container -->

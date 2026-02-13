@@ -17,7 +17,7 @@ namespace ProcedureCore.LangRenSha
                 { YuYanJia.dictYuYanJiaResult, 1 },
             };
         private static List<int> actionOrders = new()
-            { 150 , 151 };
+            { 149, 150, 151, 152 };
 
         public YuYanJia()
         {
@@ -83,7 +83,12 @@ namespace ProcedureCore.LangRenSha
                 return GameActionResult.Continue;
             }
 
-            if (Game.GetGameDictionaryProperty(game, LangRenSha.dictAction, 0) == ActionOrders[0])
+            if (LangRenSha.AnnouncerAction(game, update, false, ActionOrders[0], ActionOrders[3], 50, 51, Name, 4) == GameActionResult.Restart)
+            {
+                return GameActionResult.Restart;
+            }
+
+            if (Game.GetGameDictionaryProperty(game, LangRenSha.dictAction, 0) == ActionOrders[1])
             {
                 var yuYanJia = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == Name);
                 var alivePlayers = LangRenSha.GetPlayers(game, x => (int)x[LangRenSha.dictAlive] == 1);
@@ -122,7 +127,7 @@ namespace ProcedureCore.LangRenSha
                 return GameActionResult.NotExecuted;
             }
 
-            if (Game.GetGameDictionaryProperty(game, LangRenSha.dictAction, 0) == ActionOrders[1])
+            if (Game.GetGameDictionaryProperty(game, LangRenSha.dictAction, 0) == ActionOrders[2])
             {
                 var yuYanJia = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == Name);
                 var alivePlayers = LangRenSha.GetPlayers(game, x => (int)x[LangRenSha.dictAlive] == 1);

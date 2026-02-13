@@ -16,7 +16,7 @@ namespace ProcedureCore.LangRenSha
                 { NvWu.dictCannotBePoisoned, 1 },
             };
         private static List<int> actionOrders = new()
-            { 60, 130 };
+            { 59, 60, 61, 130 };
         public WuZhe()
         {
         }
@@ -77,7 +77,13 @@ namespace ProcedureCore.LangRenSha
                 return GameActionResult.Continue;
             }
 
-            if (Game.GetGameDictionaryProperty(game, LangRenSha.dictAction, 0) == ActionOrders[0])
+            if (LangRenSha.AnnouncerAction(game, update, true, ActionOrders[0], ActionOrders[2], 50, 51, Name, 4) == GameActionResult.Restart)
+            {
+                return GameActionResult.Restart;
+            }
+
+
+            if (Game.GetGameDictionaryProperty(game, LangRenSha.dictAction, 0) == ActionOrders[1])
             {
                 var wuZhe = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == Name);
                 var alivePlayers = LangRenSha.GetPlayers(game, x => (int)x[LangRenSha.dictAlive] == 1);
@@ -129,7 +135,7 @@ namespace ProcedureCore.LangRenSha
                 return GameActionResult.NotExecuted;
             }
 
-            if (Game.GetGameDictionaryProperty(game, LangRenSha.dictAction, 0) == ActionOrders[1])
+            if (Game.GetGameDictionaryProperty(game, LangRenSha.dictAction, 0) == ActionOrders[3])
             {
                 var aboutToDie = Game.GetGameDictionaryProperty(game, LangRenSha.dictAboutToDie, new List<int>()); ;
 

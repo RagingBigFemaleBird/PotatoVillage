@@ -1,7 +1,7 @@
-using System.Text.Json;
+using Microsoft.AspNetCore.SignalR.Client;
 using System.Security.Cryptography;
 using System.Text;
-using Microsoft.AspNetCore.SignalR.Client;
+using System.Text.Json;
 
 namespace PotatoVillage
 {
@@ -60,8 +60,14 @@ namespace PotatoVillage
 
                 connection = new HubConnectionBuilder()
                     .WithUrl(hubUrl)
-                    .WithAutomaticReconnect()
                     .Build();
+
+                connection.Closed += async (error) =>
+                {
+                    await Task.Delay(100);
+                    await connection.StartAsync();
+                    await connection.InvokeAsync("JoinGame", clientId, registeredGameId, registeredPlayerId);
+                };
 
                 connection.On<int, int, string>("RoomCreated", (gameId, playerId, gameStateJson) =>
                 {

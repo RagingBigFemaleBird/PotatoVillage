@@ -25,22 +25,6 @@ namespace PotatoVillage
         private const string DictUserActionInfo = "user_info";
         private const string DictUserActionSelects = "user_selects";
 
-        // Hints dictionary - empty, to be filled in manually
-        private static readonly Dictionary<int, string> TargetHints = new Dictionary<int, string>()
-        {
-            { 1, "LangRen kill" },
-            { 2, "Yuyanjia Chayan" },
-            { 3, "NvWu act" },
-            { 4, "WuZhe act" },
-            { 6, "JiaMian chayan" },
-            { 7, "Yuyanjia Chanyan result" },
-            { 101, "Vote sherriff" },
-            { 102, "Round table" },
-            { 100, "Volunteer sheriff" },
-            { 103, "Vote sheriff" },
-            { 110, "Sheriff recommend vote" },
-            { 111, "Voteout" },
-        };
 
         // Special targets dictionary - nested by hint, then by target ID
         // First level: indexed by target hints
@@ -48,10 +32,39 @@ namespace PotatoVillage
         private static readonly Dictionary<int, Dictionary<int, string>> SpecialTargets = new Dictionary<int, Dictionary<int, string>>()
         {
             { 3, new Dictionary<int, string> { { 0, "JiuRen" }, } },
-            { 100, new Dictionary<int, string> { { -1, "Volenteer" }, { -2, "Abstain" } } },
+            { 100, new Dictionary<int, string> { { -1, "Volenteer" }, { 0, "Abstain" } } },
             { 102, new Dictionary<int, string> { { -1, "Done speaking" } } },
 
         };
+
+        private static readonly Dictionary<int, Func<string, string>> UserInfoHints = new()
+        {
+            { 3, NvWuInfoHandler },
+            { 7, YuYanJiaInfoHandler },
+        };
+
+        private static string NvWuInfoHandler(string userInfo)
+        {
+            if (string.IsNullOrEmpty(userInfo) || userInfo == "0")
+                return LocalizationManager.Instance.GetString("nvwu_no_save", "Cannot view attack info.");
+            var txt = LocalizationManager.Instance.GetString("nvwu_save", "Last night {0} was attacked.");
+            return txt.Replace("{0}", userInfo);
+        }
+
+        private static string YuYanJiaInfoHandler(string userInfo)
+        {
+            int.TryParse(userInfo, out var result);
+            var txt = LocalizationManager.Instance.GetString("yuyanjia_chayan_result", "Yuyanjia's Chayan result: {0}");
+            if (result != 0)
+            {
+                var allegience = LocalizationManager.Instance.GetString(result == 1 ? "good" : "evil");
+                return txt.Replace("{0}", allegience);
+            }
+            else
+            {
+                return txt.Replace("{0}", LocalizationManager.Instance.GetString(userInfo));
+            }
+        }
 
         public GameView(HubConnectionManager connectionManager, int gameId, int playerId, bool isOwner = false)
         {
@@ -62,7 +75,9 @@ namespace PotatoVillage
             this.isOwner = isOwner;
             PlayerIdTopLabel.Text = playerId.ToString();
             PlayerIdBottomLabel.Text = playerId.ToString();
-            StartGameBtn.IsVisible = isOwner;
+            var gameDict = (connectionManager?.GetGameDictionary() ?? new());
+            var sq = GetInt32Value(gameDict.TryGetValue(DictUserAction, out var sqObj) ? sqObj : null) ?? 0;
+            StartGameBtn.IsVisible = gameDict.Count == 0 || sq == 0;
             StartGameBtn.Text = LocalizationManager.Instance.GetString("start_game");
             ConfirmButton.Text = LocalizationManager.Instance.GetString("confirm");
 
@@ -186,6 +201,8 @@ namespace PotatoVillage
                 4 => "wuzhe_act",
                 6 => "jiamian_chayan",
                 7 => "yuyanjia_result",
+                50 => "open_eyes",
+                51 => "close_eyes",
                 100 => "volunteer_sheriff",
                 101 => "vote_sheriff",
                 102 => "round_table",
@@ -286,7 +303,7 @@ namespace PotatoVillage
 
                 if (userAction != 0 && userUsers.Count > 0 && phaseValue == 0)
                 {
-                    DisplayCurrentlyActing(userAction, userUsers);
+                    DisplayCurrentlyActing(userAction, userUsers, userTargetsHint, userInfo);
                 }
                 else
                 {
@@ -296,28 +313,41 @@ namespace PotatoVillage
             });
         }
 
-        private void DisplayCurrentlyActing(int deadline, List<int> actingPlayerIds)
+        private void DisplayCurrentlyActing(int deadline, List<int> actingPlayerIds, int userTargetsHint, string userInfo)
         {
             countdownCts?.Cancel();
             countdownCts = new CancellationTokenSource();
 
-            // Get the roles of acting players
-            var actingRoles = new HashSet<string>();
-            foreach (var playerId in actingPlayerIds)
+            if (actingPlayerIds.Contains(-1) && actingPlayerIds.Count == 1)
             {
-                var role = GetPlayerRole(playerId);
-                if (!string.IsNullOrEmpty(role))
-                {
-                    var rs = LocalizationManager.Instance.GetString(role);
-                    actingRoles.Add(rs);
-                }
-            }
+                var hintText = GetTargetHint(userTargetsHint);
+                userInfo = LocalizationManager.Instance.GetString(userInfo);
+                hintText = hintText.Replace("{0}", userInfo);
+                GameStatusLabel.Text = hintText;
 
-            // Display the acting roles
-            string actingText = actingRoles.Count > 0 
-                ? string.Join(", ", actingRoles) : "";
-            
-            GameStatusLabel.Text = actingText;
+                // Play voiceover
+                _ = PlayVoiceoverAsync(GameStatusLabel.Text);
+            }
+            else
+            {
+                // Get the roles of acting players
+                var actingRoles = new HashSet<string>();
+                foreach (var playerId in actingPlayerIds)
+                {
+                    var role = GetPlayerRole(playerId);
+                    if (!string.IsNullOrEmpty(role))
+                    {
+                        var rs = LocalizationManager.Instance.GetString(role);
+                        actingRoles.Add(rs);
+                    }
+                }
+
+                // Display the acting roles
+                string actingText = actingRoles.Count > 0
+                    ? string.Join(", ", actingRoles) : "";
+
+                GameStatusLabel.Text = actingText;
+            }
 
             // Start countdown timer
             StartCountdown(deadline, countdownCts.Token);
@@ -327,6 +357,21 @@ namespace PotatoVillage
         {
             countdownCts?.Cancel();
             countdownCts = null;
+        }
+
+        private async Task PlayVoiceoverAsync(string text)
+        {
+            try
+            {
+                // Use TextToSpeech from MAUI
+                if (string.IsNullOrEmpty(text)) return;
+
+                await TextToSpeech.Default.SpeakAsync(text);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Voiceover failed: {ex.Message}");
+            }
         }
 
         private void DisplayTargetSelection(int userActionDeadline, List<int> availableTargets, int maxTargetCount, int hintIndex, string userInfo = "")
@@ -354,11 +399,8 @@ namespace PotatoVillage
                 TargetInstructionLabel.Text = instructionText;
             }
 
-            // Append user info if present
-            if (!string.IsNullOrEmpty(userInfo))
-            {
-                TargetInstructionLabel.Text += $"\n{userInfo}";
-            }
+            var ui = UserInfoHints.TryGetValue(hintIndex, out var handler) ? handler(userInfo) : userInfo;
+            TargetInstructionLabel.Text += $"\n{ui}";
 
             // Get all players from game dictionary
             var gameDict = connectionManager?.GetGameDictionary() ?? new();
@@ -388,6 +430,8 @@ namespace PotatoVillage
                     var label = GetSpecialTargetLabel(hintIndex, specialTarget);
                     if (string.IsNullOrEmpty(label))
                         label = specialTarget.ToString();
+                    else
+                        label = localization.GetString(label);
 
                     var button = new Button
                     {

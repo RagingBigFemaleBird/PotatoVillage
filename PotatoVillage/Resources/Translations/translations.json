@@ -65,7 +65,15 @@
     "death_announcement": "Last night death: {0}",
     "sheriff_choose_direction": "Choose speech direction (Left or Right):",
     "vote_result": "Vote Result {0}",
-    "voted_out": "Voted out: {0}"
+    "voted_out": "Voted out: {0}",
+    "connect": "Connect",
+    "join": "Join",
+    "select_roles_new_game": "Select Roles for New Game",
+    "join_existing_game": "Join Existing Game",
+    "room_number": "Room #",
+    "seat_number": "Seat #",
+    "nickname_optional": "Nickname (optional)",
+    "hub_url": "Hub URL"
   },
   "zh": {
     "game_info": "游戏信息",
@@ -133,6 +141,14 @@
     "death_announcement": "昨夜死亡: {0}",
     "sheriff_choose_direction": "选择发言方向:",
     "vote_result": "投票结果 {0}",
-    "voted_out": "出局: {0}"
+    "voted_out": "出局: {0}",
+    "connect": "连接",
+    "join": "加入",
+    "select_roles_new_game": "为新游戏选择角色",
+    "join_existing_game": "加入现有游戏",
+    "room_number": "房间号",
+    "seat_number": "座位号",
+    "nickname_optional": "昵称（可选）",
+    "hub_url": "Hub URL"
   }
 }

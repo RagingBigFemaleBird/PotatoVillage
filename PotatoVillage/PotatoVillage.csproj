@@ -79,8 +79,4 @@
 	  </MauiXaml>
 	</ItemGroup>
 
-	<ItemGroup>
-	  <Folder Include="Markup\" />
-	</ItemGroup>
-
 </Project>

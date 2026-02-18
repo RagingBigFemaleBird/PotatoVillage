@@ -24,6 +24,18 @@ namespace PotatoVillage
         public MainPage()
         {
             InitializeComponent();
+            UpdateConnectButtonState();
+        }
+
+        private void UpdateConnectButtonState()
+        {
+            bool hasRolesSelected = selectedLangRen.Count > 0 || 
+                                   selectedJiaMian || 
+                                   selectedNvWu || 
+                                   selectedYuYanJia || 
+                                   selectedWuZhe || 
+                                   selectedPingMin.Count > 0;
+            ConnectBtn.IsEnabled = hasRolesSelected;
         }
 
         private async void OnConnectClicked(object? sender, EventArgs e)
@@ -149,7 +161,8 @@ namespace PotatoVillage
         {
             if (sender is Button button)
             {
-                string role = button.Text;
+                // Use button name as unique identifier instead of text
+                string role = button.StyleId ?? button.AutomationId ?? "LangRen";
                 if (selectedLangRen.Contains(role))
                 {
                     selectedLangRen.Remove(role);
@@ -160,6 +173,7 @@ namespace PotatoVillage
                     selectedLangRen.Add(role);
                     button.BackgroundColor = Colors.Green;
                 }
+                UpdateConnectButtonState();
             }
         }
 
@@ -170,6 +184,7 @@ namespace PotatoVillage
             {
                 button.BackgroundColor = selectedJiaMian ? Colors.Green : Colors.LightGray;
             }
+            UpdateConnectButtonState();
         }
 
         private void OnNvWuClicked(object? sender, EventArgs e)
@@ -179,6 +194,7 @@ namespace PotatoVillage
             {
                 button.BackgroundColor = selectedNvWu ? Colors.Green : Colors.LightGray;
             }
+            UpdateConnectButtonState();
         }
 
         private void OnYuYanJiaClicked(object? sender, EventArgs e)
@@ -188,6 +204,7 @@ namespace PotatoVillage
             {
                 button.BackgroundColor = selectedYuYanJia ? Colors.Green : Colors.LightGray;
             }
+            UpdateConnectButtonState();
         }
 
         private void OnWuZheClicked(object? sender, EventArgs e)
@@ -197,13 +214,15 @@ namespace PotatoVillage
             {
                 button.BackgroundColor = selectedWuZhe ? Colors.Green : Colors.LightGray;
             }
+            UpdateConnectButtonState();
         }
 
         private void OnPingMinClicked(object? sender, EventArgs e)
         {
             if (sender is Button button)
             {
-                string role = button.Text;
+                // Use StyleId as unique identifier instead of text
+                string role = button.StyleId ?? button.AutomationId ?? "PingMin";
                 if (selectedPingMin.Contains(role))
                 {
                     selectedPingMin.Remove(role);
@@ -214,6 +233,7 @@ namespace PotatoVillage
                     selectedPingMin.Add(role);
                     button.BackgroundColor = Colors.Green;
                 }
+                UpdateConnectButtonState();
             }
         }
     }

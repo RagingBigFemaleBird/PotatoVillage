@@ -122,6 +122,7 @@ namespace ProcedureCore.LangRenSha
             if (Game.GetGameDictionaryProperty(game, LangRenSha.dictAction, 0) == ActionOrders[1])
             {
                 var nvWu = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == Name);
+                var nvWuAlive = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == Name && (int)x[LangRenSha.dictAlive] == 1);
                 var alivePlayers = LangRenSha.GetPlayers(game, x => (int)x[LangRenSha.dictAlive] == 1);
 
                 if (UserAction.EndUserAction(game, update))
@@ -168,7 +169,7 @@ namespace ProcedureCore.LangRenSha
                     }
                     else
                     {
-                        (var inputValid, var input, var input_others) = UserAction.GetUserResponse(game, true, nvWu, update);
+                        (var inputValid, var input, var input_others) = UserAction.GetUserResponse(game, true, nvWuAlive, update);
                         if (inputValid)
                         {
                             var targets = UserAction.TallyUserInput(input, 0, UserAction.UserInputMode.VoteMost, -1);

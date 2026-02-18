@@ -88,6 +88,7 @@ namespace ProcedureCore.LangRenSha
             if (Game.GetGameDictionaryProperty(game, LangRenSha.dictAction, 0) == ActionOrders[1])
             {
                 var jiaMian = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == Name);
+                var jiaMianAlive = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == Name && (int)x[LangRenSha.dictAlive] == 1);
                 var alivePlayers = LangRenSha.GetPlayers(game, x => (int)x[LangRenSha.dictAlive] == 1);
 
                 if (Game.GetGameDictionaryProperty(game, LangRenSha.dictDay, 0) == 0 || UserAction.EndUserAction(game, update))
@@ -107,7 +108,7 @@ namespace ProcedureCore.LangRenSha
                     }
                     else
                     {
-                        (var inputValid, var input, var input_others) = UserAction.GetUserResponse(game, true, jiaMian, update);
+                        (var inputValid, var input, var input_others) = UserAction.GetUserResponse(game, true, jiaMianAlive, update);
                         if (inputValid)
                         {
                             var danced = Game.GetGameDictionaryProperty(game, WuZhe.dictDanced, new List<int>());

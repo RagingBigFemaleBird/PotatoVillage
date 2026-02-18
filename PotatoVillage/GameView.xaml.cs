@@ -23,7 +23,8 @@ namespace PotatoVillage
         private const string DictUserActionTargetsCount = "user_targets_count";
         private const string DictUserActionTargetsHint = "user_targets_hint";
         private const string DictUserActionInfo = "user_info";
-        private const string DictUserActionSelects = "user_selects";
+        private const string DictUserActionResponse = "user_response";
+        private const string DictSpeaker = "speaker";
 
 
         // Special targets dictionary - nested by hint, then by target ID
@@ -32,7 +33,7 @@ namespace PotatoVillage
         private static readonly Dictionary<int, Dictionary<int, string>> SpecialTargets = new Dictionary<int, Dictionary<int, string>>()
         {
             { 3, new Dictionary<int, string> { { 0, "JiuRen" }, } },
-            { 100, new Dictionary<int, string> { { -1, "Volenteer" }, { 0, "Abstain" } } },
+            { 100, new Dictionary<int, string> { { -1, "Volunteer" }, { 0, "Abstain" } } },
             { 102, new Dictionary<int, string> { { -1, "Done speaking" } } },
 
         };
@@ -41,7 +42,36 @@ namespace PotatoVillage
         {
             { 3, NvWuInfoHandler },
             { 7, YuYanJiaInfoHandler },
+            { 104, SheriffSpeechHandler },
+            { 105, SheriffPKHandler },
+            { 154, VoteResultInfoHandler },
+            {1000, CheckRoleInfoHandler },
         };
+
+        private static string SheriffSpeechHandler(string userInfo)
+        {
+            return LocalizationManager.Instance.GetString("sheriff_speech_info", "{0} volunteered.").Replace("{0}", userInfo);
+        }
+        private static string SheriffPKHandler(string userInfo)
+        {
+            return LocalizationManager.Instance.GetString("sheriff_pk_info", "{0} PK.").Replace("{0}", userInfo);
+        }
+
+        private static string VoteResultInfoHandler(string userInfo)
+        {
+            var txt = LocalizationManager.Instance.GetString("vote_result", "Vote result: {0}");
+            return txt.Replace("{0}", userInfo);
+        }
+
+        private static string CheckRoleInfoHandler(string role)
+        {
+            if (!string.IsNullOrEmpty(role))
+            {
+                role = LocalizationManager.Instance.GetString(role);
+            }
+            var txt = LocalizationManager.Instance.GetString("check_role_info", "Your role is {0}.");
+            return txt.Replace("{0}", role);
+        }
 
         private static string NvWuInfoHandler(string userInfo)
         {
@@ -77,7 +107,7 @@ namespace PotatoVillage
             PlayerIdBottomLabel.Text = playerId.ToString();
             var gameDict = (connectionManager?.GetGameDictionary() ?? new());
             var sq = GetInt32Value(gameDict.TryGetValue(DictUserAction, out var sqObj) ? sqObj : null) ?? 0;
-            StartGameBtn.IsVisible = gameDict.Count == 0 || sq == 0;
+            StartGameBtn.IsVisible = isOwner && (gameDict.Count == 0 || sq == 0);
             StartGameBtn.Text = LocalizationManager.Instance.GetString("start_game");
             ConfirmButton.Text = LocalizationManager.Instance.GetString("confirm");
 
@@ -207,8 +237,18 @@ namespace PotatoVillage
                 101 => "vote_sheriff",
                 102 => "round_table",
                 103 => "vote_sheriff_vote",
+                104 => "sheriff_speech",
+                105 => "sheriff_pk",
                 110 => "sheriff_recommend_vote",
                 111 => "voteout",
+                150 => "sheriff_handover",
+                151 => "dead_player_skill",
+                152 => "death_announcement",
+                153 => "sheriff_choose_direction",
+                154 => "vote_result",
+                1000 => "check_role",
+                1001 => "night_time",
+                1002 => "day_time",
                 _ => null
             };
 
@@ -288,22 +328,26 @@ namespace PotatoVillage
                 var userTargetsCount = GetInt32Value(gameDict.TryGetValue(DictUserActionTargetsCount, out var utcObj) ? utcObj : null) ?? 0;
                 var userTargetsHint = GetInt32Value(gameDict.TryGetValue(DictUserActionTargetsHint, out var uthObj) ? uthObj : null) ?? -1;
                 var userInfo = GetStringValue(gameDict.TryGetValue(DictUserActionInfo, out var uiObj) ? uiObj : null) ?? "";
+                var userResponse = GetDictionaryValue(gameDict.TryGetValue(DictUserActionResponse, out var urObj) ? urObj : null);
+
+                var speaking = GetInt32List(gameDict.TryGetValue(DictSpeaker, out var speakingObj) ? speakingObj : null);
+                var speaker = speaking.Count > 0 ? speaking[speaking.Count - 1] : 0;
 
                 // Check if self can act
                 bool isSelfActable = userAction != 0 && userUsers.Contains(playerId);
 
                 if (isSelfActable)
                 {
-                    DisplayTargetSelection(userAction, userTargets, userTargetsCount, userTargetsHint, userInfo);
+                    DisplayTargetSelection(userAction, userTargets, userTargetsCount, userTargetsHint, userInfo, phaseValue == 0 ? userResponse : null);
                 }
                 else
                 {
                     HideTargetSelection();
                 }
 
-                if (userAction != 0 && userUsers.Count > 0 && phaseValue == 0)
+                if (userAction != 0 && userUsers.Count > 0)
                 {
-                    DisplayCurrentlyActing(userAction, userUsers, userTargetsHint, userInfo);
+                    DisplayCurrentlyActing(userAction, userUsers, userTargetsHint, userInfo, speaker, phaseValue ?? 0);
                 }
                 else
                 {
@@ -313,7 +357,7 @@ namespace PotatoVillage
             });
         }
 
-        private void DisplayCurrentlyActing(int deadline, List<int> actingPlayerIds, int userTargetsHint, string userInfo)
+        private void DisplayCurrentlyActing(int deadline, List<int> actingPlayerIds, int userTargetsHint, string userInfo, int speaker = 0, int phaseValue = 0)
         {
             countdownCts?.Cancel();
             countdownCts = new CancellationTokenSource();
@@ -328,9 +372,21 @@ namespace PotatoVillage
                 // Play voiceover
                 _ = PlayVoiceoverAsync(GameStatusLabel.Text);
             }
+            else if (phaseValue == 1)
+            {
+                // Day phase - show who should be speaking
+                var localization = LocalizationManager.Instance;
+
+                // Display speaking indicator with roles
+                var speakingText = localization.GetString("speaking", "Speaking: {0}");
+                if (speaker != 0)
+                    GameStatusLabel.Text = speakingText.Replace("{0}", speaker.ToString());
+                else
+                    GameStatusLabel.Text = "";
+            }
             else
             {
-                // Get the roles of acting players
+                // Night phase - get the roles of acting players
                 var actingRoles = new HashSet<string>();
                 foreach (var playerId in actingPlayerIds)
                 {
@@ -374,7 +430,7 @@ namespace PotatoVillage
             }
         }
 
-        private void DisplayTargetSelection(int userActionDeadline, List<int> availableTargets, int maxTargetCount, int hintIndex, string userInfo = "")
+        private void DisplayTargetSelection(int userActionDeadline, List<int> availableTargets, int maxTargetCount, int hintIndex, string userInfo = "", Dictionary<string, object>? userResponse = null)
         {
             // Cancel previous countdown if any
             countdownCts?.Cancel();
@@ -399,6 +455,10 @@ namespace PotatoVillage
                 TargetInstructionLabel.Text = instructionText;
             }
 
+            if (hintIndex == 1000)
+            {
+                userInfo = GetPlayerRole(playerId);
+            }
             var ui = UserInfoHints.TryGetValue(hintIndex, out var handler) ? handler(userInfo) : userInfo;
             TargetInstructionLabel.Text += $"\n{ui}";
 
@@ -419,6 +479,31 @@ namespace PotatoVillage
                 allPlayerIds.Sort();
             }
 
+            // Parse user responses to show who chose what
+            var responsesByTarget = new Dictionary<int, List<int>>();
+            var ownChoices = new HashSet<int>();
+
+            if (userResponse != null)
+            {
+                foreach (var kvp in userResponse)
+                {
+                    if (int.TryParse(kvp.Key, out var playerIdKey))
+                    {
+                        var chosenTargets = GetInt32List(kvp.Value);
+                        foreach (var target in chosenTargets)
+                        {
+                            if (!responsesByTarget.ContainsKey(target))
+                                responsesByTarget[target] = new List<int>();
+                            responsesByTarget[target].Add(playerIdKey);
+
+                            // Track own choices
+                            if (playerIdKey == playerId)
+                                ownChoices.Add(target);
+                        }
+                    }
+                }
+            }
+
             // Create special target buttons first (if they are in availableTargets)
             if (SpecialTargets.TryGetValue(hintIndex, out var specialTargetsForHint))
             {
@@ -433,13 +518,19 @@ namespace PotatoVillage
                     else
                         label = localization.GetString(label);
 
+                    // Add response count if available
+                    if (responsesByTarget.TryGetValue(specialTarget, out var respondents))
+                    {
+                        label += $" ({respondents.Count})";
+                    }
+
                     var button = new Button
                     {
                         Text = label,
                         CornerRadius = 5,
                         Padding = new Thickness(10, 5),
                         Margin = new Thickness(5),
-                        BackgroundColor = Colors.LightGray,
+                        BackgroundColor = ownChoices.Contains(specialTarget) ? Colors.Orange : Colors.LightGray,
                         TextColor = Colors.Black,
                         IsEnabled = true,
                         Opacity = 1.0
@@ -458,13 +549,21 @@ namespace PotatoVillage
                 if (targetId <= 0) 
                     continue; // Skip special targets, already handled
 
+                var buttonText = targetId.ToString();
+
+                // Add response count and indicator if available
+                if (responsesByTarget.TryGetValue(targetId, out var respondents))
+                {
+                    buttonText += $" ({respondents.Count})";
+                }
+
                 var button = new Button
                 {
-                    Text = targetId.ToString(),
+                    Text = buttonText,
                     CornerRadius = 5,
                     Padding = new Thickness(10, 5),
                     Margin = new Thickness(5),
-                    BackgroundColor = Colors.LightGray,
+                    BackgroundColor = ownChoices.Contains(targetId) ? Colors.Orange : Colors.LightGray,
                     TextColor = Colors.Black,
                     IsEnabled = true,
                     Opacity = 1.0,

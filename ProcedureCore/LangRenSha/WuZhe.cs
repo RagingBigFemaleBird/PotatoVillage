@@ -86,6 +86,7 @@ namespace ProcedureCore.LangRenSha
             if (Game.GetGameDictionaryProperty(game, LangRenSha.dictAction, 0) == ActionOrders[1])
             {
                 var wuZhe = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == Name);
+                var wuZheAlive = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == Name && (int)x[LangRenSha.dictAlive] == 1);
                 var alivePlayers = LangRenSha.GetPlayers(game, x => (int)x[LangRenSha.dictAlive] == 1);
 
                 if (Game.GetGameDictionaryProperty(game, LangRenSha.dictDay, 0) == 0 || UserAction.EndUserAction(game, update))
@@ -97,7 +98,7 @@ namespace ProcedureCore.LangRenSha
                 {
                     if (UserAction.StartUserAction(game, ActionDuration, update))
                     {
-                        var danced = LangRenSha.GetPlayerProperty(game, wuZhe[0], dictDanced, new List<int>());
+                        var danced = LangRenSha.GetPlayerProperty(game, wuZhe.Count > 0 ? wuZhe[0]: 1, dictDanced, new List<int>());
                         
                         var targets = new List<int>();
                         foreach (var target in alivePlayers)
@@ -115,13 +116,13 @@ namespace ProcedureCore.LangRenSha
                     }
                     else
                     {
-                        (var inputValid, var input, var input_others) = UserAction.GetUserResponse(game, true, wuZhe, update);
+                        (var inputValid, var input, var input_others) = UserAction.GetUserResponse(game, true, wuZheAlive, update);
                         if (inputValid)
                         {
                             var targets = UserAction.TallyUserInput(input, 0, UserAction.UserInputMode.Input, -1);
                             if (targets.Count == 3 && targets[0] != targets[1] && targets[1] != targets[2] && targets[2] != targets[0])
                             {
-                                var danced = LangRenSha.GetPlayerProperty(game, wuZhe[0], dictDanced, new List<int>());
+                                var danced = LangRenSha.GetPlayerProperty(game, wuZhe.Count > 0 ? wuZhe[0] : 1, dictDanced, new List<int>());
                                 danced.AddRange(targets);
                                 LangRenSha.SetPlayerProperty(game, wuZhe[0], dictDanced, danced, update);
                                 update[dictDanced] = targets;

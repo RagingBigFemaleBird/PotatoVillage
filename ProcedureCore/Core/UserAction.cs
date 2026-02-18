@@ -145,7 +145,6 @@ namespace ProcedureCore.Core
         {
             var ret = new Dictionary<string, object>();
             var ret_others = new Dictionary<string, object>();
-            users = Game.GetGameDictionaryProperty(game, dictUserActionUsers, new List<int>());
             var targets = Game.GetGameDictionaryProperty(game, dictUserActionTargets, new List<int>());
             var uar = Game.GetGameDictionaryProperty(game,dictUserActionResponse, new Dictionary<string, object>());
             if (uar.Count > 0)

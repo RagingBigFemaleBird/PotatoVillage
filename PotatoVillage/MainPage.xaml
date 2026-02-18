@@ -5,8 +5,6 @@
 
     <ScrollView>
         <VerticalStackLayout Padding="20" Spacing="12">
-            <Label Text="PotatoVillage - Game Client" FontAttributes="Bold" FontSize="18" />
-
             <Entry x:Name="NicknameEntry" Placeholder="Nickname (optional)" />
             <Entry x:Name="HubUrlEntry" Text="http://localhost:5269/gamehub" Placeholder="Hub URL" />
 
@@ -19,11 +17,11 @@
             
             <!-- Row 1: LangRen (5 buttons) -->
             <HorizontalStackLayout Spacing="4">
-                <Button x:Name="LangRen1Btn" Text="L1" Clicked="OnLangRenClicked" BackgroundColor="LightGray" WidthRequest="40" />
-                <Button x:Name="LangRen2Btn" Text="L2" Clicked="OnLangRenClicked" BackgroundColor="LightGray" WidthRequest="40" />
-                <Button x:Name="LangRen3Btn" Text="L3" Clicked="OnLangRenClicked" BackgroundColor="LightGray" WidthRequest="40" />
-                <Button x:Name="LangRen4Btn" Text="L4" Clicked="OnLangRenClicked" BackgroundColor="LightGray" WidthRequest="40" />
-                <Button x:Name="LangRen5Btn" Text="L5" Clicked="OnLangRenClicked" BackgroundColor="LightGray" WidthRequest="40" />
+                <Button x:Name="LangRen1Btn" Text="LangRen1" Clicked="OnLangRenClicked" BackgroundColor="LightGray" />
+                <Button x:Name="LangRen2Btn" Text="LangRen2" Clicked="OnLangRenClicked" BackgroundColor="LightGray" />
+                <Button x:Name="LangRen3Btn" Text="LangRen3" Clicked="OnLangRenClicked" BackgroundColor="LightGray" />
+                <Button x:Name="LangRen4Btn" Text="LangRen4" Clicked="OnLangRenClicked" BackgroundColor="LightGray" />
+                <Button x:Name="LangRen5Btn" Text="LangRen5" Clicked="OnLangRenClicked" BackgroundColor="LightGray" />
             </HorizontalStackLayout>
 
             <!-- Row 2: JiaMian (1 button) -->

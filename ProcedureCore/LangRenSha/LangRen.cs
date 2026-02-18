@@ -124,12 +124,13 @@ namespace ProcedureCore.LangRenSha
 
             if (Game.GetGameDictionaryProperty(game, LangRenSha.dictAction, 0) == ActionOrders[1])
             {
-                var langRen = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == Name && (int)x[LangRenSha.dictAlive] == 1);
-                if (langRen.Count == 0)
+                var langRen = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == Name);
+                var langRenAlive = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == Name && (int)x[LangRenSha.dictAlive] == 1);
+                if (langRenAlive.Count == 0)
                 {
                     langRen = LangRenSha.GetPlayers(game, x => x.ContainsKey(dictSuceession) && (int)x[dictSuceession] == 1);
                 }
-                if (langRen.Count == 0)
+                if (langRenAlive.Count == 0)
                 {
                     LangRenSha.AdvanceAction(game, update);
                     return GameActionResult.Restart;
@@ -137,7 +138,7 @@ namespace ProcedureCore.LangRenSha
                 var alivePlayers = LangRenSha.GetPlayers(game, x => (int)x[LangRenSha.dictAlive] == 1);
                 if (UserAction.EndUserAction(game, update))
                 {
-                    (var inputValid, var input, var input_others) = UserAction.GetUserResponse(game, true, langRen, update);
+                    (var inputValid, var input, var input_others) = UserAction.GetUserResponse(game, true, langRenAlive, update);
                     if (inputValid)
                     {
                         var targets = UserAction.TallyUserInput(input, 0, UserAction.UserInputMode.VoteMost, -1);
@@ -163,11 +164,11 @@ namespace ProcedureCore.LangRenSha
                     }
                     else
                     {
-                        (var inputValid, var input, var input_others) = UserAction.GetUserResponse(game, false, langRen, update);
+                        (var inputValid, var input, var input_others) = UserAction.GetUserResponse(game, false, langRenAlive, update);
                         if (inputValid)
                         {
                             bool allResponded = true;
-                            foreach (var lang in langRen)
+                            foreach (var lang in langRenAlive)
                             {
                                 if (!input.ContainsKey(lang.ToString()))
                                 {
@@ -177,7 +178,7 @@ namespace ProcedureCore.LangRenSha
                             }
                             if (allResponded)
                             {
-                                (inputValid, input, input_others) = UserAction.GetUserResponse(game, true, langRen, update);
+                                (inputValid, input, input_others) = UserAction.GetUserResponse(game, true, langRenAlive, update);
                                 var targets = UserAction.TallyUserInput(input, 0, UserAction.UserInputMode.VoteMost, -1);
                                 var choose = new List<int>();
                                 if (targets.Count > 0)

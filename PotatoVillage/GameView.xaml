@@ -7,7 +7,7 @@
         <ToolbarItem Text="?" Clicked="OnDisconnectClicked" Priority="1" />
     </ContentPage.ToolbarItems>
 
-    <Grid ColumnDefinitions="2*,1*" RowDefinitions="*">
+    <Grid ColumnDefinitions="1*,2*" RowDefinitions="*">
         <!-- Left side: Player ID display (2/3 of screen) -->
         <Grid Grid.Column="0" RowDefinitions="1*,1*">
             <!-- Top: Upside down player ID -->
@@ -55,7 +55,7 @@
                     <Label x:Name="GameStatusLabel" 
                            Text="" 
                            LineBreakMode="WordWrap"
-                           FontSize="12"
+                           FontSize="18"
                            VerticalOptions="FillAndExpand"
                            HorizontalOptions="FillAndExpand"
                            VerticalTextAlignment="Center"
@@ -87,7 +87,7 @@
                         <StackLayout Spacing="8">
                             <Label x:Name="TargetInstructionLabel" 
                                    Text="" 
-                                   FontSize="15"
+                                   FontSize="18"
                                    TextColor="#666666" />
                             
                             <!-- Target buttons container -->
@@ -105,7 +105,7 @@
                                     Margin="0,8,0,0"
                                     BackgroundColor="#007AFF"
                                     TextColor="White"
-                                    FontSize="12"
+                                    FontSize="18"
                                     Padding="8,4" />
                         </StackLayout>
                     </Frame>

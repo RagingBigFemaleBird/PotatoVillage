@@ -23,6 +23,25 @@ namespace ProcedureCore.LangRenSha
                 return interruptHandlers;
             }
         }
+
+        // Dead player skill handlers - return true if handled, false if not handled
+        private static List<Func<Game, int, Dictionary<string, object>, (bool, GameActionResult)>> deadPlayerHandlers = new();
+
+        public static void RegisterDeadPlayerHandler(Func<Game, int, Dictionary<string, object>, (bool, GameActionResult)> handler)
+        {
+            if (!deadPlayerHandlers.Contains(handler))
+            {
+                deadPlayerHandlers.Add(handler);
+            }
+        }
+
+        public static List<Func<Game, int, Dictionary<string, object>, (bool, GameActionResult)>> DeadPlayerHandlers
+        {
+            get
+            {
+                return deadPlayerHandlers;
+            }
+        }
         public LangRenSha()
         {
             players = new List<(int, Role)>();
@@ -55,13 +74,16 @@ namespace ProcedureCore.LangRenSha
         public static string dictSpeaker = "speaker";
         public static string dictAboutToDie = "about_to_die";
         public static string dictDeadPlayerAction = "dead_player";
+        public static string dictDeadSkillsProcessed = "dead_skills_processed";
         public static string dictPlayerAlliance = "alliance";
         public static string dictSheriff = "sheriff";
         public static string dictCurrentSheriff = "current_sheriff";
         public static string dictPk = "pk";
         public static string dictInterrupt = "interrupt";
         public static string dictVoteOut = "voteout";
+        public static string dictVoteInfo = "voteinfo";
         public static string dictSheriffVote = "sheriffvote";
+        public static string dictDaySpeechDirection = "day_speech_direction";
 
         public int Version
         {
@@ -71,7 +93,7 @@ namespace ProcedureCore.LangRenSha
             }
         }
 
-        public static int actionDuraionPlayerReact = 15;
+        public static int actionDuraionPlayerReact = 5;
         public static int actionDurationPlayerSpeak = 5;
 
         public GameActionResult GenerateStateDiff(Game game, Dictionary<string, object> update)
@@ -105,6 +127,73 @@ namespace ProcedureCore.LangRenSha
                 update[dictAction] = 0;
                 update[dictSpeak] = 0;
                 return GameActionResult.Restart;
+            }
+            if (game.StateSequenceNumber == 1)
+            {
+                var no = Game.GetGameDictionaryProperty(game, LangRenSha.dictNightOrders, new List<int>());
+                no.AddRange([1, 2, 1000]);
+                update[LangRenSha.dictNightOrders] = no;
+                return GameActionResult.Continue;
+            }
+            if (Game.GetGameDictionaryProperty(game, LangRenSha.dictAction, 0) == 1)
+            {
+                if (Game.GetGameDictionaryProperty(game, LangRenSha.dictDay, 0) != 0 || UserAction.EndUserAction(game, update))
+                {
+                    LangRenSha.AdvanceAction(game, update);
+                    return GameActionResult.Restart;
+                }
+                else
+                {
+                    if (UserAction.StartUserAction(game, 4, update))
+                    {
+                        var allPlayers = LangRenSha.GetPlayers(game, x => true);
+                        update[UserAction.dictUserActionTargets] = new List<int>();
+                        update[UserAction.dictUserActionUsers] = allPlayers;
+                        update[UserAction.dictUserActionTargetsCount] = 1;
+                        update[UserAction.dictUserActionTargetsHint] = 1000;
+                        return GameActionResult.Restart;
+                    }
+                }
+            }
+            if (Game.GetGameDictionaryProperty(game, LangRenSha.dictAction, 0) == 2)
+            {
+                if (UserAction.EndUserAction(game, update))
+                {
+                    LangRenSha.AdvanceAction(game, update);
+                    return GameActionResult.Restart;
+                }
+                else
+                {
+                    if (UserAction.StartUserAction(game, 7, update))
+                    {
+                        var allPlayers = LangRenSha.GetPlayers(game, x => true);
+                        update[UserAction.dictUserActionTargets] = new List<int>();
+                        update[UserAction.dictUserActionUsers] = new List<int>() { -1 };
+                        update[UserAction.dictUserActionTargetsCount] = 1;
+                        update[UserAction.dictUserActionTargetsHint] = 1001;
+                        return GameActionResult.Restart;
+                    }
+                }
+            }
+            if (Game.GetGameDictionaryProperty(game, LangRenSha.dictAction, 0) == 1000)
+            {
+                if (UserAction.EndUserAction(game, update))
+                {
+                    LangRenSha.AdvanceAction(game, update);
+                    return GameActionResult.Restart;
+                }
+                else
+                {
+                    if (UserAction.StartUserAction(game, 3, update))
+                    {
+                        var allPlayers = LangRenSha.GetPlayers(game, x => true);
+                        update[UserAction.dictUserActionTargets] = new List<int>();
+                        update[UserAction.dictUserActionUsers] = new List<int>() { -1 };
+                        update[UserAction.dictUserActionTargetsCount] = 1;
+                        update[UserAction.dictUserActionTargetsHint] = 1002;
+                        return GameActionResult.Restart;
+                    }
+                }
             }
             if (game.StateSequenceNumber >= 2)
             {
@@ -199,6 +288,7 @@ namespace ProcedureCore.LangRenSha
         {
             var allPlayers = LangRenSha.GetPlayers(game, x => true);
             var alivePlayers = LangRenSha.GetPlayers(game, x => (int)x[LangRenSha.dictAlive] == 1);
+
             // Sheriff volunteer
             if (Game.GetGameDictionaryProperty(game, dictSpeak, 0) == 0)
             {
@@ -223,11 +313,11 @@ namespace ProcedureCore.LangRenSha
                         update[dictSheriff] = sheriffPlayers;
                         if (sheriffPlayers.Count == allPlayers.Count || sheriffPlayers.Count == 0)
                         {
-                            update[dictSpeak] = 10;
+                            update[dictSpeak] = 9;
                         }
                         else if (sheriffPlayers.Count == 1)
                         {
-                            update[dictSpeak] = 10;
+                            update[dictSpeak] = 9;
                             update[dictCurrentSheriff] = sheriffPlayers[0];
                         }
                         else
@@ -251,7 +341,7 @@ namespace ProcedureCore.LangRenSha
                 }
                 else
                 {
-                    update[dictSpeak] = 10;
+                    update[dictSpeak] = 9;
                     return GameActionResult.Restart;
                 }
 
@@ -260,9 +350,10 @@ namespace ProcedureCore.LangRenSha
             if (Game.GetGameDictionaryProperty(game, dictSpeak, 0) == 1)
             {
                 var sheriffPlayers = Game.GetGameDictionaryProperty(game, dictSheriff, new List<int>());
-                return HandleRoundTableSpeak(game, sheriffPlayers, game.GetRandomNumber() % sheriffPlayers.Count, (game.GetRandomNumber() % 2) == 1, update, 2);
+                var volunteersInfo = string.Join(", ", sheriffPlayers);
+                return HandleRoundTableSpeak(game, sheriffPlayers, game.GetRandomNumber() % sheriffPlayers.Count, (game.GetRandomNumber() % 2) == 1, update, 2, 104, volunteersInfo);
             }
-            // Sheriff vote
+            // Sheriff vote - tally only
             if (Game.GetGameDictionaryProperty(game, dictSpeak, 0) == 2)
             {
                 var sheriffPlayers = Game.GetGameDictionaryProperty(game, dictSheriff, new List<int>());
@@ -276,22 +367,15 @@ namespace ProcedureCore.LangRenSha
                     if (inputValid)
                     {
                         var targets = UserAction.TallyUserInput(input, 0, UserAction.UserInputMode.VoteMost, -1);
-                        if (targets.Count > 1)
-                        {
-                            update[dictSpeak] = 3;
-                            update[dictPk] = targets;
-                        }
-                        else
-                        {
-                            update[dictSpeak] = 10;
-                            update[dictCurrentSheriff] = targets[0];
-                        }
+                        update[dictVoteOut] = targets;
+                        update[dictVoteInfo] = FormatVoteTally(input);
                     }
                     else
                     {
-                        update[dictSpeak] = 10;
-                        update[dictCurrentSheriff] = 0;
+                        update[dictVoteOut] = new List<int>();
+                        update[dictVoteInfo] = "";
                     }
+                    update[dictSpeak] = 3;
                     return GameActionResult.Restart;
                 }
                 else
@@ -306,20 +390,62 @@ namespace ProcedureCore.LangRenSha
                     }
                 }
                 return GameActionResult.NotExecuted;
-
             }
-            // Sheriff PK
+            // Sheriff vote - display result
             if (Game.GetGameDictionaryProperty(game, dictSpeak, 0) == 3)
+            {
+                var voteOut = Game.GetGameDictionaryProperty(game, dictVoteOut, new List<int>());
+
+                if (UserAction.EndUserAction(game, update))
+                {
+                    // Route based on vote result
+                    if (voteOut.Count > 1)
+                    {
+                        // Tie - go to PK
+                        update[dictSpeak] = 4;
+                        update[dictPk] = voteOut;
+                    }
+                    else if (voteOut.Count == 1)
+                    {
+                        // Single target - go to death announcement
+                        update[dictSpeak] = 9;
+                        update[dictCurrentSheriff] = voteOut[0];
+                    }
+                    else
+                    {
+                        update[dictSpeak] = 9;
+                        update[dictCurrentSheriff] = 0;
+                    }
+                    return GameActionResult.Restart;
+                }
+                else
+                {
+                    // Display vote result
+                    if (UserAction.StartUserAction(game, 5, update))
+                    {
+                        update[UserAction.dictUserActionTargets] = new List<int>();
+                        update[UserAction.dictUserActionUsers] = new List<int>() { -1 };
+                        update[UserAction.dictUserActionTargetsCount] = 0;
+                        update[UserAction.dictUserActionTargetsHint] = 154;
+                        update[UserAction.dictUserActionInfo] = Game.GetGameDictionaryProperty(game, dictVoteInfo, "");
+                        return GameActionResult.Restart;
+                    }
+                }
+                return GameActionResult.NotExecuted;
+            }
+            // Sheriff PK speech
+            if (Game.GetGameDictionaryProperty(game, dictSpeak, 0) == 4)
             {
                 var pkPlayers = Game.GetGameDictionaryProperty(game, dictPk, new List<int>());
                 var sheriffPlayers = Game.GetGameDictionaryProperty(game, dictSheriff, new List<int>());
                 var first = sheriffPlayers[game.GetRandomNumber() % sheriffPlayers.Count];
                 bool directionPlus = (game.GetRandomNumber() % 2) == 0;
                 var nextPlayer = NextPlayer(pkPlayers, allPlayers.Count, first, directionPlus);
-                return HandleRoundTableSpeak(game, pkPlayers, pkPlayers.IndexOf(nextPlayer), directionPlus, update, 4);
+                var volunteersInfo = string.Join(", ", pkPlayers);
+                return HandleRoundTableSpeak(game, pkPlayers, pkPlayers.IndexOf(nextPlayer), directionPlus, update, 5, 105, volunteersInfo);
             }
-            // Sheriff PK vote
-            if (Game.GetGameDictionaryProperty(game, dictSpeak, 0) == 4)
+            // Sheriff PK voting + tally
+            if (Game.GetGameDictionaryProperty(game, dictSpeak, 0) == 5)
             {
                 var pkPlayers = Game.GetGameDictionaryProperty(game, dictPk, new List<int>());
                 var votePlayers = new List<int>();
@@ -329,20 +455,18 @@ namespace ProcedureCore.LangRenSha
                 if (UserAction.EndUserAction(game, update))
                 {
                     (var inputValid, var input, var input_others) = UserAction.GetUserResponse(game, true, votePlayers, update);
-                    update[dictCurrentSheriff] = 0;
                     if (inputValid)
                     {
                         var targets = UserAction.TallyUserInput(input, 0, UserAction.UserInputMode.VoteMost, -1);
-                        if (inputValid)
-                        {
-                            if (targets.Count == 1)
-                            {
-                                update[dictCurrentSheriff] = targets[0];
-                            }
-                        }
+                        update[dictVoteOut] = targets;
+                        update[dictVoteInfo] = FormatVoteTally(input);
                     }
-                    update[dictPk] = null;
-                    update[dictSpeak] = 10;
+                    else
+                    {
+                        update[dictVoteOut] = new List<int>();
+                        update[dictVoteInfo] = "";
+                    }
+                    update[dictSpeak] = 6;
                     return GameActionResult.Restart;
                 }
                 else
@@ -352,18 +476,79 @@ namespace ProcedureCore.LangRenSha
                         update[UserAction.dictUserActionTargets] = pkPlayers;
                         update[UserAction.dictUserActionUsers] = votePlayers;
                         update[UserAction.dictUserActionTargetsCount] = 1;
-                        update[UserAction.dictUserActionTargetsHint] = 102;
+                        update[UserAction.dictUserActionTargetsHint] = 103;
                         return GameActionResult.Restart;
                     }
                 }
                 return GameActionResult.NotExecuted;
+            }
+            // Sheriff PK vote result display
+            if (Game.GetGameDictionaryProperty(game, dictSpeak, 0) == 6)
+            {
+                var voteOut = Game.GetGameDictionaryProperty(game, dictVoteOut, new List<int>());
 
+                if (UserAction.EndUserAction(game, update))
+                {
+                    if (voteOut.Count == 1)
+                    {
+                        update[dictCurrentSheriff] = voteOut[0];
+                    }
+                    else
+                    {
+                        update[dictCurrentSheriff] = 0;
+                    }
+                    update[dictPk] = null;
+                    update[dictVoteOut] = null;
+                    update[dictVoteInfo] = null;
+                    update[dictSpeak] = 9;
+                    return GameActionResult.Restart;
+                }
+                else
+                {
+                    // Display vote result
+                    if (UserAction.StartUserAction(game, 5, update))
+                    {
+                        update[UserAction.dictUserActionTargets] = new List<int>();
+                        update[UserAction.dictUserActionUsers] = new List<int>() { -1 };
+                        update[UserAction.dictUserActionTargetsCount] = 0;
+                        update[UserAction.dictUserActionTargetsHint] = 154;
+                        update[UserAction.dictUserActionInfo] = Game.GetGameDictionaryProperty(game, dictVoteInfo, "");
+                        return GameActionResult.Restart;
+                    }
+                }
+                return GameActionResult.NotExecuted;
+            }
+            // Death announcement
+            if (Game.GetGameDictionaryProperty(game, dictSpeak, 0) == 9)
+            {
+                var deadPlayers = Game.GetGameDictionaryProperty(game, dictAboutToDie, new List<int>());
+
+                if (UserAction.EndUserAction(game, update))
+                {
+                    // Move to kill dead players phase
+                    update[dictSpeak] = 10;
+                    return GameActionResult.Restart;
+                }
+                else
+                {
+                    // Display death announcement
+                    if (UserAction.StartUserAction(game, 5, update))
+                    {
+                        var deathInfo = string.Join(", ", deadPlayers);
+                        update[UserAction.dictUserActionTargets] = new List<int>();
+                        update[UserAction.dictUserActionUsers] = new List<int>() { -1 };
+                        update[UserAction.dictUserActionTargetsCount] = 0;
+                        update[UserAction.dictUserActionTargetsHint] = 152; // Death announcement hint
+                        update[UserAction.dictUserActionInfo] = deathInfo;
+                        return GameActionResult.Restart;
+                    }
+                }
+                return GameActionResult.NotExecuted;
             }
             // Dead player
             if (Game.GetGameDictionaryProperty(game, dictSpeak, 0) == 10)
             {
                 KillDeadPlayers(game, update);
-                // TODO: skill
                 update[dictSpeak] = 20;
                 game.UseRandomNumber(update);
                 return GameActionResult.Restart;
@@ -371,25 +556,69 @@ namespace ProcedureCore.LangRenSha
             // Dead player action
             if (Game.GetGameDictionaryProperty(game, dictSpeak, 0) == 20)
             {
-                if (Game.GetGameDictionaryProperty(game, dictDay, 0) == 0)
-                {
-                    var interrupted = new Dictionary<string, object>();
+                var interrupted = new Dictionary<string, object>();
 
-                    interrupted[dictSpeak] = 30;
-                    update[dictSpeak] = 100;
-                    update[dictInterrupt] = interrupted;
+                interrupted[dictSpeak] = 30;
+                update[dictSpeak] = 98;
+                update[dictInterrupt] = interrupted;
+                return GameActionResult.Restart;
+            }
+            // Sheriff choose day speech direction
+            if (Game.GetGameDictionaryProperty(game, dictSpeak, 0) == 30)
+            {
+                var sheriff = Game.GetGameDictionaryProperty(game, dictCurrentSheriff, 0);
+
+                // Only ask sheriff if one exists, otherwise default to left (false)
+                if (sheriff != 0)
+                {
+                    if (UserAction.EndUserAction(game, update))
+                    {
+                        (var inputValid, var input, var input_others) = UserAction.GetUserResponse(game, true, new List<int> { sheriff }, update);
+
+                        // -1 means left (false), any other positive means right (true)
+                        bool directionRight = false;
+                        if (inputValid && input.ContainsKey(sheriff.ToString()))
+                        {
+                            var targets = (List<int>)input[sheriff.ToString()];
+                            if (targets.Count > 0 && targets[0] != -1)
+                            {
+                                directionRight = true;
+                            }
+                        }
+
+                        update[UserAction.dictUserActionUsers] = new List<int>();
+                        update[dictSpeak] = 31;
+                        update[dictDaySpeechDirection] = directionRight;
+                        return GameActionResult.Restart;
+                    }
+                    else
+                    {
+                        if (UserAction.StartUserAction(game, actionDuraionPlayerReact, update))
+                        {
+                            update[UserAction.dictUserActionTargets] = new List<int> { -1, 1 }; // -1 = left, 1 = right
+                            update[UserAction.dictUserActionUsers] = new List<int> { sheriff };
+                            update[UserAction.dictUserActionTargetsCount] = 1;
+                            update[UserAction.dictUserActionTargetsHint] = 153; // Sheriff choose direction hint
+                            return GameActionResult.Restart;
+                        }
+                    }
+                    return GameActionResult.NotExecuted;
                 }
                 else
                 {
-                    update[dictSpeak] = 30;
+                    // No sheriff, default to left
+                    update[dictSpeak] = 31;
+                    update[dictDaySpeechDirection] = false;
+                    return GameActionResult.Restart;
                 }
-                return GameActionResult.Restart;
             }
             // Day speech
-            if (Game.GetGameDictionaryProperty(game, dictSpeak, 0) == 30)
+            if (Game.GetGameDictionaryProperty(game, dictSpeak, 0) == 31)
             {
                 var ap = LangRenSha.GetPlayers(game, x => (int)x[LangRenSha.dictAlive] == 1);
                 var sheriff = Game.GetGameDictionaryProperty(game, dictCurrentSheriff, 0);
+                var directionRight = Game.GetGameDictionaryProperty(game, dictDaySpeechDirection, false);
+
                 int first = 0;
                 if (sheriff != 0)
                 {
@@ -399,15 +628,12 @@ namespace ProcedureCore.LangRenSha
                 {
                     first = game.GetRandomNumber() % ap.Count;
                 }
-                bool dir = false;
-                if (sheriff == 0)
-                {
-                    dir = (game.GetRandomNumber() % 2) == 1;
-                }
-                return HandleRoundTableSpeak(game, ap, first, dir, update, 34);
+                bool dir = directionRight;
+
+                return HandleRoundTableSpeak(game, ap, first, dir, update, 32, 102);
             }
             // Sheriff recommend vote
-            if (Game.GetGameDictionaryProperty(game, dictSpeak, 0) == 34)
+            if (Game.GetGameDictionaryProperty(game, dictSpeak, 0) == 32)
             {
                 var sheriff = Game.GetGameDictionaryProperty(game, dictCurrentSheriff, 0);
                 if (sheriff != 0)
@@ -426,7 +652,7 @@ namespace ProcedureCore.LangRenSha
                                 update[dictSheriffVote] = targets;
                             }
                         }
-                        update[dictSpeak] = 35;
+                        update[dictSpeak] = 33;
                         return GameActionResult.Restart;
                     }
                     else
@@ -445,12 +671,12 @@ namespace ProcedureCore.LangRenSha
                 }
                 else
                 {
-                    update[dictSpeak] = 35;
+                    update[dictSpeak] = 33;
                     return GameActionResult.Restart;
                 }
             }
             // vote 1
-            if (Game.GetGameDictionaryProperty(game, dictSpeak, 0) == 35)
+            if (Game.GetGameDictionaryProperty(game, dictSpeak, 0) == 33)
             {
                 if (UserAction.EndUserAction(game, update))
                 {
@@ -465,14 +691,8 @@ namespace ProcedureCore.LangRenSha
                         }
                         var targets = UserAction.TallyUserInput(input, 0, UserAction.UserInputMode.VoteMost, weighted);
                         update[dictVoteOut] = targets;
-                        if (targets.Count > 1)
-                        {
-                            update[dictSpeak] = 36;
-                        }
-                        else
-                        {
-                            update[dictSpeak] = 38;
-                        }
+                        update[dictVoteInfo] = FormatVoteTally(input);
+                        update[dictSpeak] = 34; // go to vote result display
                     }
                     else
                     {
@@ -494,36 +714,77 @@ namespace ProcedureCore.LangRenSha
                 }
                 return GameActionResult.NotExecuted;
             }
+            // vote 1 result announcement
+            if (Game.GetGameDictionaryProperty(game, dictSpeak, 0) == 34)
+            {
+                var voteOut = Game.GetGameDictionaryProperty(game, dictVoteOut, new List<int>());
+
+                if (UserAction.EndUserAction(game, update))
+                {
+                    // Route based on vote result
+                    if (voteOut.Count > 1)
+                    {
+                        // Tie - go to voteout speech
+                        update[dictSpeak] = 35;
+                    }
+                    else if (voteOut.Count == 1)
+                    {
+                        // Single target - go to voted out
+                        update[dictSpeak] = 38;
+                    }
+                    else
+                    {
+                        update[dictSpeak] = 40;
+                    }
+                    return GameActionResult.Restart;
+                }
+                else
+                {
+                    // Display vote result
+                    if (UserAction.StartUserAction(game, 5, update))
+                    {
+                        update[UserAction.dictUserActionTargets] = new List<int>();
+                        update[UserAction.dictUserActionUsers] = new List<int>() { -1 };
+                        update[UserAction.dictUserActionTargetsCount] = 0;
+                        update[UserAction.dictUserActionTargetsHint] = 154;
+                        update[UserAction.dictUserActionInfo] = Game.GetGameDictionaryProperty(game, dictVoteInfo, "");
+                        return GameActionResult.Restart;
+                    }
+                }
+                return GameActionResult.NotExecuted;
+            }
             // voteout speech
-            if (Game.GetGameDictionaryProperty(game, dictSpeak, 0) == 36)
+            if (Game.GetGameDictionaryProperty(game, dictSpeak, 0) == 35)
             {
                 var pkPlayers = Game.GetGameDictionaryProperty(game, dictVoteOut, new List<int>());
                 var sheriffPlayers = Game.GetGameDictionaryProperty(game, dictSheriff, new List<int>());
-                var first = sheriffPlayers[game.GetRandomNumber() % sheriffPlayers.Count];
+                var first = sheriffPlayers.Count == 0 ? 1 : sheriffPlayers[game.GetRandomNumber() % sheriffPlayers.Count];
                 bool directionPlus = (game.GetRandomNumber() % 2) == 1;
                 var nextPlayer = NextPlayer(pkPlayers, allPlayers.Count, first, directionPlus);
-                return HandleRoundTableSpeak(game, pkPlayers, pkPlayers.IndexOf(nextPlayer), directionPlus, update, 37);
+                return HandleRoundTableSpeak(game, pkPlayers, pkPlayers.IndexOf(nextPlayer), directionPlus, update, 36, 102);
             }
             // vote 2
-            if (Game.GetGameDictionaryProperty(game, dictSpeak, 0) == 37)
+            if (Game.GetGameDictionaryProperty(game, dictSpeak, 0) == 36)
             {
                 if (UserAction.EndUserAction(game, update))
                 {
                     (var inputValid, var input, var input_others) = UserAction.GetUserResponse(game, true, allPlayers, update);
                     if (inputValid)
                     {
-                        int weighted = Game.GetGameDictionaryProperty(game, dictCurrentSheriff, 0);
+                        var sheriffTargets = Game.GetGameDictionaryProperty(game, dictSheriffVote, new List<int>());
+                        int weighted = -1;
+                        if (sheriffTargets.Count == 1)
+                        {
+                            weighted = Game.GetGameDictionaryProperty(game, dictCurrentSheriff, 0);
+                        }
                         var targets = UserAction.TallyUserInput(input, 0, UserAction.UserInputMode.VoteMost, weighted);
-                        if (targets.Count == 1)
-                        {
-                            update[dictVoteOut] = targets;
-                            update[dictSpeak] = 38;
-                        }
-                        else
-                        {
-                            update[dictSpeak] = 40;
-                            update[dictVoteOut] = new List<int>();
-                        }
+                        update[dictVoteOut] = targets;
+                        update[dictVoteInfo] = FormatVoteTally(input);
+                        update[dictSpeak] = 37; // go to vote result display
+                    }
+                    else
+                    {
+                        update[dictSpeak] = 40;
                     }
                     return GameActionResult.Restart;
                 }
@@ -544,15 +805,44 @@ namespace ProcedureCore.LangRenSha
                 }
                 return GameActionResult.NotExecuted;
             }
-            // voteout speech
-            if (Game.GetGameDictionaryProperty(game, dictSpeak, 0) == 36)
+            // vote 2 result announcement
+            if (Game.GetGameDictionaryProperty(game, dictSpeak, 0) == 37)
             {
-                var pkPlayers = Game.GetGameDictionaryProperty(game, dictVoteOut, new List<int>());
-                var sheriffPlayers = Game.GetGameDictionaryProperty(game, dictSheriff, new List<int>());
-                var first = sheriffPlayers[game.GetRandomNumber() % sheriffPlayers.Count];
-                bool directionPlus = (game.GetRandomNumber() % 2) == 1;
-                var nextPlayer = NextPlayer(pkPlayers, allPlayers.Count, first, directionPlus);
-                return HandleRoundTableSpeak(game, pkPlayers, pkPlayers.IndexOf(nextPlayer), directionPlus, update, 37);
+                var voteOut = Game.GetGameDictionaryProperty(game, dictVoteOut, new List<int>());
+
+                if (UserAction.EndUserAction(game, update))
+                {
+                    // Route based on vote result
+                    if (voteOut.Count > 1)
+                    {
+                        // Tie
+                        update[dictSpeak] = 40;
+                    }
+                    else if (voteOut.Count == 1)
+                    {
+                        // Single target - go to voted out
+                        update[dictSpeak] = 38;
+                    }
+                    else
+                    {
+                        update[dictSpeak] = 40;
+                    }
+                    return GameActionResult.Restart;
+                }
+                else
+                {
+                    // Display vote 2 result
+                    if (UserAction.StartUserAction(game, 5, update))
+                    {
+                        update[UserAction.dictUserActionTargets] = new List<int>();
+                        update[UserAction.dictUserActionUsers] = new List<int>() { -1 };
+                        update[UserAction.dictUserActionTargetsCount] = 0;
+                        update[UserAction.dictUserActionTargetsHint] = 154;
+                        update[UserAction.dictUserActionInfo] = Game.GetGameDictionaryProperty(game, dictVoteInfo, "");
+                        return GameActionResult.Restart;
+                    }
+                }
+                return GameActionResult.NotExecuted;
             }
             // voted out
             if (Game.GetGameDictionaryProperty(game, dictSpeak, 0) == 38)
@@ -561,17 +851,31 @@ namespace ProcedureCore.LangRenSha
 
                 if (voteout.Count == 1)
                 {
-                    var interrupted = new Dictionary<string, object>();
-                    update[dictDeadPlayerAction] = voteout;
-
-                    interrupted[dictSpeak] = 40;
-                    update[dictSpeak] = 100;
-                    update[dictInterrupt] = interrupted;
+                    // Mark the voteout player as about to die
+                    foreach (var player in voteout)
+                    {
+                        MarkPlayerAboutToDie(game, player, update);
+                    }
+                    update[dictSpeak] = 39;
                 }
                 else
                 {
                     update[dictSpeak] = 40;
                 }
+                return GameActionResult.Restart;
+            }
+            // voted out
+            if (Game.GetGameDictionaryProperty(game, dictSpeak, 0) == 39)
+            {
+                var aboutToDie = Game.GetGameDictionaryProperty(game, dictAboutToDie, new List<int>());
+
+                KillDeadPlayers(game, update);
+
+                var interrupted = new Dictionary<string, object>();
+
+                interrupted[dictSpeak] = 40;
+                update[dictSpeak] = 98;
+                update[dictInterrupt] = interrupted;
                 return GameActionResult.Restart;
             }
 
@@ -582,16 +886,32 @@ namespace ProcedureCore.LangRenSha
                 return GameActionResult.Restart;
             }
 
+            // Dead player processing: handle sheriff handover
+            if (Game.GetGameDictionaryProperty(game, dictSpeak, 0) == 99)
+            {
+                return HandleDeadPlayerProcessing(game, update);
+            }
+
+            // Dead player skills processing
+            if (Game.GetGameDictionaryProperty(game, dictSpeak, 0) == 98)
+            {
+                return HandleDeadPlayerSkills(game, update);
+            }
+
             if (Game.GetGameDictionaryProperty(game, dictSpeak, 0) == 100)
             {
                 var dp = Game.GetGameDictionaryProperty(game, dictDeadPlayerAction, new List<int>());
-                if (dp.Count > 0)
+                if (dp.Count > 0 && Game.GetGameDictionaryProperty(game, dictDay, 0) == 0)
                 {
-                    return HandleRoundTableSpeak(game, dp, game.GetRandomNumber() % dp.Count, game.GetRandomNumber() % 2 == 1, update, -1);
+                    return HandleRoundTableSpeak(game, dp, game.GetRandomNumber() % dp.Count, game.GetRandomNumber() % 2 == 1, update, -1, 102);
                 }
                 else
                 {
-                    update[dictSpeak] = 30;
+                    var interrupted = Game.GetGameDictionaryProperty(game, dictInterrupt, new Dictionary<string, object>());
+                    foreach (var item in interrupted)
+                    {
+                        update[item.Key] = item.Value;
+                    }
                     return GameActionResult.Restart;
                 }
             }
@@ -623,7 +943,7 @@ namespace ProcedureCore.LangRenSha
             } while (!players.Contains(next));
             return next;
         }
-        public static GameActionResult HandleRoundTableSpeak(Game game, List<int> players, int startingPlayer, bool directionPlus, Dictionary<string, object> update, int nextSpeak)
+        public static GameActionResult HandleRoundTableSpeak(Game game, List<int> players, int startingPlayer, bool directionPlus, Dictionary<string, object> update, int nextSpeak, int hint = 102, string userinfo = null)
         {
             var speakers = Game.GetGameDictionaryProperty(game, dictSpeaker, new List<int>());
             var allPlayers = LangRenSha.GetPlayers(game, x => true);
@@ -691,7 +1011,11 @@ namespace ProcedureCore.LangRenSha
                     update[UserAction.dictUserActionTargets] = new List<int> { -1, 0 };
                     update[UserAction.dictUserActionUsers] = allPlayers;
                     update[UserAction.dictUserActionTargetsCount] = 1;
-                    update[UserAction.dictUserActionTargetsHint] = 102;
+                    update[UserAction.dictUserActionTargetsHint] = hint;
+                    if (userinfo != null)
+                    {
+                        update[UserAction.dictUserActionInfo] = userinfo;
+                    }
                     return GameActionResult.Restart;
                 }
                 else
@@ -741,6 +1065,7 @@ namespace ProcedureCore.LangRenSha
                     if (Game.GetGameDictionaryProperty(game, dictPhase, 0) == 0)
                     {
                         update[dictPhase] = 1;
+                        // dictSpeak will be set to 0 by HandleSpeaker for sheriff volunteer
                     }
                 }
                 else
@@ -818,6 +1143,35 @@ namespace ProcedureCore.LangRenSha
             update[LangRenSha.dictPlayers] = players;
         }
 
+        public static string FormatVoteTally(Dictionary<string, object> input)
+        {
+            var tally = new Dictionary<int, List<int>>();
+            foreach (var entry in input)
+            {
+                var p = int.Parse(entry.Key);
+                var tars = (List<int>)entry.Value;
+                var tt = tars[0];
+                if (!tally.ContainsKey(tt))
+                {
+                    tally[tt] = new List<int>();
+                }
+                tally[tt].Add(p);
+            }
+            var tally1 = tally.OrderByDescending(pair => pair.Value.Count);
+            string info = "";
+            foreach (var entry1 in tally)
+            {
+                var p = entry1.Key;
+                var voters = entry1.Value;
+                if (info.Length > 0)
+                {
+                    info += "| ";
+                }
+                info += $"{p}: {string.Join(", ", voters)}";
+            }
+            return info;
+        }
+
         public static GameActionResult AnnouncerAction(Game game, Dictionary<string, object> update, bool skipDay0, int announcerActionIdIn, int announcerActionIdOut, int announcerHintIn, int announcerHintOut, string announcerInfo, int announcerDelay)
         {
             var action = Game.GetGameDictionaryProperty(game, LangRenSha.dictAction, 0);
@@ -845,6 +1199,113 @@ namespace ProcedureCore.LangRenSha
                 return GameActionResult.NotExecuted;
             }
             return GameActionResult.NotExecuted;
+        }
+
+        public static GameActionResult HandleDeadPlayerProcessing(Game game, Dictionary<string, object> update)
+        {
+            var deadPlayers = Game.GetGameDictionaryProperty(game, dictDeadPlayerAction, new List<int>());
+            var allPlayers = GetPlayers(game, x => true);
+            var alivePlayers = GetPlayers(game, x => (int)x[dictAlive] == 1);
+            var currentSheriff = Game.GetGameDictionaryProperty(game, dictCurrentSheriff, 0);
+            var playersDict = Game.GetGameDictionaryProperty(game, dictPlayers, new Dictionary<string, object>());
+
+            // Phase 1: Handle sheriff handover if current sheriff is dead
+            if (currentSheriff != 0 && deadPlayers.Contains(currentSheriff))
+            {
+                // Ask current sheriff (who is dead) to select handover target
+                if (UserAction.EndUserAction(game, update))
+                {
+                    (var inputValid, var input, var input_others) = UserAction.GetUserResponse(game, true, new List<int> { currentSheriff }, update);
+                    if (inputValid && input.ContainsKey(currentSheriff.ToString()))
+                    {
+                        var targets = (List<int>)input[currentSheriff.ToString()];
+                        if (targets.Count > 0)
+                        {
+                            update[dictCurrentSheriff] = targets[0];
+                        }
+                        else
+                        {
+                            update[dictCurrentSheriff] = 0;
+                        }
+                    }
+                    else
+                    {
+                        update[dictCurrentSheriff] = 0;
+                    }
+
+                    // Move to dead player skills phase
+                    update[dictSpeak] = 98;
+                    return GameActionResult.Restart;
+                }
+                else
+                {
+                    // Ask current sheriff to select who to hand over to
+                    if (UserAction.StartUserAction(game, actionDuraionPlayerReact, update))
+                    {
+                        var handoverTargets = new List<int>();
+                        handoverTargets.AddRange(alivePlayers);
+                        handoverTargets.Remove(currentSheriff);
+
+                        update[UserAction.dictUserActionTargets] = handoverTargets;
+                        update[UserAction.dictUserActionUsers] = new List<int> { currentSheriff };
+                        update[UserAction.dictUserActionTargetsCount] = 1;
+                        update[UserAction.dictUserActionTargetsHint] = 150; // Sheriff handover hint
+                        return GameActionResult.Restart;
+                    }
+                }
+                return GameActionResult.NotExecuted;
+            }
+            else
+            {
+                // Current sheriff is not dead, proceed to speak
+                update[dictSpeak] = 100;
+                return GameActionResult.Restart;
+            }
+        }
+
+        public static GameActionResult HandleDeadPlayerSkills(Game game, Dictionary<string, object> update)
+        {
+            var deadPlayers = Game.GetGameDictionaryProperty(game, dictDeadPlayerAction, new List<int>());
+            var skillsProcessed = Game.GetGameDictionaryProperty(game, dictDeadSkillsProcessed, new List<int>());
+
+            // Find first dead player with unprocessed death skill
+            var deadPlayerWithSkill = -1;
+            foreach (var deadPlayer in deadPlayers)
+            {
+                if (skillsProcessed.Contains(deadPlayer))
+                    continue;
+
+                deadPlayerWithSkill = deadPlayer;
+                break;
+            }
+
+            // If there's a dead player to process, ask handlers if they want to handle it
+            if (deadPlayerWithSkill != -1)
+            {
+
+                // Try each handler to see if it wants to handle this dead player's skill
+                foreach (var handler in deadPlayerHandlers)
+                {
+                    var (handled, result) = handler(game, deadPlayerWithSkill, update);
+                    if (handled)
+                        return result;
+
+                }
+
+                // Mark this player's skill as processed
+                skillsProcessed.Add(deadPlayerWithSkill);
+                update[dictDeadSkillsProcessed] = skillsProcessed;
+
+                // Continue checking other dead players
+                return GameActionResult.Restart;
+            }
+            else
+            {
+                // All dead player skills have been processed, clear the tracking and move on
+                update[dictDeadSkillsProcessed] = null;
+                update[dictSpeak] = 99;
+                return GameActionResult.Restart;
+            }
         }
     }
 }

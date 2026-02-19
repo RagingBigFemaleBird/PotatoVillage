@@ -19,6 +19,7 @@ namespace PotatoVillage
         private bool selectedNvWu = false;
         private bool selectedYuYanJia = false;
         private bool selectedWuZhe = false;
+        private bool selectedLieRen = false;
         private HashSet<string> selectedPingMin = new();
 
         public MainPage()
@@ -34,6 +35,7 @@ namespace PotatoVillage
                                    selectedNvWu || 
                                    selectedYuYanJia || 
                                    selectedWuZhe || 
+                                   selectedLieRen ||
                                    selectedPingMin.Count > 0;
             ConnectBtn.IsEnabled = hasRolesSelected;
         }
@@ -63,22 +65,25 @@ namespace PotatoVillage
 
             // Build roleDict from selected roles
             var roleDict = new Dictionary<string, int>();
-            
+
             if (selectedLangRen.Count > 0)
                 roleDict["LangRen"] = selectedLangRen.Count;
-            
+
             if (selectedJiaMian)
                 roleDict["JiaMian"] = 1;
-            
+
             if (selectedNvWu)
                 roleDict["NvWu"] = 1;
-            
+
             if (selectedYuYanJia)
                 roleDict["YuYanJia"] = 1;
-            
+
             if (selectedWuZhe)
                 roleDict["WuZhe"] = 1;
-            
+
+            if (selectedLieRen)
+                roleDict["LieRen"] = 1;
+
             if (selectedPingMin.Count > 0)
                 roleDict["PingMin"] = selectedPingMin.Count;
 
@@ -86,7 +91,7 @@ namespace PotatoVillage
             roleDict["LangRenSha"] = 1;
 
             // Calculate total players
-            int totalPlayers = roleDict.Values.Sum();
+            int totalPlayers = roleDict.Values.Sum() - 1;
             if (totalPlayers == 0)
             {
                 await DisplayAlert("Error", "Please select at least one role", "OK");
@@ -127,9 +132,15 @@ namespace PotatoVillage
                 return;
             }
 
-            if (!int.TryParse(RoomNumberEntry.Text, out int roomNumber) || !int.TryParse(SeatNumberEntry.Text, out int seatNumber))
+            if (!int.TryParse(RoomNumberEntry.Text, out int roomNumber) || roomNumber <= 0)
             {
-                await DisplayAlert("Error", "Invalid room number or seat number", "OK");
+                await DisplayAlert("Error", "Invalid room number", "OK");
+                return;
+            }
+
+            if (!int.TryParse(SeatNumberEntry.Text, out int seatNumber) || seatNumber <= 0)
+            {
+                await DisplayAlert("Error", "Invalid seat number (must be a positive number)", "OK");
                 return;
             }
 
@@ -138,7 +149,10 @@ namespace PotatoVillage
             connectionManager = new HubConnectionManager(nickname);
             connectionManager.ConnectionFailed += async (msg) =>
             {
-                await DisplayAlert("Error", msg, "OK");
+                await MainThread.InvokeOnMainThreadAsync(async () =>
+                {
+                    await DisplayAlert("Error", msg, "OK");
+                });
             };
             connectionManager.Registered += OnRegistered;
 
@@ -149,9 +163,14 @@ namespace PotatoVillage
             }
 
             isGameOwner = false;  // Joiner is not the owner
-            // Join the existing game
-            if (!await connectionManager.JoinGameAsync(roomNumber, seatNumber))
+
+            // Join the existing game and check result
+            var (success, errorMessage) = await connectionManager.JoinGameAsync(roomNumber, seatNumber);
+            if (!success)
             {
+                await DisplayAlert("Error", errorMessage, "OK");
+                await connectionManager.Disconnect();
+                connectionManager = null;
                 return;
             }
         }
@@ -213,6 +232,16 @@ namespace PotatoVillage
             if (sender is Button button)
             {
                 button.BackgroundColor = selectedWuZhe ? Colors.Green : Colors.LightGray;
+            }
+            UpdateConnectButtonState();
+        }
+
+        private void OnLieRenClicked(object? sender, EventArgs e)
+        {
+            selectedLieRen = !selectedLieRen;
+            if (sender is Button button)
+            {
+                button.BackgroundColor = selectedLieRen ? Colors.Green : Colors.LightGray;
             }
             UpdateConnectButtonState();
         }

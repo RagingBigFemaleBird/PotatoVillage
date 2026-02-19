@@ -4,7 +4,13 @@
              x:Class="PotatoVillage.GameView">
 
     <ContentPage.ToolbarItems>
-        <ToolbarItem Text="?" Clicked="OnDisconnectClicked" Priority="1" />
+        <ToolbarItem x:Name="RevealBtn"
+                     Text="Reveal"
+                     Clicked="OnRevealClicked"
+                     Priority="0" />
+        <ToolbarItem Text="?"
+                     Clicked="OnDisconnectClicked"
+                     Priority="1" />
     </ContentPage.ToolbarItems>
 
     <Grid ColumnDefinitions="1*,2*" RowDefinitions="*">

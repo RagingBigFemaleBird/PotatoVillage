@@ -2,12 +2,16 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Server;
+using ProcedureCore.LangRenSha;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddSignalR();
 builder.Services.AddControllersWithViews();
+
+// Register dead player handlers
+LangRenSha.RegisterDeadPlayerHandler(LieRen.HandleHunterDeathSkill);
 
 var app = builder.Build();
 

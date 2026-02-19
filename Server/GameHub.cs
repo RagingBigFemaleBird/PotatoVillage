@@ -60,7 +60,8 @@ namespace Server
                 { "YuYanJia", new YuYanJia() },
                 { "NvWu", new NvWu() },
                 { "WuZhe", new WuZhe() },
-                { "JiaMian", new JiaMian() }
+                { "JiaMian", new JiaMian() },
+                { "LieRen", new LieRen() }
             };
             
             foreach (var role in roleDict.Keys)

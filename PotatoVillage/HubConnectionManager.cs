@@ -12,7 +12,8 @@ namespace PotatoVillage
         private int registeredGameId;
         private int registeredPlayerId;
         private string clientId;
-        
+        private TaskCompletionSource<(bool, string)>? joinCompletionSource;
+
         public event Action? GameStateUpdated;
         public event Action<string>? ConnectionFailed;
         public event Action<int, int>? Registered; // Fired when actually registered with actual gameId and playerId
@@ -74,8 +75,18 @@ namespace PotatoVillage
                     registeredGameId = gameId;
                     registeredPlayerId = playerId;
                     MergeGameDict(JsonSerializer.Deserialize<Dictionary<string, object>>(gameStateJson) ?? new());
+
+                    // Complete join operation successfully
+                    joinCompletionSource?.TrySetResult((true, ""));
+
                     Registered?.Invoke(gameId, playerId);
                     GameStateUpdated?.Invoke();
+                });
+
+                connection.On<string>("JoinFailed", (errorMessage) =>
+                {
+                    // Complete join operation with failure
+                    joinCompletionSource?.TrySetResult((false, errorMessage));
                 });
 
                 connection.On<string>("GameStateUpdate", (stateDiffJson) =>
@@ -121,23 +132,34 @@ namespace PotatoVillage
             }
         }
 
-        public async Task<bool> JoinGameAsync(int gameId, int playerId)
+        public async Task<(bool success, string errorMessage)> JoinGameAsync(int gameId, int playerId)
         {
             try
             {
                 if (connection == null)
                 {
-                    ConnectionFailed?.Invoke("Not connected");
-                    return false;
+                    return (false, "Not connected");
                 }
 
+                // Create a completion source to wait for the result
+                joinCompletionSource = new TaskCompletionSource<(bool, string)>();
+
                 await connection.InvokeAsync("JoinGame", clientId, gameId, playerId);
-                return true;
+
+                // Wait for either RoomCreated or JoinFailed with timeout
+                var timeoutTask = Task.Delay(10000);
+                var completedTask = await Task.WhenAny(joinCompletionSource.Task, timeoutTask);
+
+                if (completedTask == timeoutTask)
+                {
+                    return (false, "Join request timed out");
+                }
+
+                return await joinCompletionSource.Task;
             }
             catch (Exception ex)
             {
-                ConnectionFailed?.Invoke($"Join game failed: {ex.Message}");
-                return false;
+                return (false, $"Join game failed: {ex.Message}");
             }
         }
 

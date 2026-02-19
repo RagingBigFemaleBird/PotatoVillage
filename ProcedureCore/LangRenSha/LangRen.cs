@@ -66,7 +66,7 @@ namespace ProcedureCore.LangRenSha
 
         public static GameActionResult RevealSelf(Game game, int player, List<int> targets, Dictionary<string, object> update)
         {
-            if (Game.GetGameDictionaryProperty(game, LangRenSha.dictSpeak, 0) == 1 || Game.GetGameDictionaryProperty(game, LangRenSha.dictSpeak, 0) == 30)
+            if (Game.GetGameDictionaryProperty(game, LangRenSha.dictSpeak, 0) == 1 || Game.GetGameDictionaryProperty(game, LangRenSha.dictSpeak, 0) == 31)
             {
                 var langRen = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == "LangRen" && (int)x[LangRenSha.dictAlive] == 1);
                 if (langRen.Contains(player))

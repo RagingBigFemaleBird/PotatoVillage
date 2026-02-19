@@ -35,6 +35,7 @@ namespace PotatoVillage
             { 3, new Dictionary<int, string> { { 0, "JiuRen" }, } },
             { 100, new Dictionary<int, string> { { -1, "Volunteer" }, { 0, "Abstain" } } },
             { 102, new Dictionary<int, string> { { -1, "Done speaking" } } },
+            { 110, new Dictionary<int, string> { { -2, "Left" }, { -1, "Right"} } },
 
         };
 
@@ -109,6 +110,7 @@ namespace PotatoVillage
             var sq = GetInt32Value(gameDict.TryGetValue(DictUserAction, out var sqObj) ? sqObj : null) ?? 0;
             StartGameBtn.IsVisible = isOwner && (gameDict.Count == 0 || sq == 0);
             StartGameBtn.Text = LocalizationManager.Instance.GetString("start_game");
+            RevealBtn.Text = LocalizationManager.Instance.GetString("reveal");
             ConfirmButton.Text = LocalizationManager.Instance.GetString("confirm");
 
             // Set dynamic font sizes based on screen size
@@ -242,7 +244,7 @@ namespace PotatoVillage
                 110 => "sheriff_recommend_vote",
                 111 => "voteout",
                 150 => "sheriff_handover",
-                151 => "dead_player_skill",
+                151 => "hunter_kill",
                 152 => "death_announcement",
                 153 => "sheriff_choose_direction",
                 154 => "vote_result",
@@ -320,6 +322,24 @@ namespace PotatoVillage
                 var dayNum = gameDict.TryGetValue("day", out var dayNum2) ? GetInt32Value(dayNum2)?.ToString() ?? "?" : "?";
                 var dayString = localization.GetString("day").Replace("{0}", dayNum);
                 GameStatusLabel.Text = $"{dayString} {phaseStr}\n";
+
+                // Show/hide Reveal button based on day time (phaseValue == 1)
+                if (phaseValue == 1)
+                {
+                    // Add Reveal button if not already in toolbar
+                    if (!ToolbarItems.Contains(RevealBtn))
+                    {
+                        ToolbarItems.Insert(0, RevealBtn);
+                    }
+                }
+                else
+                {
+                    // Remove Reveal button if it's in toolbar
+                    if (ToolbarItems.Contains(RevealBtn))
+                    {
+                        ToolbarItems.Remove(RevealBtn);
+                    }
+                }
 
                 // Get user action related data
                 var userAction = GetInt32Value(gameDict.TryGetValue(DictUserAction, out var uaObj) ? uaObj : null) ?? 0;
@@ -704,6 +724,26 @@ namespace PotatoVillage
             {
                 StartGameBtn.IsVisible = false;
             });
+        }
+
+        private async void OnRevealClicked(object? sender, EventArgs e)
+        {
+            if (connectionManager == null)
+                return;
+
+            try
+            {
+                // Send action -10 to the server
+                await connectionManager.SendTargetSelectionAsync(gameId, playerId, new List<int> { -10 });
+            }
+            catch (Exception ex)
+            {
+                var localization = LocalizationManager.Instance;
+                await DisplayAlert(
+                    localization.GetString("error"),
+                    localization.GetString("failed_send_selection") + ": " + ex.Message,
+                    localization.GetString("yes"));
+            }
         }
     }
 

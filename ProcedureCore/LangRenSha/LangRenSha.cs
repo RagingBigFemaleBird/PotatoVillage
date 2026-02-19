@@ -60,6 +60,7 @@ namespace ProcedureCore.LangRenSha
                 "JiaMian" => new JiaMian(),
                 "LieRen" => new LieRen(),
                 "PingMin" => new PingMin(),
+                "BaiChi" => new BaiChi(),
                 _ => throw new ArgumentException($"Unknown role: {roleName}")
             };
         }

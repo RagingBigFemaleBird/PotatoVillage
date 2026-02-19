@@ -61,7 +61,8 @@ namespace Server
                 { "NvWu", new NvWu() },
                 { "WuZhe", new WuZhe() },
                 { "JiaMian", new JiaMian() },
-                { "LieRen", new LieRen() }
+                { "LieRen", new LieRen() },
+                { "BaiChi", new BaiChi() }
             };
             
             foreach (var role in roleDict.Keys)

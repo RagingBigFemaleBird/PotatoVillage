@@ -10,9 +10,6 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddSignalR();
 builder.Services.AddControllersWithViews();
 
-// Register dead player handlers
-LangRenSha.RegisterDeadPlayerHandler(LieRen.HandleHunterDeathSkill);
-
 var app = builder.Build();
 
 app.MapHub<GameHub>("/gamehub");

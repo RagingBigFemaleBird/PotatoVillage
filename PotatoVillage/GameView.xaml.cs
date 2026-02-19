@@ -113,7 +113,7 @@ namespace PotatoVillage
             UpdatePlayerIdFontSizes();
             UpdateGameStatusFontSize();
             this.SizeChanged += OnPageSizeChanged;
-            
+
             // Subscribe to game state updates
             if (connectionManager != null)
             {
@@ -122,18 +122,29 @@ namespace PotatoVillage
             }
         }
 
+        protected override void OnAppearing()
+        {
+            base.OnAppearing();
+
+            // Lock to landscape when entering game view
+            OrientationService.LockLandscape();
+        }
+
         protected override void OnDisappearing()
         {
             base.OnDisappearing();
-            
+
+            // Return to portrait when leaving game view
+            OrientationService.LockPortrait();
+
             // Clean up event subscriptions
             if (connectionManager != null)
             {
                 connectionManager.GameStateUpdated -= UpdateGameStatus;
             }
-            
+
             this.SizeChanged -= OnPageSizeChanged;
-            
+
             // Cancel any running countdown
             countdownCts?.Cancel();
             countdownCts = null;

@@ -28,6 +28,29 @@ namespace PotatoVillage
             UpdateConnectButtonState();
         }
 
+        protected override void OnAppearing()
+        {
+            base.OnAppearing();
+
+            // Re-enable all inputs when returning to this page
+            ResetUIState();
+        }
+
+        private void ResetUIState()
+        {
+            NicknameEntry.IsEnabled = true;
+            HubUrlEntry.IsEnabled = true;
+            RoomNumberEntry.IsEnabled = true;
+            SeatNumberEntry.IsEnabled = true;
+            JoinBtn.IsEnabled = true;
+
+            // Reset connection manager
+            connectionManager = null;
+
+            // Update connect button based on role selection
+            UpdateConnectButtonState();
+        }
+
         private void UpdateConnectButtonState()
         {
             bool hasRolesSelected = selectedLangRen.Count > 0 || 
@@ -105,7 +128,7 @@ namespace PotatoVillage
             }
         }
 
-        private async void OnRegistered(int registeredGameId, int registeredPlayerId)
+        private async void OnRegistered(int registeredGameId, int registeredPlayerId, bool gameStarted)
         {
             gameId = registeredGameId;
             playerId = registeredPlayerId;
@@ -119,8 +142,16 @@ namespace PotatoVillage
                 SeatNumberEntry.IsEnabled = false;
                 JoinBtn.IsEnabled = false;
 
-                // Navigate to game view with owner flag
-                await Navigation.PushAsync(new GameView(connectionManager, gameId, playerId, isGameOwner));
+                if (gameStarted)
+                {
+                    // Game already started - go directly to game view (reconnection case)
+                    await Navigation.PushAsync(new GameView(connectionManager!, gameId, playerId, isGameOwner));
+                }
+                else
+                {
+                    // Game not started - go to room view
+                    await Navigation.PushAsync(new RoomView(connectionManager!, gameId, playerId, isGameOwner));
+                }
             });
         }
 

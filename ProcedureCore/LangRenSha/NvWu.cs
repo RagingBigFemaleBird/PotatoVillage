@@ -70,13 +70,18 @@ namespace ProcedureCore.LangRenSha
             var aboutToDie = Game.GetGameDictionaryProperty(game, LangRenSha.dictAboutToDie, new List<int>()); ;
             var nvWu = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == Name);
 
-            // TODO: lie ren, she meng
             if (LangRenSha.GetPlayerProperty(game, target, dictCannotBePoisoned, 0) == 0)
             {
                 if (!aboutToDie.Contains(target))
                 {
                     aboutToDie.Add(target);
                     update[LangRenSha.dictAboutToDie] = aboutToDie;
+                }
+
+                // Disable hunter's shooting skill if target is a hunter
+                if (LangRenSha.GetPlayerProperty(game, target, LangRenSha.dictRole, "") == "LieRen")
+                {
+                    LangRenSha.SetPlayerProperty(game, target, LieRen.dictHuntingDisabled, 1, update);
                 }
             }
             LangRenSha.SetPlayerProperty(game, nvWu[0], dictPoisonUsed, 1, update);

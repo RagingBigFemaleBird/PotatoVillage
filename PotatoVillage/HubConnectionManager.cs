@@ -9,20 +9,27 @@ namespace PotatoVillage
     {
         private HubConnection? connection;
         private Dictionary<string, object> gameDict = new();
+        private Dictionary<string, object> roomState = new();
         private int registeredGameId;
         private int registeredPlayerId;
         private string clientId;
+        private string nickname;
         private TaskCompletionSource<(bool, string)>? joinCompletionSource;
+        private TaskCompletionSource<(bool, string)>? switchSeatCompletionSource;
 
         public event Action? GameStateUpdated;
+        public event Action? RoomStateUpdated;
+        public event Action? GameStarted;
         public event Action<string>? ConnectionFailed;
-        public event Action<int, int>? Registered; // Fired when actually registered with actual gameId and playerId
+        public event Action<int, int, bool>? Registered; // Fired when actually registered with actual gameId, playerId, and gameStarted flag
 
         public int RegisteredGameId => registeredGameId;
         public int RegisteredPlayerId => registeredPlayerId;
+        public Dictionary<string, object> RoomState => roomState;
 
         public HubConnectionManager(string nickname = "")
         {
+            this.nickname = nickname;
             // Generate unique client ID based on machine, user, and nickname
             clientId = GenerateClientId(nickname);
         }
@@ -67,20 +74,30 @@ namespace PotatoVillage
                 {
                     await Task.Delay(100);
                     await connection.StartAsync();
-                    await connection.InvokeAsync("JoinGame", clientId, registeredGameId, registeredPlayerId);
+                    await connection.InvokeAsync("JoinGame", clientId, nickname, registeredGameId, registeredPlayerId);
                 };
 
-                connection.On<int, int, string>("RoomCreated", (gameId, playerId, gameStateJson) =>
+                connection.On<int, int, string, string>("RoomCreated", (gameId, playerId, gameStateJson, roomStateJson) =>
                 {
                     registeredGameId = gameId;
                     registeredPlayerId = playerId;
                     MergeGameDict(JsonSerializer.Deserialize<Dictionary<string, object>>(gameStateJson) ?? new());
+                    roomState = JsonSerializer.Deserialize<Dictionary<string, object>>(roomStateJson) ?? new();
+
+                    // Check if game has already started
+                    bool gameStarted = false;
+                    if (roomState.TryGetValue("gameStarted", out var gameStartedObj))
+                    {
+                        if (gameStartedObj is bool b) gameStarted = b;
+                        else if (gameStartedObj is JsonElement je && je.ValueKind == JsonValueKind.True) gameStarted = true;
+                    }
 
                     // Complete join operation successfully
                     joinCompletionSource?.TrySetResult((true, ""));
 
-                    Registered?.Invoke(gameId, playerId);
+                    Registered?.Invoke(gameId, playerId, gameStarted);
                     GameStateUpdated?.Invoke();
+                    RoomStateUpdated?.Invoke();
                 });
 
                 connection.On<string>("JoinFailed", (errorMessage) =>
@@ -94,6 +111,28 @@ namespace PotatoVillage
                     var diff = JsonSerializer.Deserialize<Dictionary<string, object>>(stateDiffJson) ?? new();
                     MergeGameDict(diff);
                     GameStateUpdated?.Invoke();
+                });
+
+                connection.On<string>("RoomStateUpdate", (roomStateJson) =>
+                {
+                    roomState = JsonSerializer.Deserialize<Dictionary<string, object>>(roomStateJson) ?? new();
+                    RoomStateUpdated?.Invoke();
+                });
+
+                connection.On("GameStarted", () =>
+                {
+                    GameStarted?.Invoke();
+                });
+
+                connection.On<int>("SeatSwitched", (newPlayerId) =>
+                {
+                    registeredPlayerId = newPlayerId;
+                    switchSeatCompletionSource?.TrySetResult((true, ""));
+                });
+
+                connection.On<string>("SwitchSeatFailed", (errorMessage) =>
+                {
+                    switchSeatCompletionSource?.TrySetResult((false, errorMessage));
                 });
 
                 await connection.StartAsync();
@@ -122,7 +161,7 @@ namespace PotatoVillage
                     return false;
                 }
 
-                await connection.InvokeAsync("CreateRoom", clientId, numberOfPlayers, roleDict);
+                await connection.InvokeAsync("CreateRoom", clientId, nickname, numberOfPlayers, roleDict);
                 return true;
             }
             catch (Exception ex)
@@ -144,7 +183,7 @@ namespace PotatoVillage
                 // Create a completion source to wait for the result
                 joinCompletionSource = new TaskCompletionSource<(bool, string)>();
 
-                await connection.InvokeAsync("JoinGame", clientId, gameId, playerId);
+                await connection.InvokeAsync("JoinGame", clientId, nickname, gameId, playerId);
 
                 // Wait for either RoomCreated or JoinFailed with timeout
                 var timeoutTask = Task.Delay(10000);
@@ -183,12 +222,59 @@ namespace PotatoVillage
             }
         }
 
+        public async Task<(bool success, string errorMessage)> SwitchSeatAsync(int gameId, int newPlayerId)
+        {
+            try
+            {
+                if (connection == null)
+                {
+                    return (false, "Not connected");
+                }
+
+                // Create a completion source to wait for the result
+                switchSeatCompletionSource = new TaskCompletionSource<(bool, string)>();
+
+                await connection.InvokeAsync("SwitchSeat", clientId, gameId, newPlayerId);
+
+                // Wait for either SeatSwitched or SwitchSeatFailed with timeout
+                var timeoutTask = Task.Delay(10000);
+                var completedTask = await Task.WhenAny(switchSeatCompletionSource.Task, timeoutTask);
+
+                if (completedTask == timeoutTask)
+                {
+                    return (false, "Switch seat request timed out");
+                }
+
+                return await switchSeatCompletionSource.Task;
+            }
+            catch (Exception ex)
+            {
+                return (false, $"Switch seat failed: {ex.Message}");
+            }
+        }
+
+        public async Task LeaveGameAsync(int gameId)
+        {
+            try
+            {
+                if (connection != null)
+                {
+                    await connection.InvokeAsync("LeaveGame", clientId, gameId);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Leave game failed: {ex.Message}");
+            }
+        }
+
         public async Task Disconnect()
         {
             if (connection != null)
             {
                 await connection.StopAsync();
                 await connection.DisposeAsync();
+                connection = null;
             }
         }
 

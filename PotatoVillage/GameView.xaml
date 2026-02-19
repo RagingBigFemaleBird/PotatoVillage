@@ -73,15 +73,6 @@
             <ScrollView Grid.Row="1" Padding="10">
                 <VerticalStackLayout Spacing="12">
 
-                    <!-- Start Game Button (only for owner) -->
-                    <Button x:Name="StartGameBtn"
-                            Text="Start Game"
-                            IsVisible="False"
-                            Clicked="OnStartGameClicked"
-                            BackgroundColor="#007AFF"
-                            TextColor="White"
-                            Margin="0,12,0,0" />
-
                     <!-- Target selection area (initially hidden) -->
                     <Frame x:Name="TargetSelectionContainer" 
                            IsVisible="False"

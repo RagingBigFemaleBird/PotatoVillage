@@ -79,7 +79,19 @@
     "room_number": "Room #",
     "seat_number": "Seat #",
     "nickname_optional": "Nickname (optional)",
-    "hub_url": "Hub URL"
+    "hub_url": "Hub URL",
+    "room_title": "Game Room",
+    "room_number_label": "Room:",
+    "your_seat": "Your Seat:",
+    "players_joined": "Players:",
+    "switch_to_seat": "Switch to seat:",
+    "switch_seat": "Switch",
+    "leave_room": "Leave Room",
+    "leave_room_confirm": "Are you sure you want to leave the room?",
+    "empty_seat": "(Empty)",
+    "you": "(You)",
+    "owner": "(Owner)",
+    "invalid_seat_number": "Invalid seat number"
   },
   "zh": {
     "game_info": "游戏信息",
@@ -161,6 +173,18 @@
     "room_number": "房间号",
     "seat_number": "座位号",
     "nickname_optional": "昵称（可选）",
-    "hub_url": "Hub URL"
+    "hub_url": "Hub URL",
+    "room_title": "游戏房间",
+    "room_number_label": "房间:",
+    "your_seat": "你的座位:",
+    "players_joined": "玩家:",
+    "switch_to_seat": "换到座位:",
+    "switch_seat": "换座",
+    "leave_room": "离开房间",
+    "leave_room_confirm": "确定要离开房间吗？",
+    "empty_seat": "(空位)",
+    "you": "(你)",
+    "owner": "(房主)",
+    "invalid_seat_number": "无效座位号"
   }
 }

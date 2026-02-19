@@ -106,10 +106,6 @@ namespace PotatoVillage
             this.isOwner = isOwner;
             PlayerIdTopLabel.Text = playerId.ToString();
             PlayerIdBottomLabel.Text = playerId.ToString();
-            var gameDict = (connectionManager?.GetGameDictionary() ?? new());
-            var sq = GetInt32Value(gameDict.TryGetValue(DictUserAction, out var sqObj) ? sqObj : null) ?? 0;
-            StartGameBtn.IsVisible = isOwner && (gameDict.Count == 0 || sq == 0);
-            StartGameBtn.Text = LocalizationManager.Instance.GetString("start_game");
             RevealBtn.Text = LocalizationManager.Instance.GetString("reveal");
             ConfirmButton.Text = LocalizationManager.Instance.GetString("confirm");
 
@@ -692,38 +688,13 @@ namespace PotatoVillage
                 if (connectionManager != null)
                 {
                     connectionManager.GameStateUpdated -= UpdateGameStatus;
+
+                    // Notify server that we're leaving
+                    await connectionManager.LeaveGameAsync(gameId);
                     await connectionManager.Disconnect();
                 }
                 await Navigation.PopAsync();
             }
-        }
-
-        private async void OnStartGameClicked(object? sender, EventArgs e)
-        {
-            var localization = LocalizationManager.Instance;
-            if (connectionManager == null || !isOwner)
-            {
-                await DisplayAlert(
-                    localization.GetString("error"),
-                    localization.GetString("only_owner"),
-                    localization.GetString("yes"));
-                return;
-            }
-
-            if (!await connectionManager.StartGameAsync(gameId))
-            {
-                await DisplayAlert(
-                    localization.GetString("error"),
-                    localization.GetString("failed_start_game"),
-                    localization.GetString("yes"));
-                return;
-            }
-
-            // Hide the button after successfully starting the game
-            MainThread.BeginInvokeOnMainThread(() =>
-            {
-                StartGameBtn.IsVisible = false;
-            });
         }
 
         private async void OnRevealClicked(object? sender, EventArgs e)

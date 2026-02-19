@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:m="clr-namespace:PotatoVillage.Markup"
+             x:Class="PotatoVillage.RoomView"
+             Title="{m:Translate room_title}">
+
+    <Grid RowDefinitions="Auto,*,Auto" Padding="20">
+        <!-- Room Info Header -->
+        <VerticalStackLayout Grid.Row="0" Spacing="8">
+            <HorizontalStackLayout Spacing="12">
+                <Label Text="{m:Translate room_number_label}" FontAttributes="Bold" FontSize="18" />
+                <Label x:Name="RoomNumberLabel" FontSize="18" />
+            </HorizontalStackLayout>
+            <HorizontalStackLayout Spacing="12">
+                <Label Text="{m:Translate your_seat}" FontAttributes="Bold" FontSize="16" />
+                <Label x:Name="YourSeatLabel" FontSize="16" />
+            </HorizontalStackLayout>
+            <HorizontalStackLayout Spacing="12">
+                <Label Text="{m:Translate players_joined}" FontAttributes="Bold" FontSize="14" />
+                <Label x:Name="PlayersCountLabel" FontSize="14" />
+            </HorizontalStackLayout>
+        </VerticalStackLayout>
+
+        <!-- Player List -->
+        <ScrollView Grid.Row="1" Margin="0,20,0,20">
+            <VerticalStackLayout x:Name="PlayerListContainer" Spacing="8">
+                <!-- Player entries will be added dynamically -->
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <!-- Bottom Buttons -->
+        <VerticalStackLayout Grid.Row="2" Spacing="12">
+            <!-- Switch Seat Section -->
+            <HorizontalStackLayout Spacing="8">
+                <Label Text="{m:Translate switch_to_seat}" VerticalOptions="Center" />
+                <Entry x:Name="NewSeatEntry" Placeholder="1" WidthRequest="80" Keyboard="Numeric" />
+                <Button x:Name="SwitchSeatBtn" Text="{m:Translate switch_seat}" Clicked="OnSwitchSeatClicked" />
+            </HorizontalStackLayout>
+            
+            <!-- Start Game Button (only visible to owner) -->
+            <Button x:Name="StartGameBtn" 
+                    Text="{m:Translate start_game}" 
+                    Clicked="OnStartGameClicked"
+                    IsVisible="False"
+                    BackgroundColor="#007AFF"
+                    TextColor="White"
+                    FontSize="18"
+                    HeightRequest="50" />
+            
+            <!-- Leave Room Button -->
+            <Button x:Name="LeaveRoomBtn" 
+                    Text="{m:Translate leave_room}" 
+                    Clicked="OnLeaveRoomClicked"
+                    BackgroundColor="#FF3B30"
+                    TextColor="White" />
+        </VerticalStackLayout>
+    </Grid>
+
+</ContentPage>

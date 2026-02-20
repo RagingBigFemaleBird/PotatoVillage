@@ -112,7 +112,9 @@ namespace Server
                 { "WuZhe", new WuZhe() },
                 { "JiaMian", new JiaMian() },
                 { "LieRen", new LieRen() },
-                { "BaiChi", new BaiChi() }
+                { "BaiChi", new BaiChi() },
+                { "LaoShu", new LaoShu() },
+                { "DaMao", new DaMao() },
             };
 
             foreach (var role in roleDict.Keys)

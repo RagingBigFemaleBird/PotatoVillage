@@ -35,7 +35,7 @@ namespace PotatoVillage
             { 3, new Dictionary<int, string> { { 0, "JiuRen" }, } },
             { 100, new Dictionary<int, string> { { -1, "Volunteer" }, { 0, "Abstain" } } },
             { 102, new Dictionary<int, string> { { -1, "Done speaking" } } },
-            { 110, new Dictionary<int, string> { { -2, "Left" }, { -1, "Right"} } },
+            { 153, new Dictionary<int, string> { { -2, "Left" }, { -1, "Right"} } },
 
         };
 
@@ -242,6 +242,9 @@ namespace PotatoVillage
                 7 => "yuyanjia_result",
                 50 => "open_eyes",
                 51 => "close_eyes",
+                52 => "lucky_one_open_eyes",
+                53 => "lucky_one_close_eyes",
+                75 => "check_mice",
                 100 => "volunteer_sheriff",
                 101 => "vote_sheriff",
                 102 => "round_table",
@@ -255,7 +258,7 @@ namespace PotatoVillage
                 152 => "death_announcement",
                 153 => "sheriff_choose_direction",
                 154 => "vote_result",
-                1000 => "check_role",
+                1000 => "check_private",
                 1001 => "night_time",
                 1002 => "day_time",
                 _ => null
@@ -415,13 +418,20 @@ namespace PotatoVillage
             {
                 // Night phase - get the roles of acting players
                 var actingRoles = new HashSet<string>();
-                foreach (var playerId in actingPlayerIds)
+                if (userTargetsHint == 76 || userTargetsHint == 52 || userTargetsHint == 53)
                 {
-                    var role = GetPlayerRole(playerId);
-                    if (!string.IsNullOrEmpty(role))
+                    actingRoles.Add(LocalizationManager.Instance.GetString("lucky_one"));
+                }
+                else
+                {
+                    foreach (var playerId in actingPlayerIds)
                     {
-                        var rs = LocalizationManager.Instance.GetString(role);
-                        actingRoles.Add(rs);
+                        var role = GetPlayerRole(playerId);
+                        if (!string.IsNullOrEmpty(role))
+                        {
+                            var rs = LocalizationManager.Instance.GetString(role);
+                            actingRoles.Add(rs);
+                        }
                     }
                 }
 
@@ -485,6 +495,26 @@ namespace PotatoVillage
             if (hintIndex == 1000)
             {
                 userInfo = GetPlayerRole(playerId);
+            }
+            if (hintIndex == 75)
+            {
+                if (userInfo.Contains(","))
+                {
+                    var split = userInfo.Split(',');
+                    if (split[0] == playerId.ToString())
+                    {
+                        userInfo = localization.GetString("check_mice_info");
+                        userInfo = userInfo.Replace("{0}", split.Length > 1 ? split[1] : "");
+                    }
+                    else
+                    {
+                        userInfo = localization.GetString("no");
+                    }
+                }
+                else
+                {
+                    userInfo = userInfo == playerId.ToString() ? localization.GetString("yes") : localization.GetString("no");
+                }
             }
             var ui = UserInfoHints.TryGetValue(hintIndex, out var handler) ? handler(userInfo) : userInfo;
             TargetInstructionLabel.Text += $"\n{ui}";

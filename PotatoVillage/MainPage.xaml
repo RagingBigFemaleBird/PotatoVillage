@@ -28,14 +28,16 @@
             <!-- Row 2: JiaMian (1 button) -->
             <HorizontalStackLayout Spacing="4">
                 <Button x:Name="JiaMianBtn" Text="{m:Translate JiaMian}" Clicked="OnJiaMianClicked" BackgroundColor="LightGray" />
+                <Button x:Name="DaMaoBtn" Text="{m:Translate DaMao}" Clicked="OnDaMaoClicked" BackgroundColor="LightGray" />
             </HorizontalStackLayout>
 
-            <!-- Row 3: NvWu, YuYanJia, WuZhe, LieRen -->
+            <!-- Row 3: NvWu, YuYanJia, WuZhe, LieRen, DaMao, Mice -->
             <HorizontalStackLayout Spacing="4">
                 <Button x:Name="NvWuBtn" Text="{m:Translate NvWu}" Clicked="OnNvWuClicked" BackgroundColor="LightGray" />
                 <Button x:Name="YuYanJiaBtn" Text="{m:Translate YuYanJia}" Clicked="OnYuYanJiaClicked" BackgroundColor="LightGray" />
                 <Button x:Name="WuZheBtn" Text="{m:Translate WuZhe}" Clicked="OnWuZheClicked" BackgroundColor="LightGray" />
                 <Button x:Name="LieRenBtn" Text="{m:Translate LieRen}" Clicked="OnLieRenClicked" BackgroundColor="LightGray" />
+                <Button x:Name="LaoShuBtn" Text="{m:Translate LaoShu}" Clicked="OnLaoShuClicked" BackgroundColor="LightGray" />
             </HorizontalStackLayout>
 
             <!-- Row 4: PingMin (5 buttons) -->

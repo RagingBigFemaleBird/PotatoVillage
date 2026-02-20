@@ -20,6 +20,8 @@ namespace PotatoVillage
         private bool selectedYuYanJia = false;
         private bool selectedWuZhe = false;
         private bool selectedLieRen = false;
+        private bool selectedDaMao = false;
+        private bool selectedLaoShu = false;
         private HashSet<string> selectedPingMin = new();
 
         public MainPage()
@@ -59,16 +61,22 @@ namespace PotatoVillage
                                    selectedYuYanJia || 
                                    selectedWuZhe || 
                                    selectedLieRen ||
+                                   selectedDaMao ||
+                                   selectedLaoShu ||
                                    selectedPingMin.Count > 0;
             ConnectBtn.IsEnabled = hasRolesSelected;
         }
 
         private async void OnConnectClicked(object? sender, EventArgs e)
         {
+            // Disable button immediately to prevent multiple clicks
+            ConnectBtn.IsEnabled = false;
+
             var hubUrl = HubUrlEntry.Text?.Trim();
             if (string.IsNullOrEmpty(hubUrl))
             {
                 await DisplayAlert("Error", "Hub URL is required", "OK");
+                ConnectBtn.IsEnabled = true;
                 return;
             }
 
@@ -76,13 +84,18 @@ namespace PotatoVillage
             connectionManager = new HubConnectionManager(nickname);
             connectionManager.ConnectionFailed += async (msg) =>
             {
-                await DisplayAlert("Error", msg, "OK");
+                await MainThread.InvokeOnMainThreadAsync(async () =>
+                {
+                    await DisplayAlert("Error", msg, "OK");
+                    ConnectBtn.IsEnabled = true;
+                });
             };
             connectionManager.Registered += OnRegistered;
 
             // Connect to hub
             if (!await connectionManager.ConnectAsync(hubUrl))
             {
+                ConnectBtn.IsEnabled = true;
                 return;
             }
 
@@ -107,6 +120,12 @@ namespace PotatoVillage
             if (selectedLieRen)
                 roleDict["LieRen"] = 1;
 
+            if (selectedDaMao)
+                roleDict["DaMao"] = 1;
+
+            if (selectedLaoShu)
+                roleDict["LaoShu"] = 1;
+
             if (selectedPingMin.Count > 0)
                 roleDict["PingMin"] = selectedPingMin.Count;
 
@@ -118,12 +137,14 @@ namespace PotatoVillage
             if (totalPlayers == 0)
             {
                 await DisplayAlert("Error", "Please select at least one role", "OK");
+                ConnectBtn.IsEnabled = true;
                 return;
             }
 
             isGameOwner = true;  // Creator is the owner
             if (!await connectionManager.CreateRoomAsync(totalPlayers, roleDict))
             {
+                ConnectBtn.IsEnabled = true;
                 return;
             }
         }
@@ -157,21 +178,27 @@ namespace PotatoVillage
 
         private async void OnJoinClicked(object? sender, EventArgs e)
         {
+            // Disable button immediately to prevent multiple clicks
+            JoinBtn.IsEnabled = false;
+
             if (string.IsNullOrEmpty(HubUrlEntry.Text?.Trim()))
             {
                 await DisplayAlert("Error", "Hub URL is required", "OK");
+                JoinBtn.IsEnabled = true;
                 return;
             }
 
             if (!int.TryParse(RoomNumberEntry.Text, out int roomNumber) || roomNumber <= 0)
             {
                 await DisplayAlert("Error", "Invalid room number", "OK");
+                JoinBtn.IsEnabled = true;
                 return;
             }
 
             if (!int.TryParse(SeatNumberEntry.Text, out int seatNumber) || seatNumber <= 0)
             {
                 await DisplayAlert("Error", "Invalid seat number (must be a positive number)", "OK");
+                JoinBtn.IsEnabled = true;
                 return;
             }
 
@@ -183,6 +210,7 @@ namespace PotatoVillage
                 await MainThread.InvokeOnMainThreadAsync(async () =>
                 {
                     await DisplayAlert("Error", msg, "OK");
+                    JoinBtn.IsEnabled = true;
                 });
             };
             connectionManager.Registered += OnRegistered;
@@ -190,6 +218,7 @@ namespace PotatoVillage
             // Connect to hub
             if (!await connectionManager.ConnectAsync(hubUrl))
             {
+                JoinBtn.IsEnabled = true;
                 return;
             }
 
@@ -202,6 +231,7 @@ namespace PotatoVillage
                 await DisplayAlert("Error", errorMessage, "OK");
                 await connectionManager.Disconnect();
                 connectionManager = null;
+                JoinBtn.IsEnabled = true;
                 return;
             }
         }
@@ -273,6 +303,26 @@ namespace PotatoVillage
             if (sender is Button button)
             {
                 button.BackgroundColor = selectedLieRen ? Colors.Green : Colors.LightGray;
+            }
+            UpdateConnectButtonState();
+        }
+
+        private void OnDaMaoClicked(object? sender, EventArgs e)
+        {
+            selectedDaMao = !selectedDaMao;
+            if (sender is Button button)
+            {
+                button.BackgroundColor = selectedDaMao ? Colors.Green : Colors.LightGray;
+            }
+            UpdateConnectButtonState();
+        }
+
+        private void OnLaoShuClicked(object? sender, EventArgs e)
+        {
+            selectedLaoShu = !selectedLaoShu;
+            if (sender is Button button)
+            {
+                button.BackgroundColor = selectedLaoShu ? Colors.Green : Colors.LightGray;
             }
             UpdateConnectButtonState();
         }

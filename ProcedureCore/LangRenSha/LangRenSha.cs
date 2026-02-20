@@ -61,6 +61,8 @@ namespace ProcedureCore.LangRenSha
                 "LieRen" => new LieRen(),
                 "PingMin" => new PingMin(),
                 "BaiChi" => new BaiChi(),
+                "DaMao" => new DaMao(),
+                "LaoShu" => new LaoShu(),
                 _ => throw new ArgumentException($"Unknown role: {roleName}")
             };
         }
@@ -354,7 +356,7 @@ namespace ProcedureCore.LangRenSha
             {
                 var sheriffPlayers = Game.GetGameDictionaryProperty(game, dictSheriff, new List<int>());
                 var volunteersInfo = string.Join(", ", sheriffPlayers);
-                return HandleRoundTableSpeak(game, sheriffPlayers, game.GetRandomNumber() % sheriffPlayers.Count, (game.GetRandomNumber() % 2) == 1, update, 2, 104, volunteersInfo);
+                return HandleRoundTableSpeak(game, sheriffPlayers, sheriffPlayers[game.GetRandomNumber() % sheriffPlayers.Count], (game.GetRandomNumber() % 2) == 1, update, 2, 104, volunteersInfo);
             }
             // Sheriff vote - tally only
             if (Game.GetGameDictionaryProperty(game, dictSpeak, 0) == 2)
@@ -445,7 +447,7 @@ namespace ProcedureCore.LangRenSha
                 bool directionPlus = (game.GetRandomNumber() % 2) == 0;
                 var nextPlayer = NextPlayer(pkPlayers, allPlayers.Count, first, directionPlus);
                 var volunteersInfo = string.Join(", ", pkPlayers);
-                return HandleRoundTableSpeak(game, pkPlayers, pkPlayers.IndexOf(nextPlayer), directionPlus, update, 5, 105, volunteersInfo);
+                return HandleRoundTableSpeak(game, pkPlayers, nextPlayer, directionPlus, update, 5, 105, volunteersInfo);
             }
             // Sheriff PK voting + tally
             if (Game.GetGameDictionaryProperty(game, dictSpeak, 0) == 5)
@@ -596,6 +598,33 @@ namespace ProcedureCore.LangRenSha
                             update[UserAction.dictUserActionTargetsHint] = 153; // Sheriff choose direction hint
                             return GameActionResult.Restart;
                         }
+                        else
+                        {
+                            (var inputValid, var input, var input_others) = UserAction.GetUserResponse(game, true, new List<int> { sheriff }, update);
+
+                            bool directionRight = false;
+                            if (inputValid && input.ContainsKey(sheriff.ToString()))
+                            {
+                                var targets = (List<int>)input[sheriff.ToString()];
+                                if (targets.Count > 0 && targets[0] == -1)
+                                {
+                                    directionRight = true;
+                                    update[UserAction.dictUserActionUsers] = new List<int>();
+                                    update[dictSpeak] = 31;
+                                    update[dictDaySpeechDirection] = directionRight;
+                                    return GameActionResult.Restart;
+                                }
+                                if (targets.Count > 0 && targets[0] == -2)
+                                {
+                                    directionRight = false;
+                                    update[UserAction.dictUserActionUsers] = new List<int>();
+                                    update[dictSpeak] = 31;
+                                    update[dictDaySpeechDirection] = directionRight;
+                                    return GameActionResult.Restart;
+                                }
+                            }
+
+                        }
                     }
                     return GameActionResult.NotExecuted;
                 }
@@ -617,11 +646,11 @@ namespace ProcedureCore.LangRenSha
                 int first = 0;
                 if (sheriff != 0)
                 {
-                    first = ap.IndexOf(sheriff);
+                    first = sheriff;
                 }
                 else
                 {
-                    first = game.GetRandomNumber() % (ap.Count == 0 ? 1 : ap.Count);
+                    first = ap[game.GetRandomNumber() % (ap.Count == 0 ? 1 : ap.Count)];
                 }
                 bool dir = directionRight;
 
@@ -660,6 +689,20 @@ namespace ProcedureCore.LangRenSha
                             update[UserAction.dictUserActionTargetsCount] = -1;
                             update[UserAction.dictUserActionTargetsHint] = 110;
                             return GameActionResult.Restart;
+                        }
+                        else
+                        {
+                            (var inputValid, var input, var input_others) = UserAction.GetUserResponse(game, true, sheriffArray, update);
+                            if (inputValid)
+                            {
+                                if (input.ContainsKey(sheriff.ToString()))
+                                {
+                                    var targets = (List<int>)input[sheriff.ToString()];
+                                    update[dictSheriffVote] = targets;
+                                    update[dictSpeak] = 33;
+                                    return GameActionResult.Restart;
+                                }
+                            }
                         }
                     }
                     return GameActionResult.NotExecuted;
@@ -756,7 +799,7 @@ namespace ProcedureCore.LangRenSha
                 var first = sheriffPlayers.Count == 0 ? 1 : sheriffPlayers[game.GetRandomNumber() % sheriffPlayers.Count];
                 bool directionPlus = (game.GetRandomNumber() % 2) == 1;
                 var nextPlayer = NextPlayer(pkPlayers, allPlayers.Count, first, directionPlus);
-                return HandleRoundTableSpeak(game, pkPlayers, pkPlayers.IndexOf(nextPlayer), directionPlus, update, 36, 102);
+                return HandleRoundTableSpeak(game, pkPlayers, nextPlayer, directionPlus, update, 36, 102);
             }
             // vote 2
             if (Game.GetGameDictionaryProperty(game, dictSpeak, 0) == 36)
@@ -901,7 +944,7 @@ namespace ProcedureCore.LangRenSha
                 var lastAction = (int)Game.GetGameDictionaryProperty(game, dictInterrupt, new Dictionary<string, object>())[dictSpeak];
                 if (dp.Count > 0 && (lastAction == 40 || Game.GetGameDictionaryProperty(game, dictDay, 0) == 0))
                 {
-                    return HandleRoundTableSpeak(game, dp, game.GetRandomNumber() % dp.Count, game.GetRandomNumber() % 2 == 1, update, -1, 102);
+                    return HandleRoundTableSpeak(game, dp, dp[game.GetRandomNumber() % dp.Count], game.GetRandomNumber() % 2 == 1, update, -1, 102);
                 }
                 else
                 {
@@ -971,40 +1014,33 @@ namespace ProcedureCore.LangRenSha
             {
                 if (UserAction.StartUserAction(game, actionDurationPlayerSpeak, update))
                 {
-                    if (speakers.Count == 0)
+                    var last = speakers.Count == 0 ? startingPlayer : speakers.Last();
+                    var first = speakers.Count == 0 ? startingPlayer : speakers.First();
+                    var next = last;
+                    do
                     {
-                        speakers.Add(players[startingPlayer]);
-                    }
-                    else
-                    {
-                        var last = speakers.Last();
-                        var first = speakers.First();
-                        var next = last;
-                        do
+                        if (directionPlus)
                         {
-                            if (directionPlus)
+                            next++;
+                            if (next > allPlayers.Count)
                             {
-                                next++;
-                                if (next > allPlayers.Count)
-                                {
-                                    next = 1;
-                                }
+                                next = 1;
                             }
-                            else
+                        }
+                        else
+                        {
+                            next--;
+                            if (next <= 0)
                             {
-                                next--;
-                                if (next <= 0)
-                                {
-                                    next = allPlayers.Count;
-                                }
+                                next = allPlayers.Count;
                             }
-                            if (players.Contains(next))
-                            {
-                                break;
-                            }
-                        } while (next != last);
-                        speakers.Add(next);
-                    }
+                        }
+                        if (players.Contains(next))
+                        {
+                            break;
+                        }
+                    } while (next != last);
+                    speakers.Add(next);
                     update[dictSpeaker] = speakers;
                     update[UserAction.dictUserActionTargets] = new List<int> { -1, 0 };
                     update[UserAction.dictUserActionUsers] = allPlayers;

@@ -69,8 +69,12 @@ namespace ProcedureCore.LangRenSha
         {
             var aboutToDie = Game.GetGameDictionaryProperty(game, LangRenSha.dictAboutToDie, new List<int>()); ;
             var nvWu = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == Name);
+            var miceTag = Game.GetGameDictionaryProperty(game, LaoShu.dictMiceTag, 0);
+            var miceTagged = miceTag == nvWu[0];
+            var laoShu = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == "LaoShu");
+            var laoShuPlayer = laoShu.Count > 0 ? laoShu[0] : -1;
 
-            if (LangRenSha.GetPlayerProperty(game, target, dictCannotBePoisoned, 0) == 0)
+            if (LangRenSha.GetPlayerProperty(game, target, dictCannotBePoisoned, 0) == 0 && (target != laoShuPlayer || laoShuPlayer == miceTag))
             {
                 if (!aboutToDie.Contains(target))
                 {
@@ -84,7 +88,10 @@ namespace ProcedureCore.LangRenSha
                     LangRenSha.SetPlayerProperty(game, target, LieRen.dictHuntingDisabled, 1, update);
                 }
             }
-            LangRenSha.SetPlayerProperty(game, nvWu[0], dictPoisonUsed, 1, update);
+            if (!miceTagged)
+            {
+                LangRenSha.SetPlayerProperty(game, nvWu[0], dictPoisonUsed, 1, update);
+            }
         }
 
         public void Save(Game game, Dictionary<string, object> update)
@@ -92,6 +99,8 @@ namespace ProcedureCore.LangRenSha
             var attackTarget = Game.GetGameDictionaryProperty(game, LangRen.dictAttackTarget, new List<int>());
             var aboutToDie = Game.GetGameDictionaryProperty(game, LangRenSha.dictAboutToDie, new List<int>());
             var nvWu = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == Name);
+            var miceTagged = Game.GetGameDictionaryProperty(game, LaoShu.dictMiceTag, 0) == nvWu[0];
+
             if (attackTarget.Count > 0)
             {
                 // TODO: shou wei
@@ -99,7 +108,10 @@ namespace ProcedureCore.LangRenSha
                 {
                     aboutToDie.Remove(attackTarget[0]);
                     update[LangRenSha.dictAboutToDie] = aboutToDie;
-                    LangRenSha.SetPlayerProperty(game, nvWu[0], dictSaveUsed, 1, update);
+                    if (!miceTagged)
+                    {
+                        LangRenSha.SetPlayerProperty(game, nvWu[0], dictSaveUsed, 1, update);
+                    }
                 }
             }
         }

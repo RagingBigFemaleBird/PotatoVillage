@@ -14,7 +14,8 @@ namespace ProcedureCore.LangRenSha
                 { YuYanJia.dictYuYanJiaResult, 1 },
                 { LangRenSha.dictPlayerAlliance, 1 },
             };
-        private static List<int> actionOrders = new();
+        private static List<int> actionOrders = new()
+            { 170, 171, 172 };
 
         public LieRen()
         {
@@ -64,6 +65,95 @@ namespace ProcedureCore.LangRenSha
 
         public GameActionResult GenerateStateDiff(Game game, Dictionary<string, object> update)
         {
+            if (game.StateSequenceNumber == 1)
+            {
+                // Only add actions if LaoShu is present in the game
+                var laoShuPresent = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == "LaoShu").Count > 0;
+                if (laoShuPresent)
+                {
+                    var addSelf = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == Name);
+                    if (addSelf.Count > 0)
+                    {
+                        var no = Game.GetGameDictionaryProperty(game, LangRenSha.dictNightOrders, new List<int>());
+                        no.AddRange(ActionOrders);
+                        update[LangRenSha.dictNightOrders] = no;
+                    }
+                }
+                return GameActionResult.Continue;
+            }
+
+            // Actions 170 and 172 are announcer actions
+            if (LangRenSha.AnnouncerAction(game, update, false, ActionOrders[0], ActionOrders[2], 50, 51, Name, 4) == GameActionResult.Restart)
+            {
+                return GameActionResult.Restart;
+            }
+
+            // Action 171: LieRen can shoot at night if tagged by mice
+            if (Game.GetGameDictionaryProperty(game, LangRenSha.dictAction, 0) == ActionOrders[1])
+            {
+                var lieRen = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == Name);
+                var lieRenAlive = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == Name && (int)x[LangRenSha.dictAlive] == 1);
+
+                // Check if LieRen is tagged by mice
+                var miceTag = Game.GetGameDictionaryProperty(game, LaoShu.dictMiceTag, 0);
+                var lieRenPlayer = lieRenAlive.Count == 0 ? 0 : lieRenAlive[0];
+                var isTagged = lieRenAlive.Count > 0 && miceTag == lieRenPlayer;
+                var nightShootUsed = lieRenAlive.Count == 0 || LangRenSha.GetPlayerProperty(game, lieRenPlayer, dictHuntingDisabled, 0) == 1;
+
+                var alivePlayers = LangRenSha.GetPlayers(game, x => (int)x[LangRenSha.dictAlive] == 1);
+                alivePlayers.Remove(lieRenPlayer); // Cannot shoot self
+
+                if (UserAction.EndUserAction(game, update))
+                {
+                    // Time's up - get final response and process
+                    (var inputValid, var input, var input_others) = UserAction.GetUserResponse(game, true, isTagged ? lieRenAlive : new List<int>(), update);
+                    if (inputValid)
+                    {
+                        var targets = UserAction.TallyUserInput(input, 0, UserAction.UserInputMode.VoteMost, -1);
+                        if (targets.Count > 0 && targets[0] > 0)
+                        {
+                            // Shoot the target
+                            LangRenSha.MarkPlayerAboutToDie(game, targets[0], update);
+                            LangRenSha.SetPlayerProperty(game, lieRenPlayer, dictHuntingDisabled, 1, update);
+                        }
+                    }
+                    LangRenSha.AdvanceAction(game, update);
+                    return GameActionResult.Restart;
+                }
+                else
+                {
+                    if (UserAction.StartUserAction(game, ActionDuration, update))
+                    {
+                        // Action just started - setup targets and users
+                        update[UserAction.dictUserActionTargets] = alivePlayers;
+                        update[UserAction.dictUserActionUsers] = lieRen;
+                        update[UserAction.dictUserActionTargetsCount] = 1;
+                        update[UserAction.dictUserActionTargetsHint] = 151; // Hunter kill hint
+                        return GameActionResult.Restart;
+                    }
+                    else
+                    {
+                        // Action in progress - check for early completion
+                        (var inputValid, var input, var input_others) = UserAction.GetUserResponse(game, true, isTagged ? lieRenAlive : new List<int>(), update);
+                        if (inputValid)
+                        {
+                            (inputValid, input, input_others) = UserAction.GetUserResponse(game, true, lieRenAlive, update);
+                            var targets = UserAction.TallyUserInput(input, 0, UserAction.UserInputMode.VoteMost, -1);
+                            if (targets.Count == 0)
+                            {
+                                return GameActionResult.NotExecuted;
+                            }
+                            LangRenSha.MarkPlayerAboutToDie(game, targets[0], update);
+                            LangRenSha.SetPlayerProperty(game, lieRenPlayer, dictHuntingDisabled, 1, update);
+                            UserAction.EndUserAction(game, update, true);
+                            LangRenSha.AdvanceAction(game, update);
+                            return GameActionResult.Restart;
+                        }
+                    }
+                }
+                return GameActionResult.NotExecuted;
+            }
+
             return GameActionResult.NotExecuted;
         }
 
@@ -82,45 +172,6 @@ namespace ProcedureCore.LangRenSha
             // Prompt hunter to select a target to kill
             if (UserAction.EndUserAction(game, update))
             {
-                (var inputValid, var input, var input_others) = UserAction.GetUserResponse(game, true, new List<int> { deadPlayer }, update);
-                if (inputValid && input.ContainsKey(deadPlayer.ToString()))
-                {
-                    var targets = (List<int>)input[deadPlayer.ToString()];
-                    if (targets.Count > 0 && targets[0] > 0)
-                    {
-                        var currentAboutToDie = Game.GetGameDictionaryProperty(game, LangRenSha.dictAboutToDie, new List<int>());
-                        var target = targets[0];
-                        LangRenSha.MarkPlayerAboutToDie(game, target, update);
-                        LangRenSha.SetPlayerProperty(game, deadPlayer, dictHuntingDisabled, 1, update);
-
-                        // Mark this hunter's skill as processed before interrupting
-                        var skillsProcessed = Game.GetGameDictionaryProperty(game, LangRenSha.dictDeadSkillsProcessed, new List<int>());
-                        if (!skillsProcessed.Contains(deadPlayer))
-                        {
-                            skillsProcessed.Add(deadPlayer);
-                            update[LangRenSha.dictDeadSkillsProcessed] = skillsProcessed;
-                        }
-
-                        // Set up interrupt to go through death handling (state 97)
-                        var currentInterrupt = Game.GetGameDictionaryProperty(game, LangRenSha.dictInterrupt, new Dictionary<string, object>());
-                        var currentDeadPlayers = Game.GetGameDictionaryProperty(game, LangRenSha.dictDeadPlayerAction, new List<int>());
-
-                        var newInterrupt = new Dictionary<string, object>();
-                        newInterrupt[LangRenSha.dictSpeak] = 98; // Return to continue processing dead player skills
-                        newInterrupt[LangRenSha.dictInterrupt] = currentInterrupt;
-
-                        // Save death-related fields for restoration
-                        newInterrupt[LangRenSha.dictDeadPlayerAction] = currentDeadPlayers;
-                        newInterrupt[LangRenSha.dictDeadSkillsProcessed] = skillsProcessed;
-                        newInterrupt[LangRenSha.dictAboutToDie] = currentAboutToDie;
-
-                        update[LangRenSha.dictInterrupt] = newInterrupt;
-                        update[LangRenSha.dictSpeak] = 97;
-
-                        return (true, GameActionResult.Restart);
-                    }
-                }
-
                 // No valid target selected, just mark as processed and continue
                 return (true, GameActionResult.Restart);
             }

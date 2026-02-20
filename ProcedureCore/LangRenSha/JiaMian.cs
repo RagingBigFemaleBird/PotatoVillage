@@ -15,6 +15,7 @@ namespace ProcedureCore.LangRenSha
                 { LangRenSha.dictPlayerAlliance, 2 },
                 { NvWu.dictCannotBePoisoned, 1 },
                 { LangRen.dictSuceession, 1 },
+                { LangRenSha.dictPlayerFaction, LangRenSha.PlayerFaction.Evil },
             };
         private static List<int> actionOrders = new()
             { 60, 70, 71, 72 };

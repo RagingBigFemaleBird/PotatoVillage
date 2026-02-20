@@ -22,6 +22,7 @@ namespace PotatoVillage
         private bool selectedLieRen = false;
         private bool selectedDaMao = false;
         private bool selectedLaoShu = false;
+        private bool selectedBaiChi = false;
         private HashSet<string> selectedPingMin = new();
 
         public MainPage()
@@ -63,6 +64,7 @@ namespace PotatoVillage
                                    selectedLieRen ||
                                    selectedDaMao ||
                                    selectedLaoShu ||
+                                   selectedBaiChi ||
                                    selectedPingMin.Count > 0;
             ConnectBtn.IsEnabled = hasRolesSelected;
         }
@@ -125,6 +127,9 @@ namespace PotatoVillage
 
             if (selectedLaoShu)
                 roleDict["LaoShu"] = 1;
+
+            if (selectedBaiChi)
+                roleDict["BaiChi"] = 1;
 
             if (selectedPingMin.Count > 0)
                 roleDict["PingMin"] = selectedPingMin.Count;
@@ -323,6 +328,16 @@ namespace PotatoVillage
             if (sender is Button button)
             {
                 button.BackgroundColor = selectedLaoShu ? Colors.Green : Colors.LightGray;
+            }
+            UpdateConnectButtonState();
+        }
+
+        private void OnBaiChiClicked(object? sender, EventArgs e)
+        {
+            selectedBaiChi = !selectedBaiChi;
+            if (sender is Button button)
+            {
+                button.BackgroundColor = selectedBaiChi ? Colors.Green : Colors.LightGray;
             }
             UpdateConnectButtonState();
         }

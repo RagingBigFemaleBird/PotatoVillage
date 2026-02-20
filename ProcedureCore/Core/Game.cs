@@ -88,32 +88,40 @@ namespace ProcedureCore.Core
 
         public void ActionLoop()
         {
-            while (true)
+            try
             {
-                var update = new Dictionary<string, object>();
-                bool doUpdate = false;
-                foreach (var action in Actions)
+                while (true)
                 {
-                    var result = InitiateAction(action, update);
-                    if (result != GameActionResult.NotExecuted)
+                    var update = new Dictionary<string, object>();
+                    bool doUpdate = false;
+                    foreach (var action in Actions)
                     {
-                        doUpdate = true;
+                        var result = InitiateAction(action, update);
+                        if (result != GameActionResult.NotExecuted)
+                        {
+                            doUpdate = true;
+                        }
+                        if (result == GameActionResult.Restart)
+                        {
+                            break;
+                        }
                     }
-                    if (result == GameActionResult.Restart)
+                    if (doUpdate)
                     {
-                        break;
+                        lock (stateLock)
+                        {
+                            StateSequenceNumber++;
+                            update[dictStateSequence] = StateSequenceNumber;
+                            StateJournal.Add(update);
+                            StateUpdate(update);
+                        }
                     }
                 }
-                if (doUpdate)
-                {
-                    lock (stateLock)
-                    {
-                        StateSequenceNumber++;
-                        update[dictStateSequence] = StateSequenceNumber;
-                        StateJournal.Add(update);
-                        StateUpdate(update);
-                    }
-                }
+            }
+            catch (Exception ex)
+            {
+                Log($"Game thread crashed with exception: {ex.Message}");
+                Log($"Stack trace: {ex.StackTrace}");
             }
         }
 

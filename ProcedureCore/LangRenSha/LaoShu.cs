@@ -20,6 +20,7 @@ namespace ProcedureCore.LangRenSha
                 { YuYanJia.dictYuYanJiaResult, 1 },
                 { LangRenSha.dictPlayerAlliance, 1 },
                 { dictMiceLives, 2 },
+                { LangRenSha.dictPlayerFaction, LangRenSha.PlayerFaction.God },
             };
         private static List<int> actionOrders = new()
             { 30, 31, 32, 33, 34, 35, 36, 37, 38 };

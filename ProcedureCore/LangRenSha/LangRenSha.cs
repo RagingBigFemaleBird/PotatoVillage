@@ -67,6 +67,14 @@ namespace ProcedureCore.LangRenSha
             };
         }
 
+        public enum PlayerFaction
+        {
+            Evil = 1,
+            God = 2,
+            Civilian = 4,
+            ThirdParty = 8,
+        }
+
         public static string dictPlayers = "players";
         public static string dictRole = "role";
         public static string dictRoleVersion = "role_version";
@@ -81,6 +89,7 @@ namespace ProcedureCore.LangRenSha
         public static string dictDeadPlayerAction = "dead_player";
         public static string dictDeadSkillsProcessed = "dead_skills_processed";
         public static string dictPlayerAlliance = "alliance";
+        public static string dictPlayerFaction = "faction";
         public static string dictSheriff = "sheriff";
         public static string dictCurrentSheriff = "current_sheriff";
         public static string dictPk = "pk";

@@ -123,6 +123,8 @@ namespace ProcedureCore.LangRenSha
                 }
                 else
                 {
+                    var actionDuration = Game.GetGameDictionaryProperty(game, LangRenSha.dictDurationPlayerReact, ActionDuration);
+
                     if (UserAction.StartUserAction(game, ActionDuration, update))
                     {
                         // Action just started - setup targets and users

@@ -74,11 +74,12 @@ namespace ProcedureCore.LangRenSha
                 {
                     if (targets.Contains(-10))
                     {
-                        update[LangRenSha.dictSpeak] = 0;
-                        var players = Game.GetGameDictionaryProperty(game, LangRenSha.dictPlayers, new Dictionary<string, object>());
-                        ((Dictionary<string, object>)players[player.ToString()])[LangRenSha.dictAlive] = 0;
-                        update[LangRenSha.dictPlayers] = players;
-                        LangRenSha.AdvanceAction(game, update);
+                        LangRenSha.MarkPlayerAboutToDie(game, player, update);
+                        update[LangRenSha.dictSkipDaySpeech] = 1;
+                        var interrupted = new Dictionary<string, object>();
+                        interrupted[LangRenSha.dictSpeak] = 9;
+                        update[LangRenSha.dictSpeak] = 97;
+                        update[LangRenSha.dictInterrupt] = interrupted;
                         return GameActionResult.Restart;
                     }    
                 }
@@ -112,13 +113,10 @@ namespace ProcedureCore.LangRenSha
         {
             if (game.StateSequenceNumber == 1)
             {
-                var addSelf = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == Name);
-                if (addSelf.Count > 0)
-                {
-                    var no = Game.GetGameDictionaryProperty(game, LangRenSha.dictNightOrders, new List<int>());
-                    no.AddRange(ActionOrders);
-                    update[LangRenSha.dictNightOrders] = no;
-                }
+                // Langren always added
+                var no = Game.GetGameDictionaryProperty(game, LangRenSha.dictNightOrders, new List<int>());
+                no.AddRange(ActionOrders);
+                update[LangRenSha.dictNightOrders] = no;
                 return GameActionResult.Continue;
             }
             if (LangRenSha.AnnouncerAction(game, update, false, ActionOrders[0], ActionOrders[2], 50, 51, Name, 4) == GameActionResult.Restart)
@@ -129,16 +127,33 @@ namespace ProcedureCore.LangRenSha
             if (Game.GetGameDictionaryProperty(game, LangRenSha.dictAction, 0) == ActionOrders[1])
             {
                 var langRen = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == Name);
+                var langRenSuccession1 = LangRenSha.GetPlayers(game, x => x.ContainsKey(dictSuceession) && (int)x[dictSuceession] == 1);
+                var langRenSuccession2 = LangRenSha.GetPlayers(game, x => x.ContainsKey(dictSuceession) && (int)x[dictSuceession] == 2);
+                var langRenSuccession3 = LangRenSha.GetPlayers(game, x => x.ContainsKey(dictSuceession) && (int)x[dictSuceession] == 3);
                 var langRenAlive = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == Name && (int)x[LangRenSha.dictAlive] == 1);
+                var langRenSuccession1Alive = LangRenSha.GetPlayers(game, x => x.ContainsKey(dictSuceession) && (int)x[dictSuceession] == 1 && (int)x[LangRenSha.dictAlive] == 1);
+                var langRenSuccession2Alive = LangRenSha.GetPlayers(game, x => x.ContainsKey(dictSuceession) && (int)x[dictSuceession] == 2 && (int)x[LangRenSha.dictAlive] == 1);
+                var langRenSuccession3Alive = LangRenSha.GetPlayers(game, x => x.ContainsKey(dictSuceession) && (int)x[dictSuceession] == 3 && (int)x[LangRenSha.dictAlive] == 1);
+
+                langRen.AddRange(langRenSuccession1);
+                langRenAlive.AddRange(langRenSuccession1Alive);
+
                 if (langRenAlive.Count == 0)
                 {
-                    langRen = LangRenSha.GetPlayers(game, x => x.ContainsKey(dictSuceession) && (int)x[dictSuceession] == 1);
+                    langRen = langRenSuccession2;
+                    langRenAlive = langRenSuccession2Alive;
+                }
+                if (langRenAlive.Count == 0)
+                {
+                    langRen = langRenSuccession3;
+                    langRenAlive = langRenSuccession3Alive;
                 }
                 if (langRenAlive.Count == 0)
                 {
                     LangRenSha.AdvanceAction(game, update);
                     return GameActionResult.Restart;
                 }
+
                 var alivePlayers = LangRenSha.GetPlayers(game, x => (int)x[LangRenSha.dictAlive] == 1);
                 if (UserAction.EndUserAction(game, update))
                 {
@@ -158,6 +173,8 @@ namespace ProcedureCore.LangRenSha
                 }
                 else
                 {
+                    var actionDuration = Game.GetGameDictionaryProperty(game, LangRenSha.dictDurationLangRen, ActionDuration);
+
                     if (UserAction.StartUserAction(game, ActionDuration, update))
                     {
                         update[UserAction.dictUserActionTargets] = alivePlayers;

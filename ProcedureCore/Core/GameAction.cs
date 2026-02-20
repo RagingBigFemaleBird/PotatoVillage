@@ -9,8 +9,9 @@ namespace ProcedureCore.Core
     public enum GameActionResult
     {
         NotExecuted,
-        Continue, // will continue to process from the current one
-        Restart,  // will restart from beginning
+        Continue, // Will continue to process from the current one
+        Restart,  // Will restart from beginning
+        GameOver, // Game ended, no more actions will be processed
     }
     public interface GameAction
     {

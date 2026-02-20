@@ -98,6 +98,12 @@ namespace ProcedureCore.LangRenSha
         public static string dictVoteInfo = "voteinfo";
         public static string dictSheriffVote = "sheriffvote";
         public static string dictDaySpeechDirection = "day_speech_direction";
+        public static string dictSkipDaySpeech = "skip_day_speech";
+        public static string dictGameWinner = "game_winner";
+
+        public static string dictDurationLangRen = "duration_langren";
+        public static string dictDurationSpeech = "duration_speech";
+        public static string dictDurationPlayerReact = "duration_player_react";
 
         public int Version
         {
@@ -342,6 +348,7 @@ namespace ProcedureCore.LangRenSha
                     }
                     else
                     {
+
                         if (UserAction.StartUserAction(game, actionDuraionPlayerReact, update))
                         {
                             update[UserAction.dictUserActionTargets] = new List<int> { -1, 0 };
@@ -564,12 +571,52 @@ namespace ProcedureCore.LangRenSha
             {
                 // Set up interrupt to go through death handling
                 var interrupted = new Dictionary<string, object>();
-                interrupted[dictSpeak] = 30;
+                var skipDaySpeech = Game.GetGameDictionaryProperty(game, dictSkipDaySpeech, 0) == 1;
+                if (skipDaySpeech)
+                    interrupted[dictSpeak] = 40;
+                else
+                    interrupted[dictSpeak] = 20; // Go to win condition check first
                 update[dictSpeak] = 97;
+                update[dictSkipDaySpeech] = 0;
                 update[dictInterrupt] = interrupted;
                 game.UseRandomNumber(update);
                 return GameActionResult.Restart;
             }
+            // speak=20: Check win conditions (called from death handling)
+            if (Game.GetGameDictionaryProperty(game, dictSpeak, 0) == 20)
+            {
+                var winner = CheckWinCondition(game);
+                if (winner != null)
+                {
+                    update[dictGameWinner] = winner;
+                    // Game over - display winner
+                    if (UserAction.EndUserAction(game, update))
+                    {
+                        // Game ends here
+                        return GameActionResult.GameOver;
+                    }
+                    else
+                    {
+                        if (UserAction.StartUserAction(game, 10, update))
+                        {
+                            update[UserAction.dictUserActionTargets] = new List<int>();
+                            update[UserAction.dictUserActionUsers] = new List<int>() { -1 };
+                            update[UserAction.dictUserActionTargetsCount] = 0;
+                            update[UserAction.dictUserActionTargetsHint] = 1003; // Game winner hint
+                            update[UserAction.dictUserActionInfo] = winner;
+                            return GameActionResult.Restart;
+                        }
+                    }
+                    return GameActionResult.NotExecuted;
+                }
+                else
+                {
+                    // No winner yet, continue to day speech
+                    update[dictSpeak] = 30;
+                    return GameActionResult.Restart;
+                }
+            }
+
             // Sheriff choose day speech direction
             if (Game.GetGameDictionaryProperty(game, dictSpeak, 0) == 30)
             {
@@ -917,11 +964,40 @@ namespace ProcedureCore.LangRenSha
                 return GameActionResult.Restart;
             }
 
+            // speak=40: End of day - check win conditions then advance
             if (Game.GetGameDictionaryProperty(game, dictSpeak, 0) == 40)
             {
-                update[dictSpeak] = 0;
-                AdvanceAction(game, update);
-                return GameActionResult.Restart;
+                var winner = CheckWinCondition(game);
+                if (winner != null)
+                {
+                    update[dictGameWinner] = winner;
+                    // Game over - display winner
+                    if (UserAction.EndUserAction(game, update))
+                    {
+                        // Game ends here
+                        return GameActionResult.GameOver;
+                    }
+                    else
+                    {
+                        if (UserAction.StartUserAction(game, 10, update))
+                        {
+                            update[UserAction.dictUserActionTargets] = new List<int>();
+                            update[UserAction.dictUserActionUsers] = new List<int>() { -1 };
+                            update[UserAction.dictUserActionTargetsCount] = 0;
+                            update[UserAction.dictUserActionTargetsHint] = 1003; // Game winner hint
+                            update[UserAction.dictUserActionInfo] = winner;
+                            return GameActionResult.Restart;
+                        }
+                    }
+                    return GameActionResult.NotExecuted;
+                }
+                else
+                {
+                    // No winner yet, advance to night
+                    update[dictSpeak] = 0;
+                    AdvanceAction(game, update);
+                    return GameActionResult.Restart;
+                }
             }
 
             // Death handling interrupt - consolidates all death-related logic
@@ -1021,6 +1097,8 @@ namespace ProcedureCore.LangRenSha
             }
             else
             {
+                var actionDuration = Game.GetGameDictionaryProperty(game, LangRenSha.dictDurationSpeech, actionDurationPlayerSpeak);
+
                 if (UserAction.StartUserAction(game, actionDurationPlayerSpeak, update))
                 {
                     var last = speakers.Count == 0 ? startingPlayer : speakers.Last();
@@ -1115,6 +1193,61 @@ namespace ProcedureCore.LangRenSha
             }
 
             return GameActionResult.NotExecuted;
+        }
+
+        /// <summary>
+        /// Checks win conditions by iterating through all alive players and their factions.
+        /// Returns the winning faction name if a win condition is met, null otherwise.
+        /// Win conditions checked in order: Evil, God, Civilian
+        /// </summary>
+        public static string? CheckWinCondition(Game game)
+        {
+            var alivePlayers = GetPlayers(game, x => (int)x[dictAlive] == 1);
+
+            bool hasEvil = false;
+            bool hasGod = false;
+            bool hasCivilian = false;
+
+            foreach (var player in alivePlayers)
+            {
+                var factionObj = GetPlayerProperty<object>(game, player, dictPlayerFaction, PlayerFaction.Civilian);
+
+                PlayerFaction faction;
+                if (factionObj is PlayerFaction pf)
+                {
+                    faction = pf;
+                }
+                else if (factionObj is int factionInt)
+                {
+                    faction = (PlayerFaction)factionInt;
+                }
+                else
+                {
+                    faction = PlayerFaction.Civilian;
+                }
+
+                if ((faction & PlayerFaction.Evil) != 0)
+                    hasEvil = true;
+                else if ((faction & PlayerFaction.God) != 0)
+                    hasGod = true;
+                else if ((faction & PlayerFaction.Civilian) != 0)
+                    hasCivilian = true;
+            }
+
+            if (!hasCivilian)
+            {
+                return "Evil";
+            }
+            if (!hasGod)
+            {
+                return "Evil";
+            }
+            if (!hasEvil)
+            {
+                return "Good";
+            }
+
+            return null; // No winner yet
         }
 
         public static void AdvanceAction(Game game, Dictionary<string, object> update)

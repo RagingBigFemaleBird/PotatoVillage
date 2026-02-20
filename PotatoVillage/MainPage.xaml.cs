@@ -146,8 +146,13 @@ namespace PotatoVillage
                 return;
             }
 
+            // Parse duration settings
+            int speechDuration = int.TryParse(SpeechDurationEntry.Text, out var sd) ? sd : 120;
+            int werewolfDuration = int.TryParse(WerewolfDurationEntry.Text, out var wd) ? wd : 60;
+            int godDuration = int.TryParse(GodDurationEntry.Text, out var gd) ? gd : 30;
+
             isGameOwner = true;  // Creator is the owner
-            if (!await connectionManager.CreateRoomAsync(totalPlayers, roleDict))
+            if (!await connectionManager.CreateRoomAsync(totalPlayers, roleDict, speechDuration, werewolfDuration, godDuration))
             {
                 ConnectBtn.IsEnabled = true;
                 return;

@@ -105,6 +105,11 @@ namespace ProcedureCore.Core
                         {
                             break;
                         }
+                        if (result == GameActionResult.GameOver)
+                        {
+                            Log($"Game over.");
+                            return;
+                        }
                     }
                     if (doUpdate)
                     {

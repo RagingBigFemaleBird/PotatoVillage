@@ -100,12 +100,20 @@ namespace ProcedureCore.LangRenSha
                 }
                 else
                 {
+                    var actionDuration = Game.GetGameDictionaryProperty(game, LangRenSha.dictDurationPlayerReact, ActionDuration);
+                    var langRenAlive = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == "LangRen" && (int)x[LangRenSha.dictAlive] == 1);
+                    var langRenSuccession1Alive = LangRenSha.GetPlayers(game, x => x.ContainsKey(LangRen.dictSuceession) && (int)x[LangRen.dictSuceession] == 1 && (int)x[LangRenSha.dictAlive] == 1);
+
                     if (UserAction.StartUserAction(game, ActionDuration, update))
                     {
                         update[UserAction.dictUserActionTargets] = alivePlayers;
                         update[UserAction.dictUserActionUsers] = daMao;
                         update[UserAction.dictUserActionTargetsCount] = 1;
                         update[UserAction.dictUserActionTargetsHint] = 62; // Hint for DaMao selection
+                        if (langRenAlive.Count + langRenSuccession1Alive.Count == 0)
+                        {
+                            update[UserAction.dictUserActionInfo] = "Succession";
+                        }
                         return GameActionResult.Restart;
                     }
                     else

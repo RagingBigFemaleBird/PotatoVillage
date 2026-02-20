@@ -42,12 +42,40 @@ namespace PotatoVillage
         private static readonly Dictionary<int, Func<string, string>> UserInfoHints = new()
         {
             { 3, NvWuInfoHandler },
+            { 5, LangRenSuccessionHandler },
+            { 62, LangRenSuccessionHandler },
             { 7, YuYanJiaInfoHandler },
+            { 76, GiftedPoisonHandler },
             { 104, SheriffSpeechHandler },
             { 105, SheriffPKHandler },
             { 154, VoteResultInfoHandler },
-            {1000, CheckRoleInfoHandler },
+            { 1000, CheckRoleInfoHandler },
+            { 1003, GameWinnerHandler },
         };
+
+        private static string GiftedPoisonHandler(string userInfo)
+        {
+            if (userInfo != "gifted")
+            {
+                return LocalizationManager.Instance.GetString("not_gifted_yet", "Not gifted yet");
+            }
+            return LocalizationManager.Instance.GetString("gifted_use_trap", "Gifted, use cat trap:");
+        }
+
+        private static string GameWinnerHandler(string userInfo)
+        {
+            // userInfo is "Good" or "Evil"
+            var winnerName = LocalizationManager.Instance.GetString(userInfo, userInfo);
+            var txt = LocalizationManager.Instance.GetString("game_winner", "{0} wins!");
+            return txt.Replace("{0}", winnerName);
+        }
+
+        private static string LangRenSuccessionHandler(string userInfo)
+        {
+            if (string.IsNullOrEmpty(userInfo))
+                return LocalizationManager.Instance.GetString("langren_succession_no", "Cannot yet attack");
+            return LocalizationManager.Instance.GetString("langren_succession_yes", "Can attack");
+        }
 
         private static string SheriffSpeechHandler(string userInfo)
         {
@@ -118,8 +146,18 @@ namespace PotatoVillage
             if (connectionManager != null)
             {
                 connectionManager.GameStateUpdated += UpdateGameStatus;
+                connectionManager.GameEnded += OnGameEnded;
                 UpdateGameStatus();
             }
+        }
+
+        private async void OnGameEnded(string message)
+        {
+            await MainThread.InvokeOnMainThreadAsync(async () =>
+            {
+                await DisplayAlert("Game Ended", message, "OK");
+                await Navigation.PopToRootAsync();
+            });
         }
 
         protected override void OnAppearing()
@@ -141,6 +179,7 @@ namespace PotatoVillage
             if (connectionManager != null)
             {
                 connectionManager.GameStateUpdated -= UpdateGameStatus;
+                connectionManager.GameEnded -= OnGameEnded;
             }
 
             this.SizeChanged -= OnPageSizeChanged;
@@ -423,17 +462,22 @@ namespace PotatoVillage
                     actingRoles.Add(LocalizationManager.Instance.GetString("lucky_one"));
                 }
                 else
-                {
-                    foreach (var playerId in actingPlayerIds)
+                    if (userTargetsHint == 1)
                     {
-                        var role = GetPlayerRole(playerId);
-                        if (!string.IsNullOrEmpty(role))
+                        actingRoles.Add(LocalizationManager.Instance.GetString("LangRen"));
+                    }
+                    else
+                    {
+                        foreach (var playerId in actingPlayerIds)
                         {
-                            var rs = LocalizationManager.Instance.GetString(role);
-                            actingRoles.Add(rs);
+                            var role = GetPlayerRole(playerId);
+                            if (!string.IsNullOrEmpty(role))
+                            {
+                                var rs = LocalizationManager.Instance.GetString(role);
+                                actingRoles.Add(rs);
+                            }
                         }
                     }
-                }
 
                 // Display the acting roles
                 string actingText = actingRoles.Count > 0

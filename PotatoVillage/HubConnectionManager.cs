@@ -20,6 +20,7 @@ namespace PotatoVillage
         public event Action? GameStateUpdated;
         public event Action? RoomStateUpdated;
         public event Action? GameStarted;
+        public event Action<string>? GameEnded;
         public event Action<string>? ConnectionFailed;
         public event Action<int, int, bool>? Registered; // Fired when actually registered with actual gameId, playerId, and gameStarted flag
 
@@ -124,6 +125,11 @@ namespace PotatoVillage
                     GameStarted?.Invoke();
                 });
 
+                connection.On<string>("GameEnded", (message) =>
+                {
+                    GameEnded?.Invoke(message);
+                });
+
                 connection.On<int>("SeatSwitched", (newPlayerId) =>
                 {
                     registeredPlayerId = newPlayerId;
@@ -151,7 +157,7 @@ namespace PotatoVillage
             }
         }
 
-        public async Task<bool> CreateRoomAsync(int numberOfPlayers, Dictionary<string, int> roleDict)
+        public async Task<bool> CreateRoomAsync(int numberOfPlayers, Dictionary<string, int> roleDict, int speechDuration = 120, int werewolfDuration = 60, int godDuration = 30)
         {
             try
             {
@@ -161,7 +167,14 @@ namespace PotatoVillage
                     return false;
                 }
 
-                await connection.InvokeAsync("CreateRoom", clientId, nickname, numberOfPlayers, roleDict);
+                var gameOptions = new Dictionary<string, int>
+                {
+                    { "duration_speech", speechDuration },
+                    { "duration_langren", werewolfDuration },
+                    { "duration_player_react", godDuration }
+                };
+
+                await connection.InvokeAsync("CreateRoom", clientId, nickname, numberOfPlayers, roleDict, gameOptions);
                 return true;
             }
             catch (Exception ex)

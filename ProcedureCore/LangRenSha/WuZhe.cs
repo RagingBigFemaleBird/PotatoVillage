@@ -97,6 +97,8 @@ namespace ProcedureCore.LangRenSha
                 }
                 else
                 {
+                    var actionDuration = Game.GetGameDictionaryProperty(game, LangRenSha.dictDurationPlayerReact + 15, ActionDuration);
+
                     if (UserAction.StartUserAction(game, ActionDuration, update))
                     {
                         var danced = LangRenSha.GetPlayerProperty(game, wuZhe.Count > 0 ? wuZhe[0]: 1, dictDanced, new List<int>());

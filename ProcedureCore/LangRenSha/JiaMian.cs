@@ -14,7 +14,7 @@ namespace ProcedureCore.LangRenSha
                 { YuYanJia.dictYuYanJiaResult, 2 },
                 { LangRenSha.dictPlayerAlliance, 2 },
                 { NvWu.dictCannotBePoisoned, 1 },
-                { LangRen.dictSuceession, 1 },
+                { LangRen.dictSuceession, 2 },
                 { LangRenSha.dictPlayerFaction, LangRenSha.PlayerFaction.Evil },
             };
         private static List<int> actionOrders = new()
@@ -99,12 +99,20 @@ namespace ProcedureCore.LangRenSha
                 }
                 else
                 {
+                    var actionDuration = Game.GetGameDictionaryProperty(game, LangRenSha.dictDurationPlayerReact + 5, ActionDuration);
+                    var langRenAlive = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == "LangRen" && (int)x[LangRenSha.dictAlive] == 1);
+                    var langRenSuccession1Alive = LangRenSha.GetPlayers(game, x => x.ContainsKey(LangRen.dictSuceession) && (int)x[LangRen.dictSuceession] == 1 && (int)x[LangRenSha.dictAlive] == 1);
+
                     if (UserAction.StartUserAction(game, ActionDuration, update))
                     {
                         update[UserAction.dictUserActionTargets] = alivePlayers;
                         update[UserAction.dictUserActionUsers] = jiaMian;
                         update[UserAction.dictUserActionTargetsCount] = 1;
                         update[UserAction.dictUserActionTargetsHint] = 5;
+                        if (langRenAlive.Count + langRenSuccession1Alive.Count == 0)
+                        {
+                            update[UserAction.dictUserActionInfo] = "Succession";
+                        }
                         return GameActionResult.Restart;
                     }
                     else

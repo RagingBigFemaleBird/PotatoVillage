@@ -89,7 +89,7 @@ namespace Server
         }
 
         // Client calls to create a room with specified player count and roles
-        public Task CreateRoom(string clientId, string nickname, int numberOfPlayers, Dictionary<string, int> roleDict)
+        public Task CreateRoom(string clientId, string nickname, int numberOfPlayers, Dictionary<string, int> roleDict, Dictionary<string, int>? gameOptions = null)
         {
             int gameId = GetNextAvailableGameId();
             Console.WriteLine($"Client {clientId} ({nickname}) creating room with Game ID {gameId}, Players: {numberOfPlayers}, Roles: {string.Join(", ", roleDict)}");
@@ -101,6 +101,17 @@ namespace Server
 
             // Store the role configuration in the game
             game.RoleConfiguration = roleDict;
+
+            // Apply game options if provided
+            if (gameOptions != null)
+            {
+                var optionsDict = new Dictionary<string, object>();
+                foreach (var item in optionsDict)
+                {
+                    optionsDict[item.Key] = item.Value;
+                }
+                game.StateUpdate(optionsDict);
+            }
 
             // Add role actions based on roleDict
             var roleActionMap = new Dictionary<string, GameAction>
@@ -117,6 +128,10 @@ namespace Server
                 { "DaMao", new DaMao() },
             };
 
+            if (!roleDict.ContainsKey("LangRen"))
+            {
+                game.Actions.Add(new LangRen());
+            }
             foreach (var role in roleDict.Keys)
             {
                 if (roleActionMap.TryGetValue(role, out var action))
@@ -295,10 +310,66 @@ namespace Server
             // Notify all clients that game has started
             await Clients.Group($"game-{gameId}").SendAsync("GameStarted");
 
-            var gameThread = new Thread(() => game.ActionLoop());
+            var gameThread = new Thread(() => 
+            {
+                try
+                {
+                    game.ActionLoop();
+                }
+                finally
+                {
+                    // Clean up when game thread exits (either normally or due to exception)
+                    CleanupGame(gameId);
+                }
+            });
             gameThread.Start();
             gameThreads[game] = gameThread;
             Console.WriteLine($"Game {gameId} started successfully");
+        }
+
+        private static void CleanupGame(int gameId)
+        {
+            Console.WriteLine($"Game {gameId} thread exiting, cleaning up...");
+
+            if (!games.TryRemove(gameId, out var game))
+            {
+                Console.WriteLine($"Game {gameId} not found during cleanup");
+                return;
+            }
+
+            // Remove game thread tracking
+            gameThreads.TryRemove(game, out _);
+
+            // Remove game owner
+            gameOwners.TryRemove(gameId, out _);
+
+            // Get all clients in this game and clean them up
+            var clientsToRemove = new List<string>();
+            foreach (var kvp in ClientIdToGameId)
+            {
+                if (kvp.Value == gameId)
+                {
+                    clientsToRemove.Add(kvp.Key);
+                }
+            }
+
+            foreach (var clientId in clientsToRemove)
+            {
+                ClientIdToGame.TryRemove(clientId, out _);
+                ClientIdToGameId.TryRemove(clientId, out _);
+
+                // Remove connection mappings
+                foreach (var connKvp in ConnectionIdToClientId.Where(x => x.Value == clientId).ToList())
+                {
+                    ConnectionIdToClientId.TryRemove(connKvp.Key, out _);
+                }
+            }
+
+            // Notify all clients in the game that it has ended
+            IHubContext<GameHub> hubContext = Server.Controllers.HomeController.GetGameHubContext();
+            hubContext.Clients.Group($"game-{gameId}").SendAsync("GameEnded", "Game has ended");
+
+            Console.WriteLine($"Game {gameId} cleanup complete. Removed {clientsToRemove.Count} clients.");
         }
 
         public async Task SwitchSeat(string clientId, int gameId, int newPlayerId)

@@ -140,6 +140,8 @@ namespace ProcedureCore.LangRenSha
                 }
                 else
                 {
+                    var actionDuration = Game.GetGameDictionaryProperty(game, LangRenSha.dictDurationPlayerReact + 5, ActionDuration);
+
                     if (UserAction.StartUserAction(game, ActionDuration, update))
                     {
                         update[UserAction.dictUserActionTargets] = alivePlayers;
@@ -315,7 +317,7 @@ namespace ProcedureCore.LangRenSha
                 var targetRole = LangRenSha.GetPlayerProperty(game, target, LangRenSha.dictRole, "");
                 if (targetRole == "PingMin")
                 {
-                    LangRenSha.SetPlayerProperty(game, target, dictMiceGifted, 1, update);
+                    LangRenSha.SetPlayerProperty(game, target, dictMiceGifted, 0, update);
                 }
             }
         }

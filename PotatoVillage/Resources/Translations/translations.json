@@ -1,6 +1,7 @@
 {
   "en": {
     "game_info": "Game Info",
+    "game_over":  "Game over, {0} wins",
     "day": "Day {0}",
     "game_status": "Game Status",
     "your_status": "Your Status",
@@ -111,6 +112,7 @@
   },
   "zh": {
     "game_info": "游戏信息",
+    "game_over":  "游戏结束 {0}获胜",
     "day": "第{0}天",
     "game_status": "游戏状态",
     "your_status": "你的状态",

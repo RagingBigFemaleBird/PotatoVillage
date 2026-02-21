@@ -23,6 +23,9 @@ public class HomeController : Controller
 
     public IActionResult Index()
     {
+        ViewBag.TotalGames = GameHub.GetTotalGamesCount();
+        ViewBag.ActiveGames = GameHub.GetActiveGamesCount();
+        ViewBag.WaitingGames = GameHub.GetWaitingGamesCount();
         return View();
     }
 

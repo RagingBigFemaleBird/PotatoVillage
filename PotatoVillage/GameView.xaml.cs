@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Text.Json;
 using System.Text;
 using System.Linq;
@@ -15,6 +15,7 @@ namespace PotatoVillage
         private bool isOwner;
         private HashSet<int> selectedTargets = new();
         private CancellationTokenSource? countdownCts;
+        private bool announcerEnabled = false; // Client-only setting, default off
 
         // User action dictionary keys
         private const string DictUserAction = "user_action";
@@ -26,6 +27,8 @@ namespace PotatoVillage
         private const string DictUserActionResponse = "user_response";
         private const string DictSpeaker = "speaker";
 
+        // Property to check if announcer sounds should play
+        public bool IsAnnouncerEnabled => announcerEnabled;
 
         // Special targets dictionary - nested by hint, then by target ID
         // First level: indexed by target hints
@@ -300,6 +303,7 @@ namespace PotatoVillage
                 1000 => "check_private",
                 1001 => "night_time",
                 1002 => "day_time",
+                1003 => "game_over",
                 _ => null
             };
 
@@ -439,7 +443,10 @@ namespace PotatoVillage
                 GameStatusLabel.Text = hintText;
 
                 // Play voiceover
-                _ = PlayVoiceoverAsync(GameStatusLabel.Text);
+                if (IsAnnouncerEnabled)
+                {
+                    _ = PlayVoiceoverAsync(GameStatusLabel.Text);
+                }
             }
             else if (phaseValue == 1)
             {
@@ -799,6 +806,23 @@ namespace PotatoVillage
                     localization.GetString("error"),
                     localization.GetString("failed_send_selection") + ": " + ex.Message,
                     localization.GetString("yes"));
+            }
+        }
+
+        private void OnAnnouncerToggleClicked(object? sender, EventArgs e)
+        {
+            announcerEnabled = !announcerEnabled;
+
+            // Update button appearance based on state
+            if (announcerEnabled)
+            {
+                AnnouncerBtn.Text = "🔊";
+                AnnouncerBtn.BackgroundColor = Colors.Green;
+            }
+            else
+            {
+                AnnouncerBtn.Text = "🔇";
+                AnnouncerBtn.BackgroundColor = Colors.LightGray;
             }
         }
     }

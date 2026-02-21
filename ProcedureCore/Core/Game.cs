@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -125,8 +126,42 @@ namespace ProcedureCore.Core
             }
             catch (Exception ex)
             {
-                Log($"Game thread crashed with exception: {ex.Message}");
-                Log($"Stack trace: {ex.StackTrace}");
+                LogCrashToFile(ex);
+            }
+        }
+
+        private static void LogCrashToFile(Exception ex)
+        {
+            try
+            {
+                var logDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "CrashLogs");
+                Directory.CreateDirectory(logDir);
+
+                var logFile = Path.Combine(logDir, $"game_crash_{DateTime.Now:yyyyMMdd_HHmmss}.log");
+                var logContent = $"""
+                    ========================================
+                    Game Thread Crash Log - {DateTime.Now:yyyy-MM-dd HH:mm:ss}
+                    ========================================
+
+                    Exception Type: {ex.GetType().FullName}
+                    Message: {ex.Message}
+
+                    Stack Trace:
+                    {ex.StackTrace}
+
+                    Inner Exception:
+                    {ex.InnerException?.Message}
+                    {ex.InnerException?.StackTrace}
+                    ========================================
+                    """;
+
+                File.WriteAllText(logFile, logContent);
+                Console.WriteLine($"Game thread crashed. Log saved to: {logFile}");
+            }
+            catch
+            {
+                Console.WriteLine($"Game thread crashed with exception: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
             }
         }
 

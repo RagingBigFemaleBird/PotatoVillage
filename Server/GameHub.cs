@@ -17,6 +17,11 @@ namespace Server
         private static readonly ConcurrentDictionary<Game, Thread> gameThreads = new();
         private static int nextGameId = 1;
 
+        // Public static methods to get game statistics
+        public static int GetTotalGamesCount() => games.Count;
+        public static int GetActiveGamesCount() => games.Values.Count(g => g.GameStarted);
+        public static int GetWaitingGamesCount() => games.Values.Count(g => !g.GameStarted);
+
         // Simple DTO returned to clients when asking for targets
         public class TargetsDto
         {

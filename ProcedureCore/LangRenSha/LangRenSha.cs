@@ -1236,15 +1236,15 @@ namespace ProcedureCore.LangRenSha
 
             if (!hasCivilian)
             {
-                return "Evil";
+                return "evil";
             }
             if (!hasGod)
             {
-                return "Evil";
+                return "evil";
             }
             if (!hasEvil)
             {
-                return "Good";
+                return "good";
             }
 
             return null; // No winner yet

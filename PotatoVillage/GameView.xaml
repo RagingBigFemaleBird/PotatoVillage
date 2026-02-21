@@ -124,6 +124,19 @@
                            TextColor="Red"
                            HorizontalTextAlignment="Center"
                            VerticalTextAlignment="Center" />
+
+                    <!-- Announcer Toggle Button - Bottom Right -->
+                    <Button x:Name="AnnouncerBtn"
+                            Text="🔇"
+                            FontSize="20"
+                            WidthRequest="50"
+                            HeightRequest="50"
+                            CornerRadius="25"
+                            BackgroundColor="LightGray"
+                            HorizontalOptions="End"
+                            VerticalOptions="End"
+                            Margin="0,0,10,10"
+                            Clicked="OnAnnouncerToggleClicked" />
                 </Grid>
             </Frame>
         </Grid>

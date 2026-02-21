@@ -175,7 +175,7 @@ namespace ProcedureCore.LangRenSha
                 {
                     var actionDuration = Game.GetGameDictionaryProperty(game, LangRenSha.dictDurationLangRen, ActionDuration);
 
-                    if (UserAction.StartUserAction(game, ActionDuration, update))
+                    if (UserAction.StartUserAction(game, actionDuration, update))
                     {
                         update[UserAction.dictUserActionTargets] = alivePlayers;
                         update[UserAction.dictUserActionUsers] = langRen;

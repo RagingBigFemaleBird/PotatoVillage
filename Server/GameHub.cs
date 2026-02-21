@@ -97,7 +97,8 @@ namespace Server
         public Task CreateRoom(string clientId, string nickname, int numberOfPlayers, Dictionary<string, int> roleDict, Dictionary<string, int>? gameOptions = null)
         {
             int gameId = GetNextAvailableGameId();
-            Console.WriteLine($"Client {clientId} ({nickname}) creating room with Game ID {gameId}, Players: {numberOfPlayers}, Roles: {string.Join(", ", roleDict)}");
+            var optionsStr = gameOptions != null ? string.Join(", ", gameOptions.Select(kv => $"{kv.Key}={kv.Value}")) : "none";
+            Console.WriteLine($"Client {clientId} ({nickname}) creating room with Game ID {gameId}, Players: {numberOfPlayers}, Roles: {string.Join(", ", roleDict)}, Options: {optionsStr}");
 
             // Track connection to client mapping
             ConnectionIdToClientId[Context.ConnectionId] = clientId;
@@ -111,7 +112,7 @@ namespace Server
             if (gameOptions != null)
             {
                 var optionsDict = new Dictionary<string, object>();
-                foreach (var item in optionsDict)
+                foreach (var item in gameOptions)
                 {
                     optionsDict[item.Key] = item.Value;
                 }

@@ -125,7 +125,7 @@ namespace ProcedureCore.LangRenSha
                 {
                     var actionDuration = Game.GetGameDictionaryProperty(game, LangRenSha.dictDurationPlayerReact, ActionDuration);
 
-                    if (UserAction.StartUserAction(game, ActionDuration, update))
+                    if (UserAction.StartUserAction(game, actionDuration, update))
                     {
                         // Action just started - setup targets and users
                         update[UserAction.dictUserActionTargets] = alivePlayers;
@@ -140,7 +140,6 @@ namespace ProcedureCore.LangRenSha
                         (var inputValid, var input, var input_others) = UserAction.GetUserResponse(game, true, isTagged ? lieRenAlive : new List<int>(), update);
                         if (inputValid)
                         {
-                            (inputValid, input, input_others) = UserAction.GetUserResponse(game, true, lieRenAlive, update);
                             var targets = UserAction.TallyUserInput(input, 0, UserAction.UserInputMode.VoteMost, -1);
                             if (targets.Count == 0)
                             {

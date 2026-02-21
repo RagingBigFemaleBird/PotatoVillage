@@ -82,6 +82,7 @@ namespace ProcedureCore.LangRenSha
                 }
                 return GameActionResult.Continue;
             }
+            var actionDuration = Game.GetGameDictionaryProperty(game, LangRenSha.dictDurationPlayerReact, ActionDuration);
 
             // Actions 30 and 32 are announcer actions for Mice to open/close eyes
             if (LangRenSha.AnnouncerAction(game, update, false, ActionOrders[0], ActionOrders[2], 50, 51, Name, 4) == GameActionResult.Restart)
@@ -140,9 +141,7 @@ namespace ProcedureCore.LangRenSha
                 }
                 else
                 {
-                    var actionDuration = Game.GetGameDictionaryProperty(game, LangRenSha.dictDurationPlayerReact + 5, ActionDuration);
-
-                    if (UserAction.StartUserAction(game, ActionDuration, update))
+                    if (UserAction.StartUserAction(game, actionDuration, update))
                     {
                         update[UserAction.dictUserActionTargets] = alivePlayers;
                         update[UserAction.dictUserActionUsers] = mice;
@@ -262,7 +261,7 @@ namespace ProcedureCore.LangRenSha
                 }
                 else
                 {
-                    if (UserAction.StartUserAction(game, 15, update))
+                    if (UserAction.StartUserAction(game, actionDuration, update))
                     {
                         // Action just started - setup for gifted player to select target
                         update[UserAction.dictUserActionTargets] = alivePlayers;

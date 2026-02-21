@@ -152,7 +152,7 @@ namespace ProcedureCore.LangRenSha
                 {
                     var actionDuration = Game.GetGameDictionaryProperty(game, LangRenSha.dictDurationPlayerReact, ActionDuration);
 
-                    if (UserAction.StartUserAction(game, ActionDuration, update))
+                    if (UserAction.StartUserAction(game, actionDuration, update))
                     {
                         bool saveUsed = false;
                         bool poisonUsed = false;

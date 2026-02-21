@@ -503,14 +503,31 @@ namespace PotatoVillage
             countdownCts = null;
         }
 
+        /// <summary>
+        /// Plays voiceover for the given text using the VoiceoverService.
+        /// Falls back to TextToSpeech if custom audio is not available.
+        /// Only plays if announcer is enabled.
+        /// </summary>
         private async Task PlayVoiceoverAsync(string text)
         {
+            if (!announcerEnabled || string.IsNullOrEmpty(text))
+                return;
+
             try
             {
-                // Use TextToSpeech from MAUI
-                if (string.IsNullOrEmpty(text)) return;
+                // Try to use custom voice clips first
+                var segments = VoiceoverService.Instance.ParseText(text);
 
-                await TextToSpeech.Default.SpeakAsync(text);
+                if (segments.Count > 0)
+                {
+                    // Play using custom voice clips
+                    await VoiceoverService.Instance.PlayAsync(text);
+                }
+                else
+                {
+                    // Fall back to TextToSpeech
+                    await TextToSpeech.Default.SpeakAsync(text);
+                }
             }
             catch (Exception ex)
             {
@@ -818,11 +835,13 @@ namespace PotatoVillage
             {
                 AnnouncerBtn.Text = "🔊";
                 AnnouncerBtn.BackgroundColor = Colors.Green;
+                VoiceoverService.Instance.IsEnabled = true;
             }
             else
             {
                 AnnouncerBtn.Text = "🔇";
                 AnnouncerBtn.BackgroundColor = Colors.LightGray;
+                VoiceoverService.Instance.IsEnabled = false;
             }
         }
     }

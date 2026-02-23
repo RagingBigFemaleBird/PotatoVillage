@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Linq;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui;
+using PotatoVillage.Services;
 
 namespace PotatoVillage
 {
@@ -12,6 +13,7 @@ namespace PotatoVillage
         private int gameId;
         private int playerId;
         private bool isGameOwner;
+        private bool isDiscovering = false;
 
         // Track selected roles
         private HashSet<string> selectedLangRen = new();
@@ -29,6 +31,9 @@ namespace PotatoVillage
         {
             InitializeComponent();
             UpdateConnectButtonState();
+
+            // Auto-discover server on startup
+            _ = DiscoverServerAsync();
         }
 
         protected override void OnAppearing()
@@ -37,6 +42,51 @@ namespace PotatoVillage
 
             // Re-enable all inputs when returning to this page
             ResetUIState();
+
+            // Re-discover server if URL is empty
+            if (string.IsNullOrEmpty(HubUrlEntry.Text))
+            {
+                _ = DiscoverServerAsync();
+            }
+        }
+
+        private async Task DiscoverServerAsync()
+        {
+            if (isDiscovering) return;
+            isDiscovering = true;
+
+            try
+            {
+                // Show discovering status
+                await MainThread.InvokeOnMainThreadAsync(() =>
+                {
+                    HubUrlEntry.Placeholder = "Discovering server...";
+                });
+
+                // Try to discover server
+                var serverUrl = await ServerDiscoveryService.DiscoverServerAsync(2000);
+
+                await MainThread.InvokeOnMainThreadAsync(() =>
+                {
+                    HubUrlEntry.Text = serverUrl;
+                    HubUrlEntry.Placeholder = "Hub URL";
+                });
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Server discovery failed: {ex.Message}");
+
+                // Fall back to default URL
+                await MainThread.InvokeOnMainThreadAsync(() =>
+                {
+                    HubUrlEntry.Text = ServerDiscoveryService.DefaultServerUrl;
+                    HubUrlEntry.Placeholder = "Hub URL";
+                });
+            }
+            finally
+            {
+                isDiscovering = false;
+            }
         }
 
         private void ResetUIState()

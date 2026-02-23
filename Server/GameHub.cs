@@ -108,16 +108,6 @@ namespace Server
             // Store the role configuration in the game
             game.RoleConfiguration = roleDict;
 
-            // Apply game options if provided
-            if (gameOptions != null)
-            {
-                var optionsDict = new Dictionary<string, object>();
-                foreach (var item in gameOptions)
-                {
-                    optionsDict[item.Key] = item.Value;
-                }
-                game.StateUpdate(optionsDict);
-            }
 
             // Add role actions based on roleDict
             var roleActionMap = new Dictionary<string, GameAction>
@@ -153,6 +143,17 @@ namespace Server
             ClientIdToGame[clientId] = game;
             ClientIdToGameId[clientId] = gameId;
             Groups.AddToGroupAsync(Context.ConnectionId, $"game-{gameId}");
+
+            // Apply game options if provided
+            if (gameOptions != null)
+            {
+                var optionsDict = new Dictionary<string, object>();
+                foreach (var item in gameOptions)
+                {
+                    optionsDict[item.Key] = item.Value;
+                }
+                game.StateUpdate(optionsDict);
+            }
 
             var g = games[gameId];
 

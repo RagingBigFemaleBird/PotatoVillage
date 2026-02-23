@@ -89,6 +89,14 @@ namespace ProcedureCore.LangRenSha
                     LangRenSha.SetPlayerProperty(game, target, LieRen.dictHuntingDisabled, 1, update);
                 }
             }
+            if (LangRenSha.GetPlayerProperty(game, target, dictReflectPoison, 0) != 0 && (target == miceTag))
+            {
+                if (!aboutToDie.Contains(laoShuPlayer))
+                {
+                    aboutToDie.Add(laoShuPlayer);
+                    update[LangRenSha.dictAboutToDie] = aboutToDie;
+                }
+            }
             if (!miceTagged)
             {
                 LangRenSha.SetPlayerProperty(game, nvWu[0], dictPoisonUsed, 1, update);

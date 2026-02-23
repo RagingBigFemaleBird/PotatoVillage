@@ -107,7 +107,7 @@ namespace ProcedureCore.LangRenSha
                 if (UserAction.EndUserAction(game, update))
                 {
                     // Time's up - get final response and process
-                    (var inputValid, var input, var input_others) = UserAction.GetUserResponse(game, true, isTagged ? lieRenAlive : new List<int>(), update);
+                    (var inputValid, var input, var input_others) = UserAction.GetUserResponse(game, true, (isTagged && !nightShootUsed) ? lieRenAlive : new List<int>(), update);
                     if (inputValid)
                     {
                         var targets = UserAction.TallyUserInput(input, 0, UserAction.UserInputMode.VoteMost, -1);
@@ -137,9 +137,15 @@ namespace ProcedureCore.LangRenSha
                     else
                     {
                         // Action in progress - check for early completion
-                        (var inputValid, var input, var input_others) = UserAction.GetUserResponse(game, true, isTagged ? lieRenAlive : new List<int>(), update);
+                        (var inputValid, var input, var input_others) = UserAction.GetUserResponse(game, true, (isTagged && !nightShootUsed) ? lieRenAlive : new List<int>(), update);
                         if (inputValid)
                         {
+                            if (!(isTagged && !nightShootUsed))
+                            {
+                                UserAction.EndUserAction(game, update, true);
+                                LangRenSha.AdvanceAction(game, update);
+                                return GameActionResult.Restart;
+                            }
                             var targets = UserAction.TallyUserInput(input, 0, UserAction.UserInputMode.VoteMost, -1);
                             if (targets.Count == 0)
                             {

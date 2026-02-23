@@ -7,7 +7,7 @@
     <ScrollView>
         <VerticalStackLayout Padding="20" Spacing="12">
             <Entry x:Name="NicknameEntry" Placeholder="{m:Translate nickname_optional}" />
-            <Entry x:Name="HubUrlEntry" Text="http://localhost:5269/gamehub" Placeholder="{m:Translate hub_url}" />
+            <Entry x:Name="HubUrlEntry" Placeholder="{m:Translate hub_url}" />
 
             <!-- Game Duration Settings -->
             <Label Text="{m:Translate duration_settings}" FontAttributes="Bold" FontSize="14" Margin="0,12,0,0" />

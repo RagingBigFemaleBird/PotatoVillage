@@ -106,6 +106,11 @@ namespace ProcedureCore.LangRenSha
                 {
                     aboutToDie.Add(target);
                 }
+                if (guardTarget != target && !wuZhe.Contains(target) && (target == miceTag) && !aboutToDie.Contains(laoShuPlayer))
+                {
+                    aboutToDie.Add(laoShuPlayer);
+                }
+
             }
             update[dictAttackTarget] = attackTarget;
             update[LangRenSha.dictAboutToDie] = aboutToDie;

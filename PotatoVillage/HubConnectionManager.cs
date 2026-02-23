@@ -68,14 +68,30 @@ namespace PotatoVillage
                 }
 
                 connection = new HubConnectionBuilder()
-                    .WithUrl(hubUrl)
+                    .WithUrl(hubUrl, options =>
+                    {
+                        // Configure transports - prefer WebSockets, fallback to LongPolling
+                        options.Transports = Microsoft.AspNetCore.Http.Connections.HttpTransportType.WebSockets |
+                                            Microsoft.AspNetCore.Http.Connections.HttpTransportType.LongPolling;
+                        // Skip negotiation can help with some CORS issues
+                        options.SkipNegotiation = false;
+                    })
+                    .WithAutomaticReconnect(new[] { TimeSpan.Zero, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(10) })
                     .Build();
 
                 connection.Closed += async (error) =>
                 {
-                    await Task.Delay(100);
-                    await connection.StartAsync();
-                    await connection.InvokeAsync("JoinGame", clientId, nickname, registeredGameId, registeredPlayerId);
+                    // Connection will auto-reconnect due to WithAutomaticReconnect
+                    System.Diagnostics.Debug.WriteLine($"Connection closed: {error?.Message}");
+                };
+
+                connection.Reconnected += async (connectionId) =>
+                {
+                    // Re-join the game after reconnection
+                    if (registeredGameId > 0)
+                    {
+                        await connection.InvokeAsync("JoinGame", clientId, nickname, registeredGameId, registeredPlayerId);
+                    }
                 };
 
                 connection.On<int, int, string, string>("RoomCreated", (gameId, playerId, gameStateJson, roomStateJson) =>

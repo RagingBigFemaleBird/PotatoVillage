@@ -54,28 +54,55 @@ static void LogCrash(Exception? exception, string source)
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configure Kestrel to listen on all interfaces for Azure
+var port = Environment.GetEnvironmentVariable("PORT") ?? Environment.GetEnvironmentVariable("WEBSITES_PORT") ?? "8080";
+if (!builder.Environment.IsDevelopment())
+{
+    builder.WebHost.UseUrls($"http://*:{port}");
+}
+
+// Add CORS for SignalR - must allow credentials for SignalR
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.SetIsOriginAllowed(_ => true) // Allow any origin
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials(); // Required for SignalR
+    });
+});
+
 // Add services to the container.
 builder.Services.AddSignalR();
 builder.Services.AddControllersWithViews();
 
-var app = builder.Build();
+// Add UDP discovery service for local network discovery (only in development)
+if (builder.Environment.IsDevelopment())
+{
+    builder.Services.AddHostedService<Server.DiscoveryService>();
+}
 
-app.MapHub<GameHub>("/gamehub");
+var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
-app.UseHttpsRedirection();
+// CORS must be before routing and endpoints
+app.UseCors();
+
 app.UseStaticFiles();
 
 app.UseRouting();
 
 app.UseAuthorization();
+
+// Map SignalR hub
+app.MapHub<GameHub>("/gamehub");
 
 app.MapControllerRoute(
     name: "default",

@@ -49,7 +49,7 @@
         </Grid>
 
         <!-- Right side: Game status (1/3), controls (1/3), and timer (1/3) -->
-        <Grid Grid.Column="1" RowDefinitions="1*,2*,1*">
+        <Grid Grid.Column="1" RowDefinitions="1*,4*,1*">
             <!-- Top 1/3: Game Status -->
             <Frame x:Name="GameStatusFrame"
                    Grid.Row="0" 
@@ -121,7 +121,7 @@
                 <Grid BackgroundColor="Transparent" Padding="0">
                     <Label x:Name="CountdownLabel" 
                            Text=""
-                           FontSize="80"
+                           FontSize="60"
                            FontAttributes="Bold"
                            TextColor="Red"
                            HorizontalTextAlignment="Center"

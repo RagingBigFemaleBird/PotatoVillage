@@ -99,6 +99,7 @@ namespace ProcedureCore.LangRenSha
         public static string dictSheriffVote = "sheriffvote";
         public static string dictDaySpeechDirection = "day_speech_direction";
         public static string dictSkipDaySpeech = "skip_day_speech";
+        public static string dictDay0AnnouncementDone = "day0_announcement_done";
         public static string dictGameWinner = "game_winner";
 
         public static string dictDurationLangRen = "duration_langren";
@@ -113,7 +114,7 @@ namespace ProcedureCore.LangRenSha
             }
         }
 
-        public static int actionDuraionPlayerReact = 5;
+        public static int actionDuraionPlayerReact = 6;
         public static int actionDurationPlayerSpeak = 5;
 
         public GameActionResult GenerateStateDiff(Game game, Dictionary<string, object> update)
@@ -151,11 +152,33 @@ namespace ProcedureCore.LangRenSha
             if (game.StateSequenceNumber == 1)
             {
                 var no = Game.GetGameDictionaryProperty(game, LangRenSha.dictNightOrders, new List<int>());
-                no.AddRange([1, 2, 1000]);
+                no.AddRange([1, 2, 3, 4, 1000]);
                 update[LangRenSha.dictNightOrders] = no;
                 return GameActionResult.Continue;
             }
+            // Game begin announcement
             if (Game.GetGameDictionaryProperty(game, LangRenSha.dictAction, 0) == 1)
+            {
+                if (Game.GetGameDictionaryProperty(game, LangRenSha.dictDay, 0) != 0 || UserAction.EndUserAction(game, update))
+                {
+                    LangRenSha.AdvanceAction(game, update);
+                    return GameActionResult.Restart;
+                }
+                else
+                {
+                    if (UserAction.StartUserAction(game, 5, update))
+                    {
+                        update[UserAction.dictUserActionTargets] = new List<int>();
+                        update[UserAction.dictUserActionUsers] = new List<int> { -1 };
+                        update[UserAction.dictUserActionTargetsCount] = 1;
+                        update[UserAction.dictUserActionTargetsHint] = 1000;
+                        return GameActionResult.Restart;
+                    }
+                }
+            }
+
+            // Role check
+            if (Game.GetGameDictionaryProperty(game, LangRenSha.dictAction, 0) == 2)
             {
                 if (Game.GetGameDictionaryProperty(game, LangRenSha.dictDay, 0) != 0 || UserAction.EndUserAction(game, update))
                 {
@@ -175,7 +198,29 @@ namespace ProcedureCore.LangRenSha
                     }
                 }
             }
-            if (Game.GetGameDictionaryProperty(game, LangRenSha.dictAction, 0) == 2)
+
+            // Put down device announcement
+            if (Game.GetGameDictionaryProperty(game, LangRenSha.dictAction, 0) == 3)
+            {
+                if (Game.GetGameDictionaryProperty(game, LangRenSha.dictDay, 0) != 0 || UserAction.EndUserAction(game, update))
+                {
+                    LangRenSha.AdvanceAction(game, update);
+                    return GameActionResult.Restart;
+                }
+                else
+                {
+                    if (UserAction.StartUserAction(game, 3, update))
+                    {
+                        update[UserAction.dictUserActionTargets] = new List<int>();
+                        update[UserAction.dictUserActionUsers] = new List<int> { -1 };
+                        update[UserAction.dictUserActionTargetsCount] = 1;
+                        update[UserAction.dictUserActionTargetsHint] = 1020;
+                        return GameActionResult.Restart;
+                    }
+                }
+            }
+
+            if (Game.GetGameDictionaryProperty(game, LangRenSha.dictAction, 0) == 4)
             {
                 if (UserAction.EndUserAction(game, update))
                 {
@@ -544,10 +589,20 @@ namespace ProcedureCore.LangRenSha
             {
                 var deadPlayers = Game.GetGameDictionaryProperty(game, dictAboutToDie, new List<int>());
 
+                var skipDaySpeech = Game.GetGameDictionaryProperty(game, dictSkipDaySpeech, 0) == 1;
+                var day = Game.GetGameDictionaryProperty(game, dictDay, 0);
+                var announcementDone = Game.GetGameDictionaryProperty(game, dictDay0AnnouncementDone, 0) == 1;
+                if (skipDaySpeech && (day != 0 || announcementDone))
+                {
+                    update[dictSpeak] = 10;
+                    return GameActionResult.Restart;
+                }
+
                 if (UserAction.EndUserAction(game, update))
                 {
                     // Move to kill dead players phase
                     update[dictSpeak] = 10;
+                    update[dictDay0AnnouncementDone] = 1;
                     return GameActionResult.Restart;
                 }
                 else
@@ -756,6 +811,7 @@ namespace ProcedureCore.LangRenSha
                                     var targets = (List<int>)input[sheriff.ToString()];
                                     update[dictSheriffVote] = targets;
                                     update[dictSpeak] = 33;
+                                    UserAction.EndUserAction(game, update, true);
                                     return GameActionResult.Restart;
                                 }
                             }
@@ -1099,7 +1155,7 @@ namespace ProcedureCore.LangRenSha
             {
                 var actionDuration = Game.GetGameDictionaryProperty(game, LangRenSha.dictDurationSpeech, actionDurationPlayerSpeak);
 
-                if (UserAction.StartUserAction(game, actionDurationPlayerSpeak, update))
+                if (UserAction.StartUserAction(game, actionDuration, update))
                 {
                     var last = speakers.Count == 0 ? startingPlayer : speakers.Last();
                     var first = speakers.Count == 0 ? startingPlayer : speakers.First();
@@ -1166,9 +1222,9 @@ namespace ProcedureCore.LangRenSha
                                             update[item.Key] = item.Value;
                                         }
                                     }
-                                    UserAction.EndUserAction(game, update, true);
-                                    return GameActionResult.Restart;
                                 }
+                                UserAction.EndUserAction(game, update, true);
+                                return GameActionResult.Restart;
                             }
                         }
                         foreach (var int_input in input_others)

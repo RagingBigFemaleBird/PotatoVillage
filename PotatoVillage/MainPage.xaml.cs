@@ -366,6 +366,16 @@ namespace PotatoVillage
                 UpdateConnectButtonState();
             }
         }
+
+        private async void OnAboutClicked(object? sender, EventArgs e)
+        {
+            var localization = Services.LocalizationManager.Instance;
+            var title = localization.GetString("about", "About");
+            var message = localization.GetString("about_message", "Author: Bi Wu.\nRole design: Ke Ji.\nVoiceover: Tu dou.");
+            var ok = localization.GetString("yes", "OK");
+
+            await DisplayAlert(title, message, ok);
+        }
     }
 }
 

@@ -58,7 +58,7 @@ namespace ProcedureCore.LangRenSha
         {
             get
             {
-                return 60;
+                return 30;
             }
         }
 
@@ -89,6 +89,7 @@ namespace ProcedureCore.LangRenSha
                 var wuZhe = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == Name);
                 var wuZheAlive = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == Name && (int)x[LangRenSha.dictAlive] == 1);
                 var alivePlayers = LangRenSha.GetPlayers(game, x => (int)x[LangRenSha.dictAlive] == 1);
+                var actionDuration = Game.GetGameDictionaryProperty(game, LangRenSha.dictDurationPlayerReact, ActionDuration) + 15;
 
                 if (Game.GetGameDictionaryProperty(game, LangRenSha.dictDay, 0) == 0 || UserAction.EndUserAction(game, update))
                 {
@@ -97,8 +98,6 @@ namespace ProcedureCore.LangRenSha
                 }
                 else
                 {
-                    var actionDuration = Game.GetGameDictionaryProperty(game, LangRenSha.dictDurationPlayerReact + 15, ActionDuration);
-
                     if (UserAction.StartUserAction(game, actionDuration, update))
                     {
                         var danced = LangRenSha.GetPlayerProperty(game, wuZhe.Count > 0 ? wuZhe[0]: 1, dictDanced, new List<int>());
@@ -129,6 +128,10 @@ namespace ProcedureCore.LangRenSha
                                 danced.AddRange(targets);
                                 LangRenSha.SetPlayerProperty(game, wuZhe[0], dictDanced, danced, update);
                                 update[dictDanced] = targets;
+                            }
+                            else
+                            {
+                                return GameActionResult.NotExecuted;
                             }
                             UserAction.EndUserAction(game, update, true);
                             LangRenSha.AdvanceAction(game, update);

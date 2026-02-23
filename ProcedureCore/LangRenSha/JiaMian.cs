@@ -18,7 +18,7 @@ namespace ProcedureCore.LangRenSha
                 { LangRenSha.dictPlayerFaction, LangRenSha.PlayerFaction.Evil },
             };
         private static List<int> actionOrders = new()
-            { 60, 70, 71, 72 };
+            { 69, 70, 71, 72 };
         public JiaMian()
         {
         }
@@ -59,7 +59,7 @@ namespace ProcedureCore.LangRenSha
         {
             get
             {
-                return 60;
+                return 30;
             }
         }
 
@@ -85,7 +85,7 @@ namespace ProcedureCore.LangRenSha
                 return GameActionResult.Restart;
             }
 
-            var actionDuration = Game.GetGameDictionaryProperty(game, LangRenSha.dictDurationPlayerReact + 5, ActionDuration);
+            var actionDuration = Game.GetGameDictionaryProperty(game, LangRenSha.dictDurationPlayerReact, ActionDuration) + 5;
 
             if (Game.GetGameDictionaryProperty(game, LangRenSha.dictAction, 0) == ActionOrders[1])
             {
@@ -122,6 +122,10 @@ namespace ProcedureCore.LangRenSha
                         {
                             var danced = Game.GetGameDictionaryProperty(game, WuZhe.dictDanced, new List<int>());
                             var targets = UserAction.TallyUserInput(input, 0, UserAction.UserInputMode.VoteMost, -1);
+                            if (targets.Count == 0)
+                            {
+                                return GameActionResult.NotExecuted;
+                            }
                             if (danced.Contains(targets[0]))
                             {
                                 update[dictJiaMianChaYan] = 1;
@@ -157,6 +161,8 @@ namespace ProcedureCore.LangRenSha
                         update[UserAction.dictUserActionUsers] = jiaMian;
                         update[UserAction.dictUserActionTargetsCount] = 1;
                         update[UserAction.dictUserActionTargetsHint] = 6;
+                        var chayan = Game.GetGameDictionaryProperty(game, dictJiaMianChaYan, 0);
+                        update[UserAction.dictUserActionInfo] = chayan.ToString();
                         return GameActionResult.Restart;
                     }
                     else

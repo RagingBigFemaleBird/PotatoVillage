@@ -38,6 +38,7 @@ namespace PotatoVillage.Services
             { "舞者", "wuzhe" },
             { "老鼠", "laoshu" },
             { "大猫", "damao" },
+            { "幸运儿", "xingyuner" },
             { "警长", "jingzhang" },
             
             // Common phrases
@@ -49,7 +50,10 @@ namespace PotatoVillage.Services
             { "失败", "shibai" },
             { "好人", "haoren" },
             { "坏人", "huairen" },
-            { "昨夜倒牌", "zuoye_daopai" },
+            { "昨夜死亡", "zuoye_siwang" },
+            { "所有人", "suoyouren" },
+            { "请私下查看", "qing_sixia_chakan" },
+            { "游戏结束", "youxi_jieshu" },
             
             // Numbers (for player references)
             { "一号", "yihao" },

@@ -47,6 +47,7 @@ namespace PotatoVillage
             { 3, NvWuInfoHandler },
             { 5, LangRenSuccessionHandler },
             { 62, LangRenSuccessionHandler },
+            { 6, JiaMianInfoHandler },
             { 7, YuYanJiaInfoHandler },
             { 76, GiftedPoisonHandler },
             { 104, SheriffSpeechHandler },
@@ -128,6 +129,13 @@ namespace PotatoVillage
             }
         }
 
+        private static string JiaMianInfoHandler(string userInfo)
+        {
+            int.TryParse(userInfo, out var result);
+            var txt = LocalizationManager.Instance.GetString("jiamian_info", "Your check result: {0}. Select target to flip");
+            return txt.Replace("{0}", LocalizationManager.Instance.GetString("jiamian_info" + userInfo));
+        }
+
         public GameView(HubConnectionManager connectionManager, int gameId, int playerId, bool isOwner = false)
         {
             InitializeComponent();
@@ -139,6 +147,15 @@ namespace PotatoVillage
             PlayerIdBottomLabel.Text = playerId.ToString();
             RevealBtn.Text = LocalizationManager.Instance.GetString("reveal");
             ConfirmButton.Text = LocalizationManager.Instance.GetString("confirm");
+
+            // Set announcer to ON by default for game owner
+            if (isOwner)
+            {
+                announcerEnabled = true;
+                AnnouncerBtn.Text = "🔊";
+                AnnouncerBtn.BackgroundColor = Colors.Green;
+                VoiceoverService.Instance.IsEnabled = true;
+            }
 
             // Set dynamic font sizes based on screen size
             UpdatePlayerIdFontSizes();
@@ -217,14 +234,55 @@ namespace PotatoVillage
 
         private void UpdateGameStatusFontSize()
         {
-            // Calculate font size based on available height in the top 1/3 of right column
-            double availableHeight = this.Height / 3; // Top 1/3 of screen
-            double fontSize = availableHeight * 0.3; // Use 0.3 of available height
-            fontSize = Math.Max(12, Math.Min(fontSize, 300)); // Clamp
-
+            // Calculate font size based on text content to prevent wrapping
             MainThread.BeginInvokeOnMainThread(() =>
             {
-                GameStatusLabel.FontSize = fontSize;
+                var text = GameStatusLabel.Text ?? "";
+
+                // Get the container's width (Frame) minus padding (10 on each side)
+                double availableWidth = GameStatusFrame.Width - 20;
+
+                if (availableWidth <= 0)
+                {
+                    // Fallback: calculate from screen dimensions
+                    // Right column is 2/3 of screen width, minus padding
+                    var displayInfo = DeviceDisplay.MainDisplayInfo;
+                    double screenWidth = displayInfo.Width / displayInfo.Density;
+                    availableWidth = (screenWidth * 2 / 3) - 20;
+                }
+
+                if (availableWidth <= 0)
+                {
+                    // Final fallback default
+                    availableWidth = 200;
+                }
+
+                // Start with a base font size
+                double maxFontSize = 40;
+
+                if (string.IsNullOrEmpty(text))
+                {
+                    GameStatusLabel.FontSize = maxFontSize;
+                    return;
+                }
+
+                // Estimate characters that fit at current font size
+                // Rough estimate: each character is about 0.6 * fontSize wide for Chinese
+                double avgCharWidth = 0.6 * maxFontSize;
+                int maxCharsPerLine = (int)(availableWidth / avgCharWidth);
+
+                // Get the longest line in the text
+                var lines = text.Split('\n');
+                int maxLineLength = lines.Length > 0 ? lines.Max(l => l.Length) : 0;
+
+                // If text is too long, reduce font size proportionally
+                if (maxLineLength > maxCharsPerLine && maxCharsPerLine > 0)
+                {
+                    double ratio = (double)maxCharsPerLine / maxLineLength;
+                    maxFontSize = Math.Max(10, maxFontSize * ratio);
+                }
+
+                GameStatusLabel.FontSize = maxFontSize;
             });
         }
 
@@ -304,6 +362,7 @@ namespace PotatoVillage
                 1001 => "night_time",
                 1002 => "day_time",
                 1003 => "game_over",
+                1020 => "put_down_device",
                 _ => null
             };
 
@@ -375,6 +434,7 @@ namespace PotatoVillage
                 var dayNum = gameDict.TryGetValue("day", out var dayNum2) ? GetInt32Value(dayNum2)?.ToString() ?? "?" : "?";
                 var dayString = localization.GetString("day").Replace("{0}", dayNum);
                 GameStatusLabel.Text = $"{dayString} {phaseStr}\n";
+                UpdateGameStatusFontSize();
 
                 // Show/hide Reveal button based on day time (phaseValue == 1)
                 if (phaseValue == 1)
@@ -441,6 +501,7 @@ namespace PotatoVillage
                 userInfo = LocalizationManager.Instance.GetString(userInfo);
                 hintText = hintText.Replace("{0}", userInfo);
                 GameStatusLabel.Text = hintText;
+                UpdateGameStatusFontSize();
 
                 // Play voiceover
                 if (IsAnnouncerEnabled)
@@ -459,6 +520,7 @@ namespace PotatoVillage
                     GameStatusLabel.Text = speakingText.Replace("{0}", speaker.ToString());
                 else
                     GameStatusLabel.Text = "";
+                UpdateGameStatusFontSize();
             }
             else
             {
@@ -491,6 +553,7 @@ namespace PotatoVillage
                     ? string.Join(", ", actingRoles) : "";
 
                 GameStatusLabel.Text = actingText;
+                UpdateGameStatusFontSize();
             }
 
             // Start countdown timer
@@ -608,27 +671,6 @@ namespace PotatoVillage
             var responsesByTarget = new Dictionary<int, List<int>>();
             var ownChoices = new HashSet<int>();
 
-            if (userResponse != null)
-            {
-                foreach (var kvp in userResponse)
-                {
-                    if (int.TryParse(kvp.Key, out var playerIdKey))
-                    {
-                        var chosenTargets = GetInt32List(kvp.Value);
-                        foreach (var target in chosenTargets)
-                        {
-                            if (!responsesByTarget.ContainsKey(target))
-                                responsesByTarget[target] = new List<int>();
-                            responsesByTarget[target].Add(playerIdKey);
-
-                            // Track own choices
-                            if (playerIdKey == playerId)
-                                ownChoices.Add(target);
-                        }
-                    }
-                }
-            }
-
             // Create special target buttons first (if they are in availableTargets)
             if (SpecialTargets.TryGetValue(hintIndex, out var specialTargetsForHint))
             {
@@ -712,12 +754,33 @@ namespace PotatoVillage
         {
             if (selectedTargets.Contains(targetId))
             {
+                // Deselect the target
                 selectedTargets.Remove(targetId);
                 button.BackgroundColor = Colors.LightGray;
                 button.TextColor = Colors.Black;
             }
             else if (maxCount == -1 || selectedTargets.Count < maxCount)
             {
+                // Select the target
+                selectedTargets.Add(targetId);
+                button.BackgroundColor = Colors.Green;
+                button.TextColor = Colors.White;
+            }
+            else if (maxCount == 1 && selectedTargets.Count == 1)
+            {
+                // Special case: when maxCount is 1, auto-deselect the previous target
+                // Reset all buttons to deselected state
+                foreach (var child in TargetButtonsContainer.Children)
+                {
+                    if (child is Button btn)
+                    {
+                        btn.BackgroundColor = Colors.LightGray;
+                        btn.TextColor = Colors.Black;
+                    }
+                }
+
+                // Clear previous selection and select the new target
+                selectedTargets.Clear();
                 selectedTargets.Add(targetId);
                 button.BackgroundColor = Colors.Green;
                 button.TextColor = Colors.White;

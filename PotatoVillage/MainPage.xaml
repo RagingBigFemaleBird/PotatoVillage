@@ -73,6 +73,15 @@
                 <Button x:Name="JoinBtn" Text="{m:Translate join}" Clicked="OnJoinClicked" />
             </HorizontalStackLayout>
 
+            <!-- About Button -->
+            <Button x:Name="AboutBtn" 
+                    Text="{m:Translate about}" 
+                    Clicked="OnAboutClicked" 
+                    Margin="0,20,0,0"
+                    BackgroundColor="Transparent"
+                    TextColor="Gray"
+                    FontSize="12" />
+
         </VerticalStackLayout>
     </ScrollView>
 

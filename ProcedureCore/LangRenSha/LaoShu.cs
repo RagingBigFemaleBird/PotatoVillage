@@ -289,6 +289,7 @@ namespace ProcedureCore.LangRenSha
                             {
                                 LangRenSha.MarkPlayerAboutToDie(game, target, update);
                             }
+                            LangRenSha.SetPlayerProperty(game, tagged, dictMiceGifted, 0, update);
                             UserAction.EndUserAction(game, update, true);
                             LangRenSha.AdvanceAction(game, update);
                             return GameActionResult.Restart;
@@ -316,7 +317,7 @@ namespace ProcedureCore.LangRenSha
                 var targetRole = LangRenSha.GetPlayerProperty(game, target, LangRenSha.dictRole, "");
                 if (targetRole == "PingMin")
                 {
-                    LangRenSha.SetPlayerProperty(game, target, dictMiceGifted, 0, update);
+                    LangRenSha.SetPlayerProperty(game, target, dictMiceGifted, 1, update);
                 }
             }
         }

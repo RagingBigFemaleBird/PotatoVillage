@@ -77,6 +77,7 @@ namespace ProcedureCore.LangRenSha
                         LangRenSha.MarkPlayerAboutToDie(game, player, update);
                         update[LangRenSha.dictSkipDaySpeech] = 1;
                         var interrupted = new Dictionary<string, object>();
+                        var currentSpeak = Game.GetGameDictionaryProperty(game, LangRenSha.dictSpeak, 0);
                         interrupted[LangRenSha.dictSpeak] = 9;
                         update[LangRenSha.dictSpeak] = 97;
                         update[LangRenSha.dictInterrupt] = interrupted;

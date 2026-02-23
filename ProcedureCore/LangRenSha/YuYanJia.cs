@@ -114,7 +114,7 @@ namespace ProcedureCore.LangRenSha
                     if (UserAction.StartUserAction(game, actionDuration, update))
                     {
                         update[UserAction.dictUserActionTargets] = alivePlayers;
-                        update[UserAction.dictUserActionUsers] = yuYanJiaAlive;
+                        update[UserAction.dictUserActionUsers] = yuYanJia;
                         update[UserAction.dictUserActionTargetsCount] = 1;
                         update[UserAction.dictUserActionTargetsHint] = 2;
                         return GameActionResult.Restart;

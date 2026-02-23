@@ -75,6 +75,10 @@
     "good": "Good",
     "evil": "Evil",
     "game_winner": "{0} wins!",
+    "put_down_device":  "Please put down the device",
+    "jiamian_info": "Your check result: {0}. Select target to flip",
+    "jiamian_info0": "Not danced",
+    "jiamian_info1":  "danced",
     "not_gifted_yet": "Not gifted yet",
     "gifted_use_trap": "Gifted, use cat trap:",
     "yuyanjia_chayan_result": "Yuyanjia's Chayan result: {0}",
@@ -108,7 +112,10 @@
     "empty_seat": "(Empty)",
     "you": "(You)",
     "owner": "(Owner)",
-    "invalid_seat_number": "Invalid seat number"
+    "invalid_seat_number": "Invalid seat number",
+    "dead_player_notice": "To prevent leaking extra information, dead players will continue to receive prompts and be asked to choose targets, with no possible effects.",
+    "about": "About",
+    "about_message": "Author: Bi Wu.\nRole design: Ke Ji.\nVoiceover: Tu dou."
   },
   "zh": {
     "game_info": "游戏信息",
@@ -186,6 +193,10 @@
     "good": "好人",
     "evil": "狼人",
     "game_winner": "{0}获胜!",
+    "put_down_device":  "请放下设备",
+    "jiamian_info": "你的查验结果: {0}。选择目标翻牌",
+    "jiamian_info0": "不进舞池",
+    "jiamian_info1": "进舞池",
     "not_gifted_yet": "还未获得猫夹",
     "gifted_use_trap": "请使用猫夹:",
     "yuyanjia_chayan_result": "查验结果: {0}",
@@ -219,6 +230,9 @@
     "empty_seat": "(空位)",
     "you": "(你)",
     "owner": "(房主)",
-    "invalid_seat_number": "无效座位号"
+    "invalid_seat_number": "无效座位号",
+    "dead_player_notice": "为防止场外，死亡玩家将继续收到提示并被要求选择目标，但不会产生任何效果。",
+    "about": "关于",
+    "about_message": "作者：吴比\n角色设计：柯基\n配音：土豆"
   }
 }

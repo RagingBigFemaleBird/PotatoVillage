@@ -3,6 +3,12 @@
     "Windows Machine": {
       "commandName": "Project",
       "nativeDebugging": false
+    },
+    "Launch 8 Players (Testing)": {
+      "commandName": "Executable",
+      "executablePath": "powershell.exe",
+      "commandLineArgs": "-ExecutionPolicy Bypass -File \"$(SolutionDir)Launch8Players.ps1\" -PlayerCount 8",
+      "workingDirectory": "$(SolutionDir)"
     }
   }
 }

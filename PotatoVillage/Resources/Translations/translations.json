@@ -113,13 +113,13 @@
     "you": "(You)",
     "owner": "(Owner)",
     "invalid_seat_number": "Invalid seat number",
-    "dead_player_notice": "To prevent leaking extra information, dead players will continue to receive prompts and be asked to choose targets, with no possible effects.",
+    "dead_player_notice": "To prevent leaking extra information, dead players will continue to receive prompts and be asked to choose targets, with no possible effects. If you want to reveal yourself as werewolf, click the reveal button and also announce it to everyone.",
     "about": "About",
     "about_message": "Author: Bi Wu.\nRole design: Ke Ji.\nVoiceover: Tu dou."
   },
   "zh": {
     "game_info": "游戏信息",
-    "game_over":  "游戏结束 {0}获胜",
+    "game_over":  "游戏结束 {0}胜利",
     "day": "第{0}天",
     "game_status": "游戏状态",
     "your_status": "你的状态",
@@ -231,7 +231,7 @@
     "you": "(你)",
     "owner": "(房主)",
     "invalid_seat_number": "无效座位号",
-    "dead_player_notice": "为防止场外，死亡玩家将继续收到提示并被要求选择目标，但不会产生任何效果。",
+    "dead_player_notice": "为防止场外，死亡玩家将继续收到提示并被要求选择目标，但不会产生任何效果。狼人自爆请宣布并点击翻牌按钮。",
     "about": "关于",
     "about_message": "作者：吴比\n角色设计：柯基\n配音：土豆"
   }

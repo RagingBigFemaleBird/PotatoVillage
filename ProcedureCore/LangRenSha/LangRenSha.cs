@@ -1226,6 +1226,11 @@ namespace ProcedureCore.LangRenSha
                                 UserAction.EndUserAction(game, update, true);
                                 return GameActionResult.Restart;
                             }
+                            if (key > 0 && value.Count > 0 && value[0] == 0)
+                            {
+                                UserAction.PauseUnpause(game, update);
+                                return GameActionResult.Restart;
+                            }
                         }
                         foreach (var int_input in input_others)
                         {
@@ -1259,6 +1264,12 @@ namespace ProcedureCore.LangRenSha
         public static string? CheckWinCondition(Game game)
         {
             var alivePlayers = GetPlayers(game, x => (int)x[dictAlive] == 1);
+            var day = Game.GetGameDictionaryProperty(game, dictDay, 0);
+
+            if (day >= 8)
+            {
+                return "evil";
+            }
 
             bool hasEvil = false;
             bool hasGod = false;

@@ -17,7 +17,7 @@ namespace ProcedureCore.LangRenSha
                 { LangRenSha.dictPlayerFaction, LangRenSha.PlayerFaction.Evil },
             };
         private static List<int> actionOrders = new()
-            { 99, 100, 101 };
+            { 99, 100, 101, 102 };
 
         public LangRen()
         {
@@ -125,7 +125,7 @@ namespace ProcedureCore.LangRenSha
                 update[LangRenSha.dictNightOrders] = no;
                 return GameActionResult.Continue;
             }
-            if (LangRenSha.AnnouncerAction(game, update, false, ActionOrders[0], ActionOrders[2], 50, 51, Name, 4) == GameActionResult.Restart)
+            if (LangRenSha.AnnouncerAction(game, update, false, ActionOrders[0], ActionOrders[3], 50, 51, Name, 4) == GameActionResult.Restart)
             {
                 return GameActionResult.Restart;
             }
@@ -222,6 +222,60 @@ namespace ProcedureCore.LangRenSha
                 }
                 return GameActionResult.NotExecuted;
             }
+
+            if (Game.GetGameDictionaryProperty(game, LangRenSha.dictAction, 0) == ActionOrders[2])
+            {
+                var langRen = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == Name);
+                var langRenSuccession1 = LangRenSha.GetPlayers(game, x => x.ContainsKey(dictSuceession) && (int)x[dictSuceession] == 1);
+                var langRenSuccession2 = LangRenSha.GetPlayers(game, x => x.ContainsKey(dictSuceession) && (int)x[dictSuceession] == 2);
+                var langRenSuccession3 = LangRenSha.GetPlayers(game, x => x.ContainsKey(dictSuceession) && (int)x[dictSuceession] == 3);
+                var langRenAlive = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == Name && (int)x[LangRenSha.dictAlive] == 1);
+                var langRenSuccession1Alive = LangRenSha.GetPlayers(game, x => x.ContainsKey(dictSuceession) && (int)x[dictSuceession] == 1 && (int)x[LangRenSha.dictAlive] == 1);
+                var langRenSuccession2Alive = LangRenSha.GetPlayers(game, x => x.ContainsKey(dictSuceession) && (int)x[dictSuceession] == 2 && (int)x[LangRenSha.dictAlive] == 1);
+                var langRenSuccession3Alive = LangRenSha.GetPlayers(game, x => x.ContainsKey(dictSuceession) && (int)x[dictSuceession] == 3 && (int)x[LangRenSha.dictAlive] == 1);
+
+                langRen.AddRange(langRenSuccession1);
+                langRenAlive.AddRange(langRenSuccession1Alive);
+
+                if (langRenAlive.Count == 0)
+                {
+                    langRen = langRenSuccession2;
+                    langRenAlive = langRenSuccession2Alive;
+                }
+                if (langRenAlive.Count == 0)
+                {
+                    langRen = langRenSuccession3;
+                    langRenAlive = langRenSuccession3Alive;
+                }
+                if (langRenAlive.Count == 0)
+                {
+                    LangRenSha.AdvanceAction(game, update);
+                    return GameActionResult.Restart;
+                }
+
+                if (UserAction.EndUserAction(game, update))
+                {
+                    LangRenSha.AdvanceAction(game, update);
+                    return GameActionResult.Restart;
+                }
+                else
+                {
+                    var actionDuration = 5;
+
+                    if (UserAction.StartUserAction(game, actionDuration, update))
+                    {
+                        update[UserAction.dictUserActionTargets] = new List<int>();
+                        update[UserAction.dictUserActionUsers] = langRen;
+                        update[UserAction.dictUserActionTargetsCount] = 1;
+                        update[UserAction.dictUserActionTargetsHint] = 11;
+                        var at = Game.GetGameDictionaryProperty(game, dictAttackTarget, new List<int>());
+                        update[UserAction.dictUserActionInfo] = string.Join(", ", at);
+                        return GameActionResult.Restart;
+                    }
+                }
+                return GameActionResult.NotExecuted;
+            }
+
             return GameActionResult.NotExecuted;
         }
     }

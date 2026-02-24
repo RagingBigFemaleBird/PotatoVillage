@@ -31,6 +31,8 @@ namespace ProcedureCore.Core
         public static string dictUserActionResponse = "user_response";
         public static string dictUserActionSelects = "user_selects";
         public static string dictUserActionSelectsUpdate = "user_selects_update";
+        public static string dictUserActionPauseStart = "user_pause_start"; // When pause started (UTC seconds), 0 if not paused
+        public static string dictServerTime = "server_time"; // Server timestamp for clock sync
         public static object uarLock = new object();
 
         public GameActionResult GenerateStateDiff(Game game, Dictionary<string, object> update)
@@ -66,7 +68,10 @@ namespace ProcedureCore.Core
             if (doWait)
             {
                 game.Log("User wait idle.");
-                game.UserWait(Game.GetGameDictionaryProperty(game, dictUserAction, 0));
+                int paused = Game.GetGameDictionaryProperty(game, dictUserActionPauseStart, 0);
+                if (paused > 0)
+                    paused = (int)DateTimeOffset.UtcNow.ToUnixTimeSeconds() - paused;
+                game.UserWait(Game.GetGameDictionaryProperty(game, dictUserAction, 0) + paused);
             }
             lock (uarLock)
             {
@@ -94,6 +99,8 @@ namespace ProcedureCore.Core
             if (Game.GetGameDictionaryProperty(game, dictUserAction, 0) == 0)
             {
                 update[dictUserAction] = now + duration_seconds;
+                update[dictServerTime] = now; // Server timestamp for client clock sync
+                update[dictUserActionPauseStart] = 0; // Not paused initially
                 return true;
             }
             return false;
@@ -103,13 +110,91 @@ namespace ProcedureCore.Core
         {
             int now = (int)DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             var ua = Game.GetGameDictionaryProperty(game, dictUserAction, 0);
+            var pauseStart = Game.GetGameDictionaryProperty(game, dictUserActionPauseStart, 0);
+
+            // If currently paused and not forcing, don't end the action
+            if (pauseStart != 0 && !force)
+            {
+                return false;
+            }
+
             if (ua != 0 && (ua <= now || force))
             {
                 update[dictUserActionInfo] = null;
                 update[dictUserAction] = 0;
+                update[dictUserActionPauseStart] = null;
                 return true;
             }
             return false;
+        }
+
+        /// <summary>
+        /// Toggles pause state for the current user action.
+        /// When pausing: records the current time as pause start.
+        /// When unpausing: extends the deadline by the pause duration.
+        /// </summary>
+        public static bool PauseUnpause(Game game, Dictionary<string, object> update)
+        {
+            int now = (int)DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            var ua = Game.GetGameDictionaryProperty(game, dictUserAction, 0);
+
+            // No active user action to pause
+            if (ua == 0)
+            {
+                return false;
+            }
+
+            var pauseStart = Game.GetGameDictionaryProperty(game, dictUserActionPauseStart, 0);
+
+            if (pauseStart == 0)
+            {
+                // Currently not paused - start pausing
+                update[dictUserActionPauseStart] = now;
+                game.Log($"User action paused at {now}");
+                return true;
+            }
+            else
+            {
+                // Currently paused - unpause by extending the deadline
+                int pauseDuration = now - pauseStart;
+                update[dictUserAction] = ua + pauseDuration;
+                update[dictUserActionPauseStart] = 0;
+
+                game.Log($"User action unpaused. Paused for {pauseDuration}s. New deadline: {ua + pauseDuration}");
+
+                // Wake up the wait thread so it can recalculate the new deadline
+                game.UserWakeup();
+                return true;
+            }
+        }
+
+        /// <summary>
+        /// Checks if the user action is currently paused.
+        /// </summary>
+        public static bool IsPaused(Game game)
+        {
+            return Game.GetGameDictionaryProperty(game, dictUserActionPauseStart, 0) != 0;
+        }
+
+        /// <summary>
+        /// Gets the effective deadline for the user action, accounting for current pause time.
+        /// Returns 0 if no user action is active.
+        /// </summary>
+        public static int GetEffectiveDeadline(Game game)
+        {
+            var ua = Game.GetGameDictionaryProperty(game, dictUserAction, 0);
+            if (ua == 0) return 0;
+
+            var pauseStart = Game.GetGameDictionaryProperty(game, dictUserActionPauseStart, 0);
+
+            // If currently paused, effective deadline extends by current pause duration
+            if (pauseStart != 0)
+            {
+                int now = (int)DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+                return ua + (now - pauseStart);
+            }
+
+            return ua;
         }
 
         public static (bool, List<int>?, int) UserActionTargets(Game game, int player)

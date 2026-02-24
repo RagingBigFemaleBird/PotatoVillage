@@ -16,6 +16,8 @@ namespace PotatoVillage
         private HashSet<int> selectedTargets = new();
         private CancellationTokenSource? countdownCts;
         private bool announcerEnabled = false; // Client-only setting, default off
+        private bool warningBeepPlayed = false; // Track if 15-second warning beep was played
+        private int serverTimeOffset = 0; // Offset between server and client clocks (server_time - client_time)
 
         // User action dictionary keys
         private const string DictUserAction = "user_action";
@@ -25,6 +27,8 @@ namespace PotatoVillage
         private const string DictUserActionTargetsHint = "user_targets_hint";
         private const string DictUserActionInfo = "user_info";
         private const string DictUserActionResponse = "user_response";
+        private const string DictUserActionPauseStart = "user_pause_start";
+        private const string DictServerTime = "server_time";
         private const string DictSpeaker = "speaker";
 
         // Property to check if announcer sounds should play
@@ -32,14 +36,16 @@ namespace PotatoVillage
 
         // Special targets dictionary - nested by hint, then by target ID
         // First level: indexed by target hints
-        // Second level: indexed by special target values (>= 0)
+        // Second level: indexed by special target values (<= 0)
         private static readonly Dictionary<int, Dictionary<int, string>> SpecialTargets = new Dictionary<int, Dictionary<int, string>>()
         {
-            { 3, new Dictionary<int, string> { { 0, "JiuRen" }, } },
+            { 3, new Dictionary<int, string> { { 0, "JiuRen" }, { -100, "DoNotUse"} } },
             { 100, new Dictionary<int, string> { { -1, "Volunteer" }, { 0, "Abstain" } } },
-            { 102, new Dictionary<int, string> { { -1, "Done speaking" } } },
+            { 102, new Dictionary<int, string> { { -1, "Done speaking" }, { 0, "Pause game" } } },
+            { 104, new Dictionary<int, string> { { -1, "Done speaking" }, { 0, "Pause game" } } },
+            { 105, new Dictionary<int, string> { { -1, "Done speaking" }, { 0, "Pause game" } } },
+            { 151, new Dictionary<int, string> { { -100, "DoNotUse"} } },
             { 153, new Dictionary<int, string> { { -2, "Left" }, { -1, "Right"} } },
-
         };
 
         private static readonly Dictionary<int, Func<string, string>> UserInfoHints = new()
@@ -340,6 +346,7 @@ namespace PotatoVillage
                 4 => "wuzhe_act",
                 6 => "jiamian_chayan",
                 7 => "yuyanjia_result",
+                11 => "langren_kill_target",
                 50 => "open_eyes",
                 51 => "close_eyes",
                 52 => "lucky_one_open_eyes",
@@ -463,6 +470,14 @@ namespace PotatoVillage
                 var userInfo = GetStringValue(gameDict.TryGetValue(DictUserActionInfo, out var uiObj) ? uiObj : null) ?? "";
                 var userResponse = GetDictionaryValue(gameDict.TryGetValue(DictUserActionResponse, out var urObj) ? urObj : null);
 
+                // Calculate server-client clock offset for accurate countdown
+                var serverTime = GetInt32Value(gameDict.TryGetValue(DictServerTime, out var stObj) ? stObj : null) ?? 0;
+                if (serverTime > 0)
+                {
+                    int clientNow = (int)DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+                    serverTimeOffset = serverTime - clientNow;
+                }
+
                 var speaking = GetInt32List(gameDict.TryGetValue(DictSpeaker, out var speakingObj) ? speakingObj : null);
                 var speaker = speaking.Count > 0 ? speaking[speaking.Count - 1] : 0;
 
@@ -480,7 +495,9 @@ namespace PotatoVillage
 
                 if (userAction != 0 && userUsers.Count > 0)
                 {
-                    DisplayCurrentlyActing(userAction, userUsers, userTargetsHint, userInfo, speaker, phaseValue ?? 0);
+                    // Pass isSelfActable to avoid double-managing the countdown
+                    // When isSelfActable is true, DisplayTargetSelection already handles the countdown
+                    DisplayCurrentlyActing(userAction, userUsers, userTargetsHint, userInfo, speaker, phaseValue ?? 0, !isSelfActable);
                 }
                 else
                 {
@@ -490,10 +507,14 @@ namespace PotatoVillage
             });
         }
 
-        private void DisplayCurrentlyActing(int deadline, List<int> actingPlayerIds, int userTargetsHint, string userInfo, int speaker = 0, int phaseValue = 0)
+        private void DisplayCurrentlyActing(int deadline, List<int> actingPlayerIds, int userTargetsHint, string userInfo, int speaker = 0, int phaseValue = 0, bool manageCountdown = true)
         {
-            countdownCts?.Cancel();
-            countdownCts = new CancellationTokenSource();
+            // Only manage countdown if we're not showing target selection (which has its own countdown)
+            if (manageCountdown)
+            {
+                countdownCts?.Cancel();
+                countdownCts = new CancellationTokenSource();
+            }
 
             if (actingPlayerIds.Contains(-1) && actingPlayerIds.Count == 1)
             {
@@ -531,7 +552,7 @@ namespace PotatoVillage
                     actingRoles.Add(LocalizationManager.Instance.GetString("lucky_one"));
                 }
                 else
-                    if (userTargetsHint == 1)
+                    if (userTargetsHint == 1 || userTargetsHint == 11)
                     {
                         actingRoles.Add(LocalizationManager.Instance.GetString("LangRen"));
                     }
@@ -556,8 +577,11 @@ namespace PotatoVillage
                 UpdateGameStatusFontSize();
             }
 
-            // Start countdown timer
-            StartCountdown(deadline, countdownCts.Token);
+            // Start countdown timer only if we're managing it
+            if (manageCountdown)
+            {
+                StartCountdown(deadline, countdownCts.Token);
+            }
         }
 
         private void HideCurrentlyActing()
@@ -595,6 +619,31 @@ namespace PotatoVillage
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Voiceover failed: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Plays a warning beep sound when countdown is running low.
+        /// Uses audio beep and visual feedback.
+        /// </summary>
+        private void PlayWarningBeep()
+        {
+            try
+            {
+                // Play audio beep
+                _ = BeepService.PlayWarningBeepAsync();
+
+                // Also trigger haptic feedback (vibration) for tactile warning on mobile
+                try
+                {
+                    HapticFeedback.Default.Perform(HapticFeedbackType.LongPress);
+                }
+                catch { /* Haptic not available on all platforms */ }
+
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Warning beep failed: {ex.Message}");
             }
         }
 
@@ -789,22 +838,53 @@ namespace PotatoVillage
 
         private void StartCountdown(int deadline, CancellationToken ct)
         {
+            warningBeepPlayed = false; // Reset warning flag for new countdown
+
             _ = Task.Run(async () =>
             {
                 while (!ct.IsCancellationRequested)
                 {
-                    int now = (int)DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-                    int timeRemaining = deadline - now;
+                    int clientNow = (int)DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+                    // Adjust client time using server offset to account for clock skew
+                    int adjustedNow = clientNow + serverTimeOffset;
 
-                    if (timeRemaining <= 0)
+                    // Check if game is paused
+                    var gameDict = connectionManager?.GetGameDictionary() ?? new();
+                    var pauseStart = GetInt32Value(gameDict.TryGetValue(DictUserActionPauseStart, out var psObj) ? psObj : null) ?? 0;
+                    bool isPaused = pauseStart != 0;
+
+                    // Calculate effective deadline accounting for current pause
+                    int effectiveDeadline = deadline;
+                    if (isPaused)
+                    {
+                        effectiveDeadline = deadline + (adjustedNow - pauseStart);
+                    }
+
+                    int timeRemaining = effectiveDeadline - adjustedNow;
+
+                    if (!isPaused && timeRemaining <= 0)
                     {
                         MainThread.BeginInvokeOnMainThread(() => HideTargetSelection());
                         break;
                     }
 
+                    // Play warning beep when countdown reaches 15 seconds
+                    if (!isPaused && timeRemaining == 15 && !warningBeepPlayed)
+                    {
+                        warningBeepPlayed = true;
+                        MainThread.BeginInvokeOnMainThread(() => PlayWarningBeep());
+                    }
+
                     MainThread.BeginInvokeOnMainThread(() =>
                     {
-                        CountdownLabel.Text = $"{timeRemaining}";
+                        if (isPaused)
+                        {
+                            CountdownLabel.Text = LocalizationManager.Instance.GetString("game_paused", "⏸ Paused");
+                        }
+                        else
+                        {
+                            CountdownLabel.Text = $"{timeRemaining}";
+                        }
                     });
 
                     await Task.Delay(1000, ct);

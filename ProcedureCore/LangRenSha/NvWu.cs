@@ -150,6 +150,11 @@ namespace ProcedureCore.LangRenSha
                 var nvWu = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == Name);
                 var nvWuAlive = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == Name && (int)x[LangRenSha.dictAlive] == 1);
                 var alivePlayers = LangRenSha.GetPlayers(game, x => (int)x[LangRenSha.dictAlive] == 1);
+                var actionDuration = Game.GetGameDictionaryProperty(game, LangRenSha.dictDurationPlayerReact, ActionDuration);
+                if (nvWuAlive.Count == 0)
+                {
+                    actionDuration = new Random().Next(3, 6);
+                }
 
                 if (UserAction.EndUserAction(game, update))
                 {
@@ -158,7 +163,6 @@ namespace ProcedureCore.LangRenSha
                 }
                 else
                 {
-                    var actionDuration = Game.GetGameDictionaryProperty(game, LangRenSha.dictDurationPlayerReact, ActionDuration);
 
                     if (UserAction.StartUserAction(game, actionDuration, update))
                     {
@@ -187,6 +191,7 @@ namespace ProcedureCore.LangRenSha
                         {
                             targets.AddRange(alivePlayers);
                         }
+                        targets.Add(-100);
                         update[UserAction.dictUserActionTargets] = targets;
                         update[UserAction.dictUserActionUsers] = nvWu;
                         update[UserAction.dictUserActionTargetsCount] = 1;
@@ -209,7 +214,7 @@ namespace ProcedureCore.LangRenSha
                             {
                                 Poison(game, targets[0], update);
                             }
-                            else
+                            else if (targets[0] == 0)
                             {
                                 Save(game, update);
                             }

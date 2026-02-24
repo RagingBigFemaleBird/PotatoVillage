@@ -103,6 +103,10 @@ namespace ProcedureCore.LangRenSha
                 var alivePlayers = LangRenSha.GetPlayers(game, x => (int)x[LangRenSha.dictAlive] == 1);
                 var miceTagged = yuYanJiaAlive.Count > 0 ? (yuYanJiaAlive[0] == Game.GetGameDictionaryProperty(game, LaoShu.dictMiceTag, 0)) : false;
                 var actionDuration = Game.GetGameDictionaryProperty(game, LangRenSha.dictDurationPlayerReact, ActionDuration);
+                if (yuYanJiaAlive.Count == 0)
+                {
+                    actionDuration = new Random().Next(3, 6);
+                }
 
                 if (UserAction.EndUserAction(game, update))
                 {

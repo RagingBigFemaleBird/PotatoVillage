@@ -152,7 +152,7 @@ namespace Server
                 {
                     optionsDict[item.Key] = item.Value;
                 }
-                game.StateUpdate(optionsDict);
+                game.StateUpdate(optionsDict, true);
             }
 
             var g = games[gameId];

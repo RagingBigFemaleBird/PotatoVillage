@@ -49,7 +49,7 @@ namespace ProcedureCore.Core
         public Dictionary<string, int> RoleConfiguration { get; set; } = new();
         public bool GameStarted { get; set; } = false;
 
-        public int StateUpdate(Dictionary<string, object> stateDiff)
+        public int StateUpdate(Dictionary<string, object> stateDiff, bool noClientcallback = false)
         {
             lock (stateLock)
             {
@@ -73,7 +73,8 @@ namespace ProcedureCore.Core
                 }
             }
             LogDict("Game state update:", stateDiff);
-            StateUpdateCallback(this, stateDiff);
+            if (!noClientcallback)
+                StateUpdateCallback(this, stateDiff);
             //LogDict("Current game state:", StateDictionary);
             return 0;
         }

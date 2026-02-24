@@ -100,9 +100,15 @@ namespace ProcedureCore.LangRenSha
                 var lieRenPlayer = lieRenAlive.Count == 0 ? 0 : lieRenAlive[0];
                 var isTagged = lieRenAlive.Count > 0 && miceTag == lieRenPlayer;
                 var nightShootUsed = lieRenAlive.Count == 0 || LangRenSha.GetPlayerProperty(game, lieRenPlayer, dictHuntingDisabled, 0) == 1;
+                var actionDuration = Game.GetGameDictionaryProperty(game, LangRenSha.dictDurationPlayerReact, ActionDuration);
+                if (lieRenAlive.Count == 0)
+                {
+                    actionDuration = new Random().Next(3, 6);
+                }
 
                 var alivePlayers = LangRenSha.GetPlayers(game, x => (int)x[LangRenSha.dictAlive] == 1);
                 alivePlayers.Remove(lieRenPlayer); // Cannot shoot self
+                alivePlayers.Add(-100);
 
                 if (UserAction.EndUserAction(game, update))
                 {
@@ -114,7 +120,13 @@ namespace ProcedureCore.LangRenSha
                         if (targets.Count > 0 && targets[0] > 0)
                         {
                             // Shoot the target
-                            LangRenSha.MarkPlayerAboutToDie(game, targets[0], update);
+                            var laoShu = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == "LaoShu");
+                            var laoShuPlayer = laoShu.Count > 0 ? laoShu[0] : -1;
+
+                            if (targets[0] != laoShuPlayer)
+                            {
+                                LangRenSha.MarkPlayerAboutToDie(game, targets[0], update);
+                            }
                             LangRenSha.SetPlayerProperty(game, lieRenPlayer, dictHuntingDisabled, 1, update);
                         }
                     }
@@ -123,12 +135,11 @@ namespace ProcedureCore.LangRenSha
                 }
                 else
                 {
-                    var actionDuration = Game.GetGameDictionaryProperty(game, LangRenSha.dictDurationPlayerReact, ActionDuration);
 
                     if (UserAction.StartUserAction(game, actionDuration, update))
                     {
                         // Action just started - setup targets and users
-                        update[UserAction.dictUserActionTargets] = alivePlayers;
+                        update[UserAction.dictUserActionTargets] = (isTagged && !nightShootUsed) ? alivePlayers : new List<int>();
                         update[UserAction.dictUserActionUsers] = lieRen;
                         update[UserAction.dictUserActionTargetsCount] = 1;
                         update[UserAction.dictUserActionTargetsHint] = 151; // Hunter kill hint
@@ -151,8 +162,18 @@ namespace ProcedureCore.LangRenSha
                             {
                                 return GameActionResult.NotExecuted;
                             }
-                            LangRenSha.MarkPlayerAboutToDie(game, targets[0], update);
-                            LangRenSha.SetPlayerProperty(game, lieRenPlayer, dictHuntingDisabled, 1, update);
+                            if (targets[0] > 0)
+                            {
+                                var laoShu = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == "LaoShu");
+                                var laoShuPlayer = laoShu.Count > 0 ? laoShu[0] : -1;
+
+                                if (targets[0] != laoShuPlayer)
+                                {
+
+                                    LangRenSha.MarkPlayerAboutToDie(game, targets[0], update);
+                                }
+                                LangRenSha.SetPlayerProperty(game, lieRenPlayer, dictHuntingDisabled, 1, update);
+                            }
                             UserAction.EndUserAction(game, update, true);
                             LangRenSha.AdvanceAction(game, update);
                             return GameActionResult.Restart;
@@ -195,7 +216,6 @@ namespace ProcedureCore.LangRenSha
                     update[UserAction.dictUserActionUsers] = new List<int> { deadPlayer };
                     update[UserAction.dictUserActionTargetsCount] = 1;
                     update[UserAction.dictUserActionTargetsHint] = 151; // Hunter kill hint
-                    update[UserAction.dictUserActionInfo] = "LieRen";
                     return (true, GameActionResult.Restart);
                 }
                 else

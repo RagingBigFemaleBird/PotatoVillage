@@ -53,6 +53,8 @@ namespace PotatoVillage.Services
             { "昨夜死亡", "zuoye_siwang" },
             { "所有人", "suoyouren" },
             { "请私下查看", "qing_sixia_chakan" },
+            { "投票结果", "toupiao_jieguo" },
+            { "请放下设备", "qing_fangxia_shebei" },
             { "游戏结束", "youxi_jieshu" },
             
             // Numbers (for player references)

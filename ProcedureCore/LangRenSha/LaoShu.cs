@@ -98,6 +98,10 @@ namespace ProcedureCore.LangRenSha
                 
                 var alivePlayers = LangRenSha.GetPlayers(game, x => (int)x[LangRenSha.dictAlive] == 1);
                 var miceTag = Game.GetGameDictionaryProperty(game, dictMiceTag, 0);
+                if (miceAlive.Count == 0)
+                {
+                    actionDuration = new Random().Next(3, 6);
+                }
                 if (miceTag > 0)
                 {
                     alivePlayers.Remove(miceTag);

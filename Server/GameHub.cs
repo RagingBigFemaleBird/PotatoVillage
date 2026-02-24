@@ -264,17 +264,28 @@ namespace Server
 
         public void GameActionCallback(Game game, Dictionary<string, object> stateDiff)
         {
-            IHubContext<GameHub> hubContext = Server.Controllers.HomeController.GetGameHubContext();
-            string updateString = JsonSerializer.Serialize(stateDiff);
-            var gameId = 0;
-            foreach (var g in games)
+            try
             {
-                if (g.Value == game)
+                IHubContext<GameHub> hubContext = Server.Controllers.HomeController.GetGameHubContext();
+                string updateString = JsonSerializer.Serialize(stateDiff);
+                var gameId = 0;
+                foreach (var g in games)
                 {
-                    gameId = g.Key;
+                    if (g.Value == game)
+                    {
+                        gameId = g.Key;
+                        break;
+                    }
+                }
+                if (gameId > 0)
+                {
+                    hubContext.Clients.Group($"game-{gameId}").SendAsync("GameStateUpdate", updateString);
                 }
             }
-            hubContext.Clients.Group($"game-{gameId}").SendAsync("GameStateUpdate", updateString);
+            catch (Exception ex)
+            {
+                Console.WriteLine($"GameActionCallback error: {ex.Message}");
+            }
         }
 
         public async Task StartGame(string clientId, int gameId)
@@ -322,6 +333,10 @@ namespace Server
                 try
                 {
                     game.ActionLoop();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Game {gameId} thread crashed with exception: {ex}");
                 }
                 finally
                 {

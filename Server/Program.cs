@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Server;
@@ -107,5 +108,9 @@ app.MapHub<GameHub>("/gamehub");
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
+
+// Initialize the hub context for GameHub callbacks
+// This ensures it's available before any games start
+Server.Controllers.HomeController.InitializeHubContext(app.Services.GetRequiredService<IHubContext<GameHub>>());
 
 app.Run();

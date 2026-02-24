@@ -63,114 +63,165 @@ namespace PotatoVillage
                 // Dispose existing connection if any
                 if (connection != null)
                 {
-                    await connection.StopAsync();
-                    await connection.DisposeAsync();
+                    try
+                    {
+                        await connection.StopAsync();
+                        await connection.DisposeAsync();
+                    }
+                    catch { /* Ignore disposal errors */ }
+                    connection = null;
+
+                    // Wait for the server to fully process the disconnect
+                    await Task.Delay(500);
                 }
 
-                connection = new HubConnectionBuilder()
-                    .WithUrl(hubUrl, options =>
-                    {
-                        // Configure transports - prefer WebSockets, fallback to LongPolling
-                        options.Transports = Microsoft.AspNetCore.Http.Connections.HttpTransportType.WebSockets |
-                                            Microsoft.AspNetCore.Http.Connections.HttpTransportType.LongPolling;
-                        // Skip negotiation can help with some CORS issues
-                        options.SkipNegotiation = false;
-                    })
-                    .WithAutomaticReconnect(new[] { TimeSpan.Zero, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(10) })
-                    .Build();
+                // Clear previous game state
+                gameDict.Clear();
+                roomState.Clear();
+                registeredGameId = 0;
+                registeredPlayerId = 0;
 
-                connection.Closed += async (error) =>
-                {
-                    // Connection will auto-reconnect due to WithAutomaticReconnect
-                    System.Diagnostics.Debug.WriteLine($"Connection closed: {error?.Message}");
-                };
+                // Retry connection with exponential backoff
+                int maxRetries = 3;
+                int retryDelay = 500;
+                Exception? lastException = null;
 
-                connection.Reconnected += async (connectionId) =>
+                for (int attempt = 0; attempt < maxRetries; attempt++)
                 {
-                    // Re-join the game after reconnection
-                    if (registeredGameId > 0)
+                    try
                     {
-                        await connection.InvokeAsync("JoinGame", clientId, nickname, registeredGameId, registeredPlayerId);
+                        connection = new HubConnectionBuilder()
+                            .WithUrl(hubUrl, options =>
+                            {
+                                // Configure transports - prefer WebSockets, fallback to LongPolling
+                                options.Transports = Microsoft.AspNetCore.Http.Connections.HttpTransportType.WebSockets |
+                                                    Microsoft.AspNetCore.Http.Connections.HttpTransportType.LongPolling;
+                                // Skip negotiation can help with some CORS issues
+                                options.SkipNegotiation = false;
+                            })
+                            .WithAutomaticReconnect(new[] { TimeSpan.Zero, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(10) })
+                            .Build();
+
+                        SetupConnectionHandlers();
+                        await connection.StartAsync();
+                        return true;
                     }
-                };
-
-                connection.On<int, int, string, string>("RoomCreated", (gameId, playerId, gameStateJson, roomStateJson) =>
-                {
-                    registeredGameId = gameId;
-                    registeredPlayerId = playerId;
-                    MergeGameDict(JsonSerializer.Deserialize<Dictionary<string, object>>(gameStateJson) ?? new());
-                    roomState = JsonSerializer.Deserialize<Dictionary<string, object>>(roomStateJson) ?? new();
-
-                    // Check if game has already started
-                    bool gameStarted = false;
-                    if (roomState.TryGetValue("gameStarted", out var gameStartedObj))
+                    catch (Exception ex)
                     {
-                        if (gameStartedObj is bool b) gameStarted = b;
-                        else if (gameStartedObj is JsonElement je && je.ValueKind == JsonValueKind.True) gameStarted = true;
+                        lastException = ex;
+                        System.Diagnostics.Debug.WriteLine($"Connection attempt {attempt + 1} failed: {ex.Message}");
+
+                        if (connection != null)
+                        {
+                            try { await connection.DisposeAsync(); } catch { }
+                            connection = null;
+                        }
+
+                        if (attempt < maxRetries - 1)
+                        {
+                            await Task.Delay(retryDelay);
+                            retryDelay *= 2; // Exponential backoff
+                        }
                     }
+                }
 
-                    // Complete join operation successfully
-                    joinCompletionSource?.TrySetResult((true, ""));
-
-                    Registered?.Invoke(gameId, playerId, gameStarted);
-                    GameStateUpdated?.Invoke();
-                    RoomStateUpdated?.Invoke();
-                });
-
-                connection.On<string>("JoinFailed", (errorMessage) =>
-                {
-                    // Complete join operation with failure
-                    joinCompletionSource?.TrySetResult((false, errorMessage));
-                });
-
-                connection.On<string>("GameStateUpdate", (stateDiffJson) =>
-                {
-                    var diff = JsonSerializer.Deserialize<Dictionary<string, object>>(stateDiffJson) ?? new();
-                    MergeGameDict(diff);
-                    GameStateUpdated?.Invoke();
-                });
-
-                connection.On<string>("RoomStateUpdate", (roomStateJson) =>
-                {
-                    roomState = JsonSerializer.Deserialize<Dictionary<string, object>>(roomStateJson) ?? new();
-                    RoomStateUpdated?.Invoke();
-                });
-
-                connection.On("GameStarted", () =>
-                {
-                    GameStarted?.Invoke();
-                });
-
-                connection.On<string>("GameEnded", (message) =>
-                {
-                    GameEnded?.Invoke(message);
-                });
-
-                connection.On<int>("SeatSwitched", (newPlayerId) =>
-                {
-                    registeredPlayerId = newPlayerId;
-                    switchSeatCompletionSource?.TrySetResult((true, ""));
-                });
-
-                connection.On<string>("SwitchSeatFailed", (errorMessage) =>
-                {
-                    switchSeatCompletionSource?.TrySetResult((false, errorMessage));
-                });
-
-                await connection.StartAsync();
-                return true;
+                ConnectionFailed?.Invoke($"Connection failed after {maxRetries} attempts: {lastException?.Message}");
+                return false;
             }
             catch (Exception ex)
             {
                 // Clean up the failed connection
                 if (connection != null)
                 {
-                    await connection.DisposeAsync();
+                    try { await connection.DisposeAsync(); } catch { }
                     connection = null;
                 }
                 ConnectionFailed?.Invoke($"Connection failed: {ex.Message}");
                 return false;
             }
+        }
+
+        private void SetupConnectionHandlers()
+        {
+            if (connection == null) return;
+
+            connection.Closed += async (error) =>
+            {
+                // Connection will auto-reconnect due to WithAutomaticReconnect
+                System.Diagnostics.Debug.WriteLine($"Connection closed: {error?.Message}");
+            };
+
+            connection.Reconnected += async (connectionId) =>
+            {
+                // Re-join the game after reconnection
+                if (registeredGameId > 0)
+                {
+                    await connection.InvokeAsync("JoinGame", clientId, nickname, registeredGameId, registeredPlayerId);
+                }
+            };
+
+            connection.On<int, int, string, string>("RoomCreated", (gameId, playerId, gameStateJson, roomStateJson) =>
+            {
+                registeredGameId = gameId;
+                registeredPlayerId = playerId;
+                MergeGameDict(JsonSerializer.Deserialize<Dictionary<string, object>>(gameStateJson) ?? new());
+                roomState = JsonSerializer.Deserialize<Dictionary<string, object>>(roomStateJson) ?? new();
+
+                // Check if game has already started
+                bool gameStarted = false;
+                if (roomState.TryGetValue("gameStarted", out var gameStartedObj))
+                {
+                    if (gameStartedObj is bool b) gameStarted = b;
+                    else if (gameStartedObj is JsonElement je && je.ValueKind == JsonValueKind.True) gameStarted = true;
+                }
+
+                // Complete join operation successfully
+                joinCompletionSource?.TrySetResult((true, ""));
+
+                Registered?.Invoke(gameId, playerId, gameStarted);
+                GameStateUpdated?.Invoke();
+                RoomStateUpdated?.Invoke();
+            });
+
+            connection.On<string>("JoinFailed", (errorMessage) =>
+            {
+                // Complete join operation with failure
+                joinCompletionSource?.TrySetResult((false, errorMessage));
+            });
+
+            connection.On<string>("GameStateUpdate", (stateDiffJson) =>
+            {
+                var diff = JsonSerializer.Deserialize<Dictionary<string, object>>(stateDiffJson) ?? new();
+                MergeGameDict(diff);
+                GameStateUpdated?.Invoke();
+            });
+
+            connection.On<string>("RoomStateUpdate", (roomStateJson) =>
+            {
+                roomState = JsonSerializer.Deserialize<Dictionary<string, object>>(roomStateJson) ?? new();
+                RoomStateUpdated?.Invoke();
+            });
+
+            connection.On("GameStarted", () =>
+            {
+                GameStarted?.Invoke();
+            });
+
+            connection.On<string>("GameEnded", (message) =>
+            {
+                GameEnded?.Invoke(message);
+            });
+
+            connection.On<int>("SeatSwitched", (newPlayerId) =>
+            {
+                registeredPlayerId = newPlayerId;
+                switchSeatCompletionSource?.TrySetResult((true, ""));
+            });
+
+            connection.On<string>("SwitchSeatFailed", (errorMessage) =>
+            {
+                switchSeatCompletionSource?.TrySetResult((false, errorMessage));
+            });
         }
 
         public async Task<bool> CreateRoomAsync(int numberOfPlayers, Dictionary<string, int> roleDict, int speechDuration = 120, int werewolfDuration = 60, int godDuration = 30)

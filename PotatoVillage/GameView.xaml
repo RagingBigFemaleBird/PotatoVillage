@@ -55,54 +55,34 @@
             </Label>
         </Grid>
 
-        <!-- Right side: Game status (1/3), controls (1/3), and timer (1/3) -->
-        <Grid Grid.Column="1" RowDefinitions="1*,4*,1*">
-            <!-- Top 1/3: Game Status -->
-            <Frame x:Name="GameStatusFrame"
-                   Grid.Row="0" 
-                   Padding="0"
-                   CornerRadius="0"
-                   HasShadow="False"
-                   BackgroundColor="Transparent"
-                   BorderColor="Transparent">
-                <VerticalStackLayout Spacing="8" VerticalOptions="FillAndExpand" HorizontalOptions="FillAndExpand">
-                    <Label x:Name="GameStatusLabel" 
-                           Text="" 
-                           LineBreakMode="TailTruncation"
-                           FontSize="14"
-                           MaxLines="2"
-                           VerticalOptions="FillAndExpand"
-                           HorizontalOptions="FillAndExpand"
-                           VerticalTextAlignment="Center"
-                           HorizontalTextAlignment="Center" />
-                </VerticalStackLayout>
-            </Frame>
-
-            <!-- Middle 1/3: Game info and controls -->
-            <ScrollView Grid.Row="1" Padding="0">
-                <VerticalStackLayout Spacing="12">
-
+        <!-- Right side: Target selection (top 3/4), Status bar and Counter (bottom 1/4) -->
+        <Grid Grid.Column="1" RowDefinitions="3*,1*">
+            <!-- Top 3/4: Target selection area -->
+            <ScrollView Grid.Row="0" Padding="5">
+                <VerticalStackLayout Spacing="8">
                     <!-- Target selection area (initially hidden) -->
                     <Frame x:Name="TargetSelectionContainer" 
                            IsVisible="False"
-                           Padding="0"
+                           Padding="10"
                            CornerRadius="8"
                            BackgroundColor="#F0F0F0"
-                           HasShadow="True"
-                           Margin="0,12,0,0">
+                           HasShadow="True">
                         <StackLayout Spacing="8">
                             <Label x:Name="TargetInstructionLabel" 
                                    Text="" 
                                    FontSize="18"
                                    TextColor="#666666" />
-                            
+
                             <!-- Target buttons container -->
                             <FlexLayout x:Name="TargetButtonsContainer"
                                         Wrap="Wrap"
                                         JustifyContent="Start"
                                         AlignItems="Center"
+                                        AlignContent="Start"
+                                        Direction="Row"
+                                        MinimumHeightRequest="50"
                                         Margin="0,8,0,0" />
-                            
+
                             <!-- Confirm button -->
                             <Button x:Name="ConfirmButton"
                                     Text="Confirmed"
@@ -118,36 +98,60 @@
                 </VerticalStackLayout>
             </ScrollView>
 
-            <!-- Bottom 1/3: Countdown timer -->
-            <Frame Grid.Row="2" 
-                   Padding="0"
-                   CornerRadius="0"
-                   HasShadow="False"
-                   BackgroundColor="Transparent"
-                   BorderColor="Transparent">
-                <Grid BackgroundColor="Transparent" Padding="0">
+            <!-- Bottom 1/4: Status bar (6 parts) and Counter (1 part) -->
+            <Grid Grid.Row="1" ColumnDefinitions="6*,1*" Padding="5,0">
+                <!-- Left 6/7: Game Status -->
+                <Frame x:Name="GameStatusFrame"
+                       Grid.Column="0" 
+                       Padding="10"
+                       CornerRadius="8"
+                       HasShadow="False"
+                       BackgroundColor="#F8F8F8"
+                       BorderColor="#E0E0E0">
+                    <Grid>
+                        <Label x:Name="GameStatusLabel" 
+                               Text="" 
+                               LineBreakMode="TailTruncation"
+                               FontSize="20"
+                               MaxLines="3"
+                               VerticalOptions="Center"
+                               HorizontalOptions="Start"
+                               VerticalTextAlignment="Center"
+                               HorizontalTextAlignment="Start" />
+
+                        <!-- Announcer Toggle Button - Bottom Right of status bar -->
+                        <Button x:Name="AnnouncerBtn"
+                                Text="🔇"
+                                FontSize="10"
+                                WidthRequest="25"
+                                HeightRequest="25"
+                                CornerRadius="12"
+                                BackgroundColor="LightGray"
+                                HorizontalOptions="End"
+                                VerticalOptions="End"
+                                Clicked="OnAnnouncerToggleClicked" />
+                    </Grid>
+                </Frame>
+
+                <!-- Right 1/7: Countdown timer -->
+                <Frame Grid.Column="1" 
+                       Padding="5"
+                       CornerRadius="8"
+                       HasShadow="False"
+                       BackgroundColor="#FFE0E0"
+                       BorderColor="#FF8080"
+                       Margin="5,0,0,0">
                     <Label x:Name="CountdownLabel" 
                            Text=""
-                           FontSize="40"
+                           FontSize="36"
                            FontAttributes="Bold"
                            TextColor="Red"
                            HorizontalTextAlignment="Center"
-                           VerticalTextAlignment="Center" />
-
-                    <!-- Announcer Toggle Button - Bottom Right -->
-                    <Button x:Name="AnnouncerBtn"
-                            Text="🔇"
-                            FontSize="10"
-                            WidthRequest="25"
-                            HeightRequest="25"
-                            CornerRadius="12"
-                            BackgroundColor="LightGray"
-                            HorizontalOptions="End"
-                            VerticalOptions="End"
-                            Margin="0,0,10,10"
-                            Clicked="OnAnnouncerToggleClicked" />
-                </Grid>
-            </Frame>
+                           VerticalTextAlignment="Center"
+                           HorizontalOptions="Center"
+                           VerticalOptions="Center" />
+                </Frame>
+            </Grid>
         </Grid>
     </Grid>
 

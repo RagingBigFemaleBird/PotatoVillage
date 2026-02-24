@@ -19,6 +19,10 @@ namespace PotatoVillage
         private bool warningBeepPlayed = false; // Track if 15-second warning beep was played
         private int serverTimeOffset = 0; // Offset between server and client clocks (server_time - client_time)
 
+        // Track currently displayed target selection to avoid flickering rebuilds
+        private int currentDisplayedDeadline = 0;
+        private int currentDisplayedHint = -1;
+
         // User action dictionary keys
         private const string DictUserAction = "user_action";
         private const string DictUserActionUsers = "user_users";
@@ -649,6 +653,20 @@ namespace PotatoVillage
 
         private void DisplayTargetSelection(int userActionDeadline, List<int> availableTargets, int maxTargetCount, int hintIndex, string userInfo = "", Dictionary<string, object>? userResponse = null)
         {
+            // Check if we're already displaying the same target selection
+            // If so, don't rebuild the UI to avoid flickering
+            if (currentDisplayedDeadline == userActionDeadline && 
+                currentDisplayedHint == hintIndex && 
+                TargetSelectionContainer.IsVisible)
+            {
+                // Already displaying this state, no need to rebuild
+                return;
+            }
+
+            // Track the current displayed state
+            currentDisplayedDeadline = userActionDeadline;
+            currentDisplayedHint = hintIndex;
+
             // Cancel previous countdown if any
             countdownCts?.Cancel();
             countdownCts = new CancellationTokenSource();
@@ -749,7 +767,11 @@ namespace PotatoVillage
                         BackgroundColor = ownChoices.Contains(specialTarget) ? Colors.Orange : Colors.LightGray,
                         TextColor = Colors.Black,
                         IsEnabled = true,
-                        Opacity = 1.0
+                        Opacity = 1.0,
+                        MinimumWidthRequest = 60,
+                        MinimumHeightRequest = 40,
+                        HeightRequest = 45,
+                        FontSize = 16
                     };
 
                     int capturedTargetId = specialTarget;
@@ -783,6 +805,10 @@ namespace PotatoVillage
                     TextColor = Colors.Black,
                     IsEnabled = true,
                     Opacity = 1.0,
+                    MinimumWidthRequest = 50,
+                    MinimumHeightRequest = 40,
+                    HeightRequest = 45,
+                    FontSize = 18
                 };
 
                 int capturedTargetId = targetId;
@@ -794,6 +820,9 @@ namespace PotatoVillage
             // Show target selection container and confirm button
             TargetSelectionContainer.IsVisible = true;
             ConfirmButton.IsVisible = true;
+
+            // Force layout update on Android to ensure buttons are properly rendered
+            TargetButtonsContainer.InvalidateMeasure();
 
             // Start countdown timer
             StartCountdown(userActionDeadline, countdownCts.Token);
@@ -894,6 +923,10 @@ namespace PotatoVillage
 
         private void HideTargetSelection()
         {
+            // Reset tracking variables
+            currentDisplayedDeadline = 0;
+            currentDisplayedHint = -1;
+
             countdownCts?.Cancel();
             countdownCts = null;
             selectedTargets.Clear();

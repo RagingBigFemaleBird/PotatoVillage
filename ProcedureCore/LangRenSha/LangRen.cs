@@ -17,7 +17,7 @@ namespace ProcedureCore.LangRenSha
                 { LangRenSha.dictPlayerFaction, LangRenSha.PlayerFaction.Evil },
             };
         private static List<int> actionOrders = new()
-            { 99, 100, 101, 102 };
+            { 99, 100, 101, 102, 200 };
 
         public LangRen()
         {
@@ -90,29 +90,48 @@ namespace ProcedureCore.LangRenSha
 
         public void Sha(Game game, List<int> targets, Dictionary<string, object> update)
         {
-            var attackTarget = Game.GetGameDictionaryProperty(game, dictAttackTarget, new List<int>());
             var aboutToDie = Game.GetGameDictionaryProperty(game, LangRenSha.dictAboutToDie, new List<int>());
             foreach (var target in targets)
             {
-                attackTarget.Add(target);
                 int guardTarget = -1;
                 var shouWei = Game.GetGameDictionaryProperty(game, ShouWei.dictGuardTarget, 0);
                 var wuZhe = Game.GetGameDictionaryProperty(game, WuZhe.dictDanced, new List<int>());
                 var miceTag = Game.GetGameDictionaryProperty(game, LaoShu.dictMiceTag, 0);
                 var laoShu = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == "LaoShu");
                 var laoShuPlayer = laoShu.Count > 0 ? laoShu[0] : -1;
+                var sheMengRenTarget = Game.GetGameDictionaryProperty(game, SheMengRen.dictSheMengTarget, 0);
+                var sheMengRenAlive = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == "SheMengRen" && (int)x[LangRenSha.dictAlive] == 1);
+                var xiongAlive = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == "Xiong" && (int)x[LangRenSha.dictAlive] == 1);
+                var xiongPlayer = xiongAlive.Count > 0 ? xiongAlive[0] : 0;
+                var xiongLinkPlayer = xiongPlayer > 0 ? LangRenSha.GetPlayerProperty(game, xiongPlayer, Xiong.dictXiongLink, 0) : 0;
 
-                if (guardTarget != target && !wuZhe.Contains(target) && (target != laoShuPlayer || miceTag == laoShuPlayer) && !aboutToDie.Contains(target))
+                if (sheMengRenTarget != target && guardTarget != target && !wuZhe.Contains(target) && (target != laoShuPlayer || miceTag == laoShuPlayer) && !aboutToDie.Contains(target))
                 {
                     aboutToDie.Add(target);
+                    if (sheMengRenAlive.Count > 0 && target == sheMengRenAlive[0])
+                    {
+                        var shemengTarget = Game.GetGameDictionaryProperty(game, SheMengRen.dictSheMengTarget, 0);
+                        if (shemengTarget > 0 && !aboutToDie.Contains(shemengTarget))
+                        {
+                            aboutToDie.Add(shemengTarget);
+                            LangRenSha.SetPlayerProperty(game, shemengTarget, LieRen.dictHuntingDisabled, 1, update);
+                        }
+                    }
                 }
-                if (guardTarget != target && !wuZhe.Contains(target) && (target == miceTag) && !aboutToDie.Contains(laoShuPlayer))
+                if (sheMengRenTarget != target && guardTarget != target && !wuZhe.Contains(target) && (target == miceTag) && !aboutToDie.Contains(laoShuPlayer))
                 {
                     aboutToDie.Add(laoShuPlayer);
                 }
+                foreach (var pl in aboutToDie)
+                {
+                    if (pl == xiongPlayer && xiongLinkPlayer > 0 && !aboutToDie.Contains(xiongLinkPlayer))
+                    {
+                        aboutToDie.Add(xiongLinkPlayer);
+                        LangRenSha.SetPlayerProperty(game, xiongLinkPlayer, LieRen.dictHuntingDisabled, 1, update);
+                    }
+                }
 
             }
-            update[dictAttackTarget] = attackTarget;
             update[LangRenSha.dictAboutToDie] = aboutToDie;
         }
         public GameActionResult GenerateStateDiff(Game game, Dictionary<string, object> update)
@@ -172,7 +191,7 @@ namespace ProcedureCore.LangRenSha
                         {
                             choose.Add(targets[0]);
                         }
-                        Sha(game, choose, update);
+                        update[dictAttackTarget] = choose;
                     }
                     LangRenSha.AdvanceAction(game, update);
                     return GameActionResult.Restart;
@@ -212,7 +231,7 @@ namespace ProcedureCore.LangRenSha
                                 {
                                     choose.Add(targets[0]);
                                 }
-                                Sha(game, choose, update);
+                                update[dictAttackTarget] = choose;
                                 UserAction.EndUserAction(game, update, true);
                                 LangRenSha.AdvanceAction(game, update);
                                 return GameActionResult.Restart;
@@ -276,7 +295,18 @@ namespace ProcedureCore.LangRenSha
                 return GameActionResult.NotExecuted;
             }
 
+            if (Game.GetGameDictionaryProperty(game, LangRenSha.dictAction, 0) == ActionOrders[4])
+            {
+                var attackTarget = Game.GetGameDictionaryProperty(game, dictAttackTarget, new List<int>());
+                if (attackTarget.Count > 0)
+                {
+                    Sha(game, attackTarget, update);
+                }
+                LangRenSha.AdvanceAction(game, update);
+                return GameActionResult.Restart;
+            }
             return GameActionResult.NotExecuted;
         }
+
     }
 }

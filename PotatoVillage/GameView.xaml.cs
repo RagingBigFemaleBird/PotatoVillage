@@ -18,6 +18,7 @@ namespace PotatoVillage
         private bool announcerEnabled = false; // Client-only setting, default off
         private bool warningBeepPlayed = false; // Track if 15-second warning beep was played
         private int serverTimeOffset = 0; // Offset between server and client clocks (server_time - client_time)
+        private int lastServerTime = 0;
 
         // Track currently displayed target selection to avoid flickering rebuilds
         private int currentDisplayedDeadline = 0;
@@ -52,6 +53,7 @@ namespace PotatoVillage
             { 153, new Dictionary<int, string> { { -2, "Left" }, { -1, "Right"} } },
         };
 
+        // Handlers for user actions (DisplayTargetSelection path)
         private static readonly Dictionary<int, Func<string, string>> UserInfoHints = new()
         {
             { 3, NvWuInfoHandler },
@@ -64,6 +66,13 @@ namespace PotatoVillage
             { 105, SheriffPKHandler },
             { 154, VoteResultInfoHandler },
             { 1000, CheckRoleInfoHandler },
+            { 1003, GameWinnerHandler },
+        };
+
+        // Handlers for announcements (DisplayCurrentlyActing path, user == -1)
+        private static readonly Dictionary<int, Func<string, string>> AnnouncementInfoHandlers = new()
+        {
+            { 152, DeathAnnouncementHandler },
             { 1003, GameWinnerHandler },
         };
 
@@ -106,14 +115,67 @@ namespace PotatoVillage
             return txt.Replace("{0}", userInfo);
         }
 
-        private static string CheckRoleInfoHandler(string role)
+        private static string DeathAnnouncementHandler(string userInfo)
         {
+            var localization = LocalizationManager.Instance;
+
+            // Parse the userInfo: "deadPlayers;xiongBark" or just "deadPlayers"
+            var parts = userInfo.Split(';');
+            var deadPlayersStr = parts.Length > 0 ? parts[0] : "";
+            var xiongBarkStr = parts.Length > 1 ? parts[1] : "";
+
+            string result;
+            // Format death announcement
+            if (string.IsNullOrEmpty(deadPlayersStr))
+            {
+                result = localization.GetString("death_announcement_none", "Last night no deaths.");
+            }
+            else
+            {
+                var txt = localization.GetString("death_announcement", "Last night death: {0}");
+                result = txt.Replace("{0}", deadPlayersStr);
+            }
+
+            // Add Xiong bark info if provided
+            if (!string.IsNullOrEmpty(xiongBarkStr))
+            {
+                if (xiongBarkStr == "1")
+                {
+                    // Xiong barked
+                    result += "\n" + localization.GetString("xiong_barked", "Bear barked!");
+                }
+                else if (xiongBarkStr == "2")
+                {
+                    // Xiong did not bark
+                    result += "\n" + localization.GetString("xiong_not_barked", "Bear did not bark.");
+                }
+            }
+
+            return result;
+        }
+
+        private static string CheckRoleInfoHandler(string userInfo)
+        {
+            var localization = LocalizationManager.Instance;
+
+            // Parse comma-separated string: role,allegiance
+            var parts = userInfo.Split(',');
+            var role = parts.Length > 0 ? parts[0] : "";
+            var allegiance = parts.Length > 1 ? parts[1] : "1";
+
+            // Translate role name
             if (!string.IsNullOrEmpty(role))
             {
-                role = LocalizationManager.Instance.GetString(role);
+                role = localization.GetString(role);
             }
-            var txt = LocalizationManager.Instance.GetString("check_role_info", "Your role is {0}.");
-            return txt.Replace("{0}", role);
+
+            // Translate allegiance (1 = good, 2 = evil)
+            var allegianceText = allegiance == "2" 
+                ? localization.GetString("evil") 
+                : localization.GetString("good");
+
+            var txt = localization.GetString("check_role_info", "Your role is {0}.");
+            return txt.Replace("{0}", $"{role} ({allegianceText})");
         }
 
         private static string NvWuInfoHandler(string userInfo)
@@ -350,6 +412,8 @@ namespace PotatoVillage
                 4 => "wuzhe_act",
                 6 => "jiamian_chayan",
                 7 => "yuyanjia_result",
+                8 => "shemengren_act",
+                9 => "xiong_act",
                 11 => "langren_kill_target",
                 50 => "open_eyes",
                 51 => "close_eyes",
@@ -396,7 +460,7 @@ namespace PotatoVillage
         {
             var gameDict = connectionManager?.GetGameDictionary() ?? new();
             var playersDict = GetDictionaryValue(gameDict.TryGetValue("players", out var playersObj) ? playersObj : null);
-            
+
             if (playersDict == null || playersDict.Count == 0)
                 return string.Empty;
 
@@ -408,13 +472,48 @@ namespace PotatoVillage
             return GetStringValue(playerDict.TryGetValue("role", out var roleObj) ? roleObj : null) ?? string.Empty;
         }
 
+        private int GetPlayerAllegiance(int playerId)
+        {
+            var gameDict = connectionManager?.GetGameDictionary() ?? new();
+            var playersDict = GetDictionaryValue(gameDict.TryGetValue("players", out var playersObj) ? playersObj : null);
+
+            if (playersDict == null || playersDict.Count == 0)
+                return 1; // Default to good
+
+            var playerKey = playerId.ToString();
+            if (!playersDict.ContainsKey(playerKey))
+                return 1; // Default to good
+
+            var playerDict = GetDictionaryValue(playersDict[playerKey]);
+            return GetInt32Value(playerDict.TryGetValue("alliance", out var allianceObj) ? allianceObj : null) ?? 1;
+        }
+
+        private bool IsPlayerDead(int playerId)
+        {
+            var gameDict = connectionManager?.GetGameDictionary() ?? new();
+            var playersDict = GetDictionaryValue(gameDict.TryGetValue("players", out var playersObj) ? playersObj : null);
+
+            if (playersDict == null || playersDict.Count == 0)
+                return false;
+
+            var playerKey = playerId.ToString();
+            if (!playersDict.ContainsKey(playerKey))
+                return false;
+
+            var playerDict = GetDictionaryValue(playersDict[playerKey]);
+            var aliveValue = GetInt32Value(playerDict.TryGetValue("alive", out var aliveObj) ? aliveObj : null);
+
+            // Player is dead if alive == 0
+            return aliveValue == 0;
+        }
+
         private Dictionary<string, object> GetDictionaryValue(object? obj)
         {
             if (obj == null) return new();
-            
+
             if (obj is Dictionary<string, object> dict)
                 return dict;
-            
+
             if (obj is JsonElement je && je.ValueKind == JsonValueKind.Object)
             {
                 var result = new Dictionary<string, object>();
@@ -465,7 +564,12 @@ namespace PotatoVillage
                     }
                 }
 
-                // Get user action related data
+                // Check if current player is dead and update player ID color
+                var isPlayerDead = IsPlayerDead(playerId);
+                var playerIdColor = isPlayerDead ? Colors.Red : Colors.Blue;
+                PlayerIdTopLabel.TextColor = playerIdColor;
+                PlayerIdBottomLabel.TextColor = playerIdColor;
+
                 var userAction = GetInt32Value(gameDict.TryGetValue(DictUserAction, out var uaObj) ? uaObj : null) ?? 0;
                 var userUsers = GetInt32List(gameDict.TryGetValue(DictUserActionUsers, out var uuObj) ? uuObj : null);
                 var userTargets = GetInt32List(gameDict.TryGetValue(DictUserActionTargets, out var utObj) ? utObj : null);
@@ -476,10 +580,11 @@ namespace PotatoVillage
 
                 // Calculate server-client clock offset for accurate countdown
                 var serverTime = GetInt32Value(gameDict.TryGetValue(DictServerTime, out var stObj) ? stObj : null) ?? 0;
-                if (serverTime > 0)
+                if (serverTime != lastServerTime)
                 {
                     int clientNow = (int)DateTimeOffset.UtcNow.ToUnixTimeSeconds();
                     serverTimeOffset = serverTime - clientNow;
+                    lastServerTime = serverTime;
                 }
 
                 var speaking = GetInt32List(gameDict.TryGetValue(DictSpeaker, out var speakingObj) ? speakingObj : null);
@@ -522,10 +627,20 @@ namespace PotatoVillage
 
             if (actingPlayerIds.Contains(-1) && actingPlayerIds.Count == 1)
             {
-                var hintText = GetTargetHint(userTargetsHint);
-                userInfo = LocalizationManager.Instance.GetString(userInfo);
-                hintText = hintText.Replace("{0}", userInfo);
-                GameStatusLabel.Text = hintText;
+                // This is an announcement (user == -1)
+                // Check if there's a special handler for this hint
+                if (AnnouncementInfoHandlers.TryGetValue(userTargetsHint, out var handler))
+                {
+                    GameStatusLabel.Text = handler(userInfo);
+                }
+                else
+                {
+                    // Default handling: get hint text and replace {0} with userInfo
+                    var hintText = GetTargetHint(userTargetsHint);
+                    userInfo = LocalizationManager.Instance.GetString(userInfo);
+                    hintText = hintText.Replace("{0}", userInfo);
+                    GameStatusLabel.Text = hintText;
+                }
                 UpdateGameStatusFontSize();
 
                 // Play voiceover
@@ -654,10 +769,9 @@ namespace PotatoVillage
         private void DisplayTargetSelection(int userActionDeadline, List<int> availableTargets, int maxTargetCount, int hintIndex, string userInfo = "", Dictionary<string, object>? userResponse = null)
         {
             // Check if we're already displaying the same target selection
-            // If so, don't rebuild the UI to avoid flickering
+            // Only compare deadline and hint - don't rely on UI visibility state which can have race conditions
             if (currentDisplayedDeadline == userActionDeadline && 
-                currentDisplayedHint == hintIndex && 
-                TargetSelectionContainer.IsVisible)
+                currentDisplayedHint == hintIndex)
             {
                 // Already displaying this state, no need to rebuild
                 return;
@@ -692,7 +806,9 @@ namespace PotatoVillage
 
             if (hintIndex == 1000)
             {
-                userInfo = GetPlayerRole(playerId);
+                var role = GetPlayerRole(playerId);
+                var allegiance = GetPlayerAllegiance(playerId);
+                userInfo = $"{role},{allegiance}";
             }
             if (hintIndex == 75)
             {
@@ -820,6 +936,8 @@ namespace PotatoVillage
             // Show target selection container and confirm button
             TargetSelectionContainer.IsVisible = true;
             ConfirmButton.IsVisible = true;
+            ConfirmButton.IsEnabled = true;
+            ConfirmButton.Text = LocalizationManager.Instance.GetString("confirm");
 
             // Force layout update on Android to ensure buttons are properly rendered
             TargetButtonsContainer.InvalidateMeasure();
@@ -893,12 +1011,14 @@ namespace PotatoVillage
 
                     if (!isPaused && timeRemaining <= 0)
                     {
-                        MainThread.BeginInvokeOnMainThread(() => HideTargetSelection());
+                        // Time expired locally - hide UI but don't reset tracking
+                        // The server will send an update that will reset tracking properly
+                        MainThread.BeginInvokeOnMainThread(() => HideTargetSelection(resetTracking: false));
                         break;
                     }
 
                     // Play warning beep when countdown reaches 15 seconds
-                    if (!isPaused && timeRemaining == 15 && !warningBeepPlayed)
+                    if (!isPaused && timeRemaining == 15 && !warningBeepPlayed && IsAnnouncerEnabled)
                     {
                         warningBeepPlayed = true;
                         MainThread.BeginInvokeOnMainThread(() => PlayWarningBeep());
@@ -921,11 +1041,15 @@ namespace PotatoVillage
             }, ct);
         }
 
-        private void HideTargetSelection()
+        private void HideTargetSelection(bool resetTracking = true)
         {
-            // Reset tracking variables
-            currentDisplayedDeadline = 0;
-            currentDisplayedHint = -1;
+            // Only reset tracking variables when the server indicates the action is complete
+            // Don't reset when hiding due to local countdown expiry (server might still have same deadline)
+            if (resetTracking)
+            {
+                currentDisplayedDeadline = 0;
+                currentDisplayedHint = -1;
+            }
 
             countdownCts?.Cancel();
             countdownCts = null;
@@ -947,12 +1071,21 @@ namespace PotatoVillage
             var localization = LocalizationManager.Instance;
             try
             {
+                // Disable confirm button to prevent double-clicks and show feedback
+                ConfirmButton.IsEnabled = false;
+                ConfirmButton.Text = "✓";
+
                 // Send the selected targets to the server via SignalR
+                // Don't hide the selection - let server state drive the UI
+                // This prevents countdown timer from resetting when server sends update
                 await connectionManager.SendTargetSelectionAsync(gameId, playerId, selectedTargets.ToList());
-                HideTargetSelection();
             }
             catch (Exception ex)
             {
+                // Re-enable on error
+                ConfirmButton.IsEnabled = true;
+                ConfirmButton.Text = localization.GetString("confirm");
+
                 await DisplayAlert(
                     localization.GetString("error"),
                     localization.GetString("failed_send_selection") + ": " + ex.Message,

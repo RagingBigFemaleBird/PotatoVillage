@@ -122,6 +122,10 @@ namespace Server
                 { "BaiChi", new BaiChi() },
                 { "LaoShu", new LaoShu() },
                 { "DaMao", new DaMao() },
+                { "Xiong", new Xiong() },
+                { "LangQiang", new LangQiang() },
+                { "SheMengRen", new SheMengRen() },
+                { "ShenLangGongWu1", new ShenLangGongWu1() },
             };
 
             if (!roleDict.ContainsKey("LangRen"))

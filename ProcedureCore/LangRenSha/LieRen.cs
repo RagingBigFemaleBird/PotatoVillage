@@ -101,7 +101,7 @@ namespace ProcedureCore.LangRenSha
                 var isTagged = lieRenAlive.Count > 0 && miceTag == lieRenPlayer;
                 var nightShootUsed = lieRenAlive.Count == 0 || LangRenSha.GetPlayerProperty(game, lieRenPlayer, dictHuntingDisabled, 0) == 1;
                 var actionDuration = Game.GetGameDictionaryProperty(game, LangRenSha.dictDurationPlayerReact, ActionDuration);
-                if (lieRenAlive.Count == 0)
+                if (lieRenAlive.Count == 0 || !isTagged || nightShootUsed)
                 {
                     actionDuration = new Random().Next(3, 6);
                 }

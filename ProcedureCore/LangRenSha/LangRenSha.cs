@@ -46,6 +46,8 @@ namespace ProcedureCore.LangRenSha
         {
             players = new List<(int, Role)>();
             RegisterDeadPlayerHandler(LieRen.HandleHunterDeathSkill);
+            RegisterDeadPlayerHandler(LangQiang.HandleLangQiangDeathSkill);
+            RegisterDeadPlayerHandler(Xiong.HandleXiongDeathSkill);
             // Players will be initialized dynamically in GenerateStateDiff based on roleDict
         }
 
@@ -59,11 +61,14 @@ namespace ProcedureCore.LangRenSha
                 "WuZhe" => new WuZhe(),
                 "JiaMian" => new JiaMian(),
                 "LieRen" => new LieRen(),
+                "LangQiang" => new LangQiang(),
                 "PingMin" => new PingMin(),
                 "BaiChi" => new BaiChi(),
                 "DaMao" => new DaMao(),
                 "LaoShu" => new LaoShu(),
-                _ => throw new ArgumentException($"Unknown role: {roleName}")
+                "SheMengRen" => new SheMengRen(),
+                "Xiong" => new Xiong(),
+                _ => throw new ArgumentException($"Not a role: {roleName}")
             };
         }
 
@@ -152,12 +157,12 @@ namespace ProcedureCore.LangRenSha
             if (game.StateSequenceNumber == 1)
             {
                 var no = Game.GetGameDictionaryProperty(game, LangRenSha.dictNightOrders, new List<int>());
-                no.AddRange([1, 2, 3, 4, 1000]);
+                no.AddRange([5, 6, 7, 8, 1000]);
                 update[LangRenSha.dictNightOrders] = no;
                 return GameActionResult.Continue;
             }
             // Game begin announcement
-            if (Game.GetGameDictionaryProperty(game, LangRenSha.dictAction, 0) == 1)
+            if (Game.GetGameDictionaryProperty(game, LangRenSha.dictAction, 0) == 5)
             {
                 if (Game.GetGameDictionaryProperty(game, LangRenSha.dictDay, 0) != 0 || UserAction.EndUserAction(game, update))
                 {
@@ -178,7 +183,7 @@ namespace ProcedureCore.LangRenSha
             }
 
             // Role check
-            if (Game.GetGameDictionaryProperty(game, LangRenSha.dictAction, 0) == 2)
+            if (Game.GetGameDictionaryProperty(game, LangRenSha.dictAction, 0) == 6)
             {
                 if (Game.GetGameDictionaryProperty(game, LangRenSha.dictDay, 0) != 0 || UserAction.EndUserAction(game, update))
                 {
@@ -200,7 +205,7 @@ namespace ProcedureCore.LangRenSha
             }
 
             // Put down device announcement
-            if (Game.GetGameDictionaryProperty(game, LangRenSha.dictAction, 0) == 3)
+            if (Game.GetGameDictionaryProperty(game, LangRenSha.dictAction, 0) == 7)
             {
                 if (Game.GetGameDictionaryProperty(game, LangRenSha.dictDay, 0) != 0 || UserAction.EndUserAction(game, update))
                 {
@@ -220,7 +225,8 @@ namespace ProcedureCore.LangRenSha
                 }
             }
 
-            if (Game.GetGameDictionaryProperty(game, LangRenSha.dictAction, 0) == 4)
+            // Night time announcement
+            if (Game.GetGameDictionaryProperty(game, LangRenSha.dictAction, 0) == 8)
             {
                 if (UserAction.EndUserAction(game, update))
                 {
@@ -611,6 +617,14 @@ namespace ProcedureCore.LangRenSha
                     if (UserAction.StartUserAction(game, 5, update))
                     {
                         var deathInfo = string.Join(", ", deadPlayers);
+
+                        // Add Xiong bark info if available (1 = barked, 2 = not barked)
+                        var xiongBark = Game.GetGameDictionaryProperty(game, Xiong.dictXiongBark, 0);
+                        if (xiongBark == 1 || xiongBark == 2)
+                        {
+                            deathInfo += $";{xiongBark}";
+                        }
+
                         update[UserAction.dictUserActionTargets] = new List<int>();
                         update[UserAction.dictUserActionUsers] = new List<int>() { -1 };
                         update[UserAction.dictUserActionTargetsCount] = 0;
@@ -1503,8 +1517,7 @@ namespace ProcedureCore.LangRenSha
                         update[dictCurrentSheriff] = 0;
                     }
 
-                    // Move to dead player skills phase
-                    update[dictSpeak] = 98;
+                    update[dictSpeak] = 100;
                     return GameActionResult.Restart;
                 }
                 else

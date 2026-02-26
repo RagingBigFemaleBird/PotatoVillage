@@ -58,12 +58,14 @@ namespace PotatoVillage
         {
             { 3, NvWuInfoHandler },
             { 5, LangRenSuccessionHandler },
+            { 12, LangRenSuccessionHandler },
             { 62, LangRenSuccessionHandler },
             { 6, JiaMianInfoHandler },
             { 7, YuYanJiaInfoHandler },
             { 76, GiftedPoisonHandler },
             { 104, SheriffSpeechHandler },
             { 105, SheriffPKHandler },
+            { 151, LieRenInfoHandler },
             { 154, VoteResultInfoHandler },
             { 1000, CheckRoleInfoHandler },
             { 1003, GameWinnerHandler },
@@ -75,6 +77,17 @@ namespace PotatoVillage
             { 152, DeathAnnouncementHandler },
             { 1003, GameWinnerHandler },
         };
+        private static string LieRenInfoHandler(string userInfo)
+        {
+            if (userInfo == "1")
+            {
+                return LocalizationManager.Instance.GetString("lieren_can_shoot", "Can shoot if dead.");
+            }
+            else
+            {
+                return LocalizationManager.Instance.GetString("lieren_cannot_shoot", "Shooting disabled.");
+            }
+        }
 
         private static string GiftedPoisonHandler(string userInfo)
         {
@@ -313,20 +326,34 @@ namespace PotatoVillage
 
                 // Get the container's width (Frame) minus padding (10 on each side)
                 double availableWidth = GameStatusFrame.Width - 20;
+                double availableHeight = GameStatusFrame.Height - 20;
 
                 if (availableWidth <= 0)
                 {
                     // Fallback: calculate from screen dimensions
-                    // Right column is 2/3 of screen width, minus padding
+                    // Right column is 5/6 of 2/3 of screen width
                     var displayInfo = DeviceDisplay.MainDisplayInfo;
                     double screenWidth = displayInfo.Width / displayInfo.Density;
-                    availableWidth = (screenWidth * 2 / 3) - 20;
+                    availableWidth = (screenWidth * 2 / 3) * 5 / 6 - 20;
+                }
+
+                if (availableHeight <= 0)
+                {
+                    // Fallback: calculate from screen height
+                    var displayInfo = DeviceDisplay.MainDisplayInfo;
+                    double screenHeight = displayInfo.Height / displayInfo.Density;
+                    availableHeight = (screenHeight * 1 / 5) - 20;
                 }
 
                 if (availableWidth <= 0)
                 {
                     // Final fallback default
                     availableWidth = 200;
+                }
+
+                if (availableHeight <= 0)
+                {
+                    availableHeight = 100;
                 }
 
                 // Start with a base font size
@@ -339,8 +366,7 @@ namespace PotatoVillage
                 }
 
                 // Estimate characters that fit at current font size
-                // Rough estimate: each character is about 0.6 * fontSize wide for Chinese
-                double avgCharWidth = 0.6 * maxFontSize;
+                double avgCharWidth = 2.2 * maxFontSize;
                 int maxCharsPerLine = (int)(availableWidth / avgCharWidth);
 
                 // Get the longest line in the text
@@ -351,6 +377,15 @@ namespace PotatoVillage
                 if (maxLineLength > maxCharsPerLine && maxCharsPerLine > 0)
                 {
                     double ratio = (double)maxCharsPerLine / maxLineLength;
+                    maxFontSize = Math.Max(10, maxFontSize * ratio);
+                }
+
+                double avgCharHeight = 0.6 * maxFontSize;
+                int maxLines = (int)(availableHeight / avgCharHeight);
+
+                if (lines.Count() > maxLines && maxLines > 0)
+                {
+                    double ratio = (double)maxLines / lines.Count();
                     maxFontSize = Math.Max(10, maxFontSize * ratio);
                 }
 
@@ -415,10 +450,13 @@ namespace PotatoVillage
                 8 => "shemengren_act",
                 9 => "xiong_act",
                 11 => "langren_kill_target",
+                12 => "converted_langren_succession",
                 50 => "open_eyes",
                 51 => "close_eyes",
                 52 => "lucky_one_open_eyes",
                 53 => "lucky_one_close_eyes",
+                54 => "converted_open_eyes",
+                55 => "converted_close_eyes",
                 75 => "check_mice",
                 100 => "volunteer_sheriff",
                 101 => "vote_sheriff",
@@ -671,7 +709,7 @@ namespace PotatoVillage
                     actingRoles.Add(LocalizationManager.Instance.GetString("lucky_one"));
                 }
                 else
-                    if (userTargetsHint == 1 || userTargetsHint == 11)
+                    if (userTargetsHint == 1 || userTargetsHint == 11 || userTargetsHint == 12)
                     {
                         actingRoles.Add(LocalizationManager.Instance.GetString("LangRen"));
                     }

@@ -23,7 +23,7 @@ namespace ProcedureCore.LangRenSha
                 { LangRenSha.dictPlayerFaction, LangRenSha.PlayerFaction.God },
             };
         private static List<int> actionOrders = new()
-            { 30, 31, 32, 33, 34, 35, 36, 37, 38 };
+            { (int)ActionConstant.LaoShu_OpenEyes, (int)ActionConstant.LaoShu_Tag, (int)ActionConstant.LaoShu_CloseEyes, (int)ActionConstant.LaoShu_LuckyOneOpenEyes, (int)ActionConstant.LaoShu_CheckMice, (int)ActionConstant.LaoShu_LuckyOneCloseEyes, (int)ActionConstant.LaoShu_GiftOpenEyes, (int)ActionConstant.LaoShu_GiftAct, (int)ActionConstant.LaoShu_GiftCloseEyes };
 
         public LaoShu()
         {

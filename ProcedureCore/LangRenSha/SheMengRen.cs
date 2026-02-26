@@ -16,7 +16,7 @@ namespace ProcedureCore.LangRenSha
             { LangRenSha.dictPlayerFaction, LangRenSha.PlayerFaction.God },
         };
 
-        private static List<int> actionOrders = new() { 40, 41, 42 };
+        private static List<int> actionOrders = new() { (int)ActionConstant.SheMengRen_OpenEyes, (int)ActionConstant.SheMengRen_Act, (int)ActionConstant.SheMengRen_CloseEyes };
 
         public SheMengRen()
         {

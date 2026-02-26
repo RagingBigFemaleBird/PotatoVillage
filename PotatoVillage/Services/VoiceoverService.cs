@@ -39,6 +39,9 @@ namespace PotatoVillage.Services
             { "老鼠", "laoshu" },
             { "大猫", "damao" },
             { "幸运儿", "xingyuner" },
+            { "摄梦人", "shemengren" },
+            { "狼枪", "langqiang" },
+            { "转换者", "zhuanhuanzhe" }, 
             { "警长", "jingzhang" },
             
             // Common phrases

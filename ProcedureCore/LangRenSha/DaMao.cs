@@ -19,7 +19,7 @@ namespace ProcedureCore.LangRenSha
                 { LangRenSha.dictPlayerFaction, LangRenSha.PlayerFaction.Evil },
             };
         private static List<int> actionOrders = new()
-            { 20, 21, 22 };
+            { (int)ActionConstant.DaMao_OpenEyes, (int)ActionConstant.DaMao_Act, (int)ActionConstant.DaMao_CloseEyes };
 
         public DaMao()
         {

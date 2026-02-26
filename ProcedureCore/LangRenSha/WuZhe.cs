@@ -17,7 +17,7 @@ namespace ProcedureCore.LangRenSha
                 { LangRenSha.dictPlayerFaction, LangRenSha.PlayerFaction.God },
             };
         private static List<int> actionOrders = new()
-            { 59, 60, 61, 130 };
+            { (int)ActionConstant.WuZhe_OpenEyes, (int)ActionConstant.WuZhe_Act, (int)ActionConstant.WuZhe_CloseEyes, (int)ActionConstant.WuZhe_Dance };
         public WuZhe()
         {
         }

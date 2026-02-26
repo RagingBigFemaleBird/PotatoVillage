@@ -17,7 +17,7 @@ namespace ProcedureCore.LangRenSha
                 { LangRenSha.dictPlayerFaction, LangRenSha.PlayerFaction.Evil },
             };
         private static List<int> actionOrders = new()
-            { 99, 100, 101, 102, 200 };
+            { (int)ActionConstant.LangRen_OpenEyes, (int)ActionConstant.LangRen_SelectTarget, (int)ActionConstant.LangRen_ConfirmKill, (int)ActionConstant.LangRen_CloseEyes, (int)ActionConstant.LangRen_Kill };
 
         public LangRen()
         {
@@ -67,7 +67,7 @@ namespace ProcedureCore.LangRenSha
 
         public static GameActionResult RevealSelf(Game game, int player, List<int> targets, Dictionary<string, object> update)
         {
-            if (Game.GetGameDictionaryProperty(game, LangRenSha.dictSpeak, 0) == 1 || Game.GetGameDictionaryProperty(game, LangRenSha.dictSpeak, 0) == 31)
+            if (Game.GetGameDictionaryProperty(game, LangRenSha.dictSpeak, 0) == (int)SpeakConstant.SheriffSpeech || Game.GetGameDictionaryProperty(game, LangRenSha.dictSpeak, 0) == (int)SpeakConstant.DaySpeech)
             {
                 var langRen = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == "LangRen" && (int)x[LangRenSha.dictAlive] == 1);
                 if (langRen.Contains(player))
@@ -78,8 +78,8 @@ namespace ProcedureCore.LangRenSha
                         update[LangRenSha.dictSkipDaySpeech] = 1;
                         var interrupted = new Dictionary<string, object>();
                         var currentSpeak = Game.GetGameDictionaryProperty(game, LangRenSha.dictSpeak, 0);
-                        interrupted[LangRenSha.dictSpeak] = 9;
-                        update[LangRenSha.dictSpeak] = 97;
+                        interrupted[LangRenSha.dictSpeak] = (int)SpeakConstant.DeathAnnouncement;
+                        update[LangRenSha.dictSpeak] = (int)SpeakConstant.DeathHandlingInterrupt;
                         update[LangRenSha.dictInterrupt] = interrupted;
                         return GameActionResult.Restart;
                     }    

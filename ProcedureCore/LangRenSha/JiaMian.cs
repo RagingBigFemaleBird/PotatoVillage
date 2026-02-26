@@ -18,7 +18,7 @@ namespace ProcedureCore.LangRenSha
                 { LangRenSha.dictPlayerFaction, LangRenSha.PlayerFaction.Evil },
             };
         private static List<int> actionOrders = new()
-            { 69, 70, 71, 72 };
+            { (int)ActionConstant.JiaMian_OpenEyes, (int)ActionConstant.JiaMian_ChaYan, (int)ActionConstant.JiaMian_Reverse, (int)ActionConstant.JiaMian_CloseEyes };
         public JiaMian()
         {
         }

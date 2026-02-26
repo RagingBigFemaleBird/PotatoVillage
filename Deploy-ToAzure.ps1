@@ -3,7 +3,7 @@
 
 param(
     [string]$ResourceGroupName = "pv-resource-group",
-    [string]$Location = "westus",
+    [string]$Location = "eastus",
     [string]$WebAppName = "potatovillage-server",
     [string]$AppServicePlanSku = "B1"
 )

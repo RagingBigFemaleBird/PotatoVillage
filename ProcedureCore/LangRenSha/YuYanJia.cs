@@ -19,7 +19,7 @@ namespace ProcedureCore.LangRenSha
                 { LangRenSha.dictPlayerFaction, LangRenSha.PlayerFaction.God },
             };
         private static List<int> actionOrders = new()
-            { 149, 150, 151, 152 };
+            { (int)ActionConstant.YuYanJia_OpenEyes, (int)ActionConstant.YuYanJia_ChaYan, (int)ActionConstant.YuYanJia_Result, (int)ActionConstant.YuYanJia_CloseEyes };
 
         public YuYanJia()
         {

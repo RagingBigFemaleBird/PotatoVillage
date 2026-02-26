@@ -16,7 +16,7 @@ namespace ProcedureCore.LangRenSha
                 { LangRenSha.dictPlayerFaction, LangRenSha.PlayerFaction.God },
             };
         private static List<int> actionOrders = new()
-            { 170, 171, 172 };
+            { (int)ActionConstant.LieRen_OpenEyes, (int)ActionConstant.LieRen_Act, (int)ActionConstant.LieRen_CloseEyes };
 
         public LieRen()
         {
@@ -68,17 +68,12 @@ namespace ProcedureCore.LangRenSha
         {
             if (game.StateSequenceNumber == 1)
             {
-                // Only add actions if LaoShu is present in the game
-                var laoShuPresent = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == "LaoShu").Count > 0;
-                if (laoShuPresent)
+                var addSelf = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == Name);
+                if (addSelf.Count > 0)
                 {
-                    var addSelf = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == Name);
-                    if (addSelf.Count > 0)
-                    {
-                        var no = Game.GetGameDictionaryProperty(game, LangRenSha.dictNightOrders, new List<int>());
-                        no.AddRange(ActionOrders);
-                        update[LangRenSha.dictNightOrders] = no;
-                    }
+                    var no = Game.GetGameDictionaryProperty(game, LangRenSha.dictNightOrders, new List<int>());
+                    no.AddRange(ActionOrders);
+                    update[LangRenSha.dictNightOrders] = no;
                 }
                 return GameActionResult.Continue;
             }
@@ -143,6 +138,7 @@ namespace ProcedureCore.LangRenSha
                         update[UserAction.dictUserActionUsers] = lieRen;
                         update[UserAction.dictUserActionTargetsCount] = 1;
                         update[UserAction.dictUserActionTargetsHint] = 151; // Hunter kill hint
+                        update[UserAction.dictUserActionInfo] = nightShootUsed ? "0" : "1";
                         return GameActionResult.Restart;
                     }
                     else

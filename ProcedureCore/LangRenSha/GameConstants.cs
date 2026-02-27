@@ -68,20 +68,20 @@ namespace ProcedureCore.LangRenSha
         YuYanJia_Result = 151,
         YuYanJia_CloseEyes = 152,
 
-        // === LieRen (170-172) ===
-        LieRen_OpenEyes = 170,
-        LieRen_Act = 171,
-        LieRen_CloseEyes = 172,
+        // === Xiong (160-162) ===
+        Xiong_OpenEyes = 160,
+        Xiong_Act = 161,
+        Xiong_CloseEyes = 162,
 
-        // === LangQiang (175-177) ===
-        LangQiang_OpenEyes = 175,
-        LangQiang_Act = 176,
-        LangQiang_CloseEyes = 177,
+        // === LieRen (270-272) ===
+        LieRen_OpenEyes = 270,
+        LieRen_Act = 271,
+        LieRen_CloseEyes = 272,
 
-        // === Xiong (180-182) ===
-        Xiong_OpenEyes = 180,
-        Xiong_Act = 181,
-        Xiong_CloseEyes = 182,
+        // === LangQiang (275-277) ===
+        LangQiang_OpenEyes = 275,
+        LangQiang_Act = 276,
+        LangQiang_CloseEyes = 277,
 
         // === Day Time (1000) ===
         DayTimeAnnouncement = 1000,
@@ -128,5 +128,79 @@ namespace ProcedureCore.LangRenSha
         DeadPlayerSkillsProcessing = 98,
         DeadPlayerSheriffHandover = 99,
         DeadPlayerSpeak = 100,
+    }
+
+    /// <summary>
+    /// User action target hint constants.
+    /// These are used to display appropriate UI hints for player actions.
+    /// </summary>
+    public enum HintConstant
+    {
+        // === LangRen (1, 11-12) ===
+        LangRen_Kill = 1,
+        LangRen_KillTarget = 11,
+        LangRen_ConvertedSuccession = 12,
+
+        // === YuYanJia (2, 7) ===
+        YuYanJia_ChaYan = 2,
+        YuYanJia_Result = 7,
+
+        // === NvWu (3) ===
+        NvWu_Act = 3,
+
+        // === WuZhe (4) ===
+        WuZhe_Act = 4,
+
+        // === JiaMian (5-6) ===
+        JiaMian_OpenEyes = 5,
+        JiaMian_ChaYan = 6,
+
+        // === SheMengRen (8) ===
+        SheMengRen_Act = 8,
+
+        // === Xiong (9) ===
+        Xiong_Act = 9,
+
+        // === Open/Close Eyes Announcements (50-55) ===
+        OpenEyes = 50,
+        CloseEyes = 51,
+        LuckyOneOpenEyes = 52,
+        LuckyOneCloseEyes = 53,
+        ConvertedOpenEyes = 54,
+        ConvertedCloseEyes = 55,
+
+        // === DaMao (62) ===
+        DaMao_Act = 62,
+
+        // === LaoShu (72, 75-76) ===
+        LaoShu_Tag = 72,
+        LaoShu_CheckMice = 75,
+        LaoShu_GiftedPoison = 76,
+
+        // === Sheriff Election (100-105) ===
+        SheriffVolunteer = 100,
+        SheriffVote = 101,
+        RoundTable = 102,
+        SheriffVoteVote = 103,
+        SheriffSpeech = 104,
+        SheriffPK = 105,
+
+        // === Day Voting (110-111) ===
+        SheriffRecommendVote = 110,
+        VoteOut = 111,
+
+        // === Death Handling (150-154) ===
+        SheriffHandover = 150,
+        HunterKill = 151,
+        DeathAnnouncement = 152,
+        SheriffChooseDirection = 153,
+        VoteResult = 154,
+
+        // === Announcements (1000-1020) ===
+        CheckPrivate = 1000,
+        NightTime = 1001,
+        DayTime = 1002,
+        GameOver = 1003,
+        PutDownDevice = 1020,
     }
 }

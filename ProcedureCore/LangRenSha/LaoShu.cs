@@ -150,7 +150,7 @@ namespace ProcedureCore.LangRenSha
                         update[UserAction.dictUserActionTargets] = alivePlayers;
                         update[UserAction.dictUserActionUsers] = mice;
                         update[UserAction.dictUserActionTargetsCount] = 1;
-                        update[UserAction.dictUserActionTargetsHint] = 72; // Hint for Mice tagging
+                        update[UserAction.dictUserActionTargetsHint] = (int)HintConstant.LaoShu_Tag;
                         return GameActionResult.Restart;
                     }
                     else
@@ -224,7 +224,7 @@ namespace ProcedureCore.LangRenSha
                         update[UserAction.dictUserActionTargets] = new List<int>();
                         update[UserAction.dictUserActionUsers] = allPlayers;
                         update[UserAction.dictUserActionTargetsCount] = 0;
-                        update[UserAction.dictUserActionTargetsHint] = 75; // Hint for checking tag status
+                        update[UserAction.dictUserActionTargetsHint] = (int)HintConstant.LaoShu_CheckMice;
                         var isLangRen = tagged > 0 && LangRenSha.GetPlayerProperty(game, tagged, LangRenSha.dictPlayerAlliance, 0) == 2;
                         var miceAlive = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == Name && (int)x[LangRenSha.dictAlive] == 1);
                         var laoshuPlayer = miceAlive.Count > 0 ? miceAlive[0] : 0;
@@ -271,7 +271,7 @@ namespace ProcedureCore.LangRenSha
                         update[UserAction.dictUserActionTargets] = alivePlayers;
                         update[UserAction.dictUserActionUsers] = new List<int> { tagged };
                         update[UserAction.dictUserActionTargetsCount] = 1;
-                        update[UserAction.dictUserActionTargetsHint] = 76; // Hint for gifted poison
+                        update[UserAction.dictUserActionTargetsHint] = (int)HintConstant.LaoShu_GiftedPoison;
                         update[UserAction.dictUserActionInfo] = isGifted ? "gifted" : "";
                         return GameActionResult.Restart;
                     }

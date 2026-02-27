@@ -41,6 +41,7 @@ namespace PotatoVillage.Services
             { "幸运儿", "xingyuner" },
             { "摄梦人", "shemengren" },
             { "狼枪", "langqiang" },
+            { "熊", "xiong" },
             { "转换者", "zhuanhuanzhe" }, 
             { "警长", "jingzhang" },
             
@@ -59,6 +60,8 @@ namespace PotatoVillage.Services
             { "投票结果", "toupiao_jieguo" },
             { "请放下设备", "qing_fangxia_shebei" },
             { "游戏结束", "youxi_jieshu" },
+            { "没有", "meiyou" },
+            { "咆哮", "paoxiao" },
             
             // Numbers (for player references)
             { "一号", "yihao" },

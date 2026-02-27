@@ -118,7 +118,7 @@ namespace ProcedureCore.Core
                 return false;
             }
 
-            if (ua != 0 && (ua <= now || force))
+            if ((ua != 0 && ua <= now) || force)
             {
                 update[dictUserActionInfo] = null;
                 update[dictUserAction] = 0;

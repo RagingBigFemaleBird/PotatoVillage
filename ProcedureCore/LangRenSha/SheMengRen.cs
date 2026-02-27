@@ -113,7 +113,7 @@ namespace ProcedureCore.LangRenSha
                         update[UserAction.dictUserActionTargets] = sheMengRenAlive.Count > 0 ? alivePlayers : new List<int>();
                         update[UserAction.dictUserActionUsers] = sheMengRen;
                         update[UserAction.dictUserActionTargetsCount] = 1;
-                        update[UserAction.dictUserActionTargetsHint] = 8; // SheMengRen protect hint
+                        update[UserAction.dictUserActionTargetsHint] = (int)HintConstant.SheMengRen_Act;
                         return GameActionResult.Restart;
                     }
                     else

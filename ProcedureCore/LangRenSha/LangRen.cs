@@ -81,6 +81,7 @@ namespace ProcedureCore.LangRenSha
                         interrupted[LangRenSha.dictSpeak] = (int)SpeakConstant.DeathAnnouncement;
                         update[LangRenSha.dictSpeak] = (int)SpeakConstant.DeathHandlingInterrupt;
                         update[LangRenSha.dictInterrupt] = interrupted;
+                        UserAction.EndUserAction(game, update, true);
                         return GameActionResult.Restart;
                     }    
                 }
@@ -128,6 +129,7 @@ namespace ProcedureCore.LangRenSha
                     {
                         aboutToDie.Add(xiongLinkPlayer);
                         LangRenSha.SetPlayerProperty(game, xiongLinkPlayer, LieRen.dictHuntingDisabled, 1, update);
+                        break;
                     }
                 }
 
@@ -205,7 +207,7 @@ namespace ProcedureCore.LangRenSha
                         update[UserAction.dictUserActionTargets] = alivePlayers;
                         update[UserAction.dictUserActionUsers] = langRen;
                         update[UserAction.dictUserActionTargetsCount] = 1;
-                        update[UserAction.dictUserActionTargetsHint] = 1;
+                        update[UserAction.dictUserActionTargetsHint] = (int)HintConstant.LangRen_Kill;
                         return GameActionResult.Restart;
                     }
                     else
@@ -286,7 +288,7 @@ namespace ProcedureCore.LangRenSha
                         update[UserAction.dictUserActionTargets] = new List<int>();
                         update[UserAction.dictUserActionUsers] = langRen;
                         update[UserAction.dictUserActionTargetsCount] = 1;
-                        update[UserAction.dictUserActionTargetsHint] = 11;
+                        update[UserAction.dictUserActionTargetsHint] = (int)HintConstant.LangRen_KillTarget;
                         var at = Game.GetGameDictionaryProperty(game, dictAttackTarget, new List<int>());
                         update[UserAction.dictUserActionInfo] = string.Join(", ", at);
                         return GameActionResult.Restart;

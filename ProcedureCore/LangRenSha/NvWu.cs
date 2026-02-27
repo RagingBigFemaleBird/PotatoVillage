@@ -113,6 +113,7 @@ namespace ProcedureCore.LangRenSha
                 {
                     aboutToDie.Add(xiongLinkPlayer);
                     LangRenSha.SetPlayerProperty(game, xiongLinkPlayer, LieRen.dictHuntingDisabled, 1, update);
+                    break;
                 }
             }
             update[LangRenSha.dictAboutToDie] = aboutToDie;
@@ -211,7 +212,7 @@ namespace ProcedureCore.LangRenSha
                         update[UserAction.dictUserActionTargets] = targets;
                         update[UserAction.dictUserActionUsers] = nvWu;
                         update[UserAction.dictUserActionTargetsCount] = 1;
-                        update[UserAction.dictUserActionTargetsHint] = 3;
+                        update[UserAction.dictUserActionTargetsHint] = (int)HintConstant.NvWu_Act;
                         var at = attackTarget.Count > 0 ? attackTarget[0] : 0;
                         update[UserAction.dictUserActionInfo] = $"{(saveUsed ? 0 : at)}";
                         return GameActionResult.Restart;

@@ -363,3 +363,5 @@ MigrationBackup/
 FodyWeavers.xsd
 /temp-build
 /.dockerignore
+/potatovillage.keystore
+/potatovillage.keystore

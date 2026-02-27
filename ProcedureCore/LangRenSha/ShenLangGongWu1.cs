@@ -148,7 +148,7 @@ namespace ProcedureCore.LangRenSha
                             update[UserAction.dictUserActionTargets] = new List<int>();
                             update[UserAction.dictUserActionUsers] = new List<int>() { target };
                             update[UserAction.dictUserActionTargetsCount] = 1;
-                            update[UserAction.dictUserActionTargetsHint] = 12;
+                            update[UserAction.dictUserActionTargetsHint] = (int)HintConstant.LangRen_ConvertedSuccession;
                             if (langRenAlive.Count + langRenSuccession1Alive.Count == 0)
                             {
                                 update[UserAction.dictUserActionInfo] = "Succession";

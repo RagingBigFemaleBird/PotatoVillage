@@ -67,14 +67,16 @@
                            CornerRadius="8"
                            BackgroundColor="#F0F0F0"
                            HasShadow="True">
-                        <StackLayout Spacing="8">
+                        <Grid RowDefinitions="Auto,*,Auto">
                             <Label x:Name="TargetInstructionLabel" 
+                                   Grid.Row="0"
                                    Text="" 
                                    FontSize="18"
                                    TextColor="#666666" />
 
                             <!-- Target buttons container -->
                             <FlexLayout x:Name="TargetButtonsContainer"
+                                        Grid.Row="1"
                                         Wrap="Wrap"
                                         JustifyContent="Start"
                                         AlignItems="Center"
@@ -83,17 +85,31 @@
                                         MinimumHeightRequest="50"
                                         Margin="0,8,0,0" />
 
-                            <!-- Confirm button -->
-                            <Button x:Name="ConfirmButton"
-                                    Text="Confirmed"
-                                    IsVisible="False"
-                                    Clicked="OnConfirmClicked"
-                                    Margin="0,8,0,0"
-                                    BackgroundColor="#007AFF"
-                                    TextColor="White"
-                                    FontSize="18"
-                                    Padding="8,4" />
-                        </StackLayout>
+                            <!-- Bottom row: Confirm button and Sheriff status -->
+                            <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="0,8,0,0">
+                                <!-- Confirm button -->
+                                <Button x:Name="ConfirmButton"
+                                        Grid.Column="0"
+                                        Text="Confirmed"
+                                        IsVisible="False"
+                                        Clicked="OnConfirmClicked"
+                                        BackgroundColor="#007AFF"
+                                        TextColor="White"
+                                        FontSize="18"
+                                        Padding="8,4"
+                                        HorizontalOptions="Start" />
+
+                                <!-- Current Sheriff status label -->
+                                <Label x:Name="CurrentSheriffLabel"
+                                       Grid.Column="1"
+                                       Text=""
+                                       FontSize="14"
+                                       TextColor="#888888"
+                                       FontAttributes="Italic"
+                                       VerticalOptions="Center"
+                                       HorizontalOptions="End" />
+                            </Grid>
+                        </Grid>
                     </Frame>
                 </VerticalStackLayout>
             </ScrollView>

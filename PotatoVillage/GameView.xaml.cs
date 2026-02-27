@@ -47,7 +47,7 @@ namespace PotatoVillage
             { 3, new Dictionary<int, string> { { 0, "JiuRen" }, { -100, "DoNotUse"} } },
             { 100, new Dictionary<int, string> { { -1, "Volunteer" }, { 0, "Abstain" } } },
             { 102, new Dictionary<int, string> { { -1, "Done speaking" }, { 0, "Pause game" } } },
-            { 104, new Dictionary<int, string> { { -1, "Done speaking" }, { 0, "Pause game" } } },
+            { 104, new Dictionary<int, string> { { -1, "Done speaking" }, { 0, "Pause game" }, { -2, "Withdraw" } } },
             { 105, new Dictionary<int, string> { { -1, "Done speaking" }, { 0, "Pause game" } } },
             { 151, new Dictionary<int, string> { { -100, "DoNotUse"} } },
             { 153, new Dictionary<int, string> { { -2, "Left" }, { -1, "Right"} } },
@@ -155,12 +155,12 @@ namespace PotatoVillage
                 if (xiongBarkStr == "1")
                 {
                     // Xiong barked
-                    result += "\n" + localization.GetString("xiong_barked", "Bear barked!");
+                    result += ";" + localization.GetString("xiong_barked", "Bear barked!");
                 }
                 else if (xiongBarkStr == "2")
                 {
                     // Xiong did not bark
-                    result += "\n" + localization.GetString("xiong_not_barked", "Bear did not bark.");
+                    result += ";" + localization.GetString("xiong_not_barked", "Bear did not bark.");
                 }
             }
 
@@ -545,6 +545,30 @@ namespace PotatoVillage
             return aliveValue == 0;
         }
 
+        private int GetCurrentSheriff()
+        {
+            var gameDict = connectionManager?.GetGameDictionary() ?? new();
+            return GetInt32Value(gameDict.TryGetValue("current_sheriff", out var sheriffObj) ? sheriffObj : null) ?? 0;
+        }
+
+        private void UpdateCurrentSheriffLabel()
+        {
+            var localization = LocalizationManager.Instance;
+            var currentSheriff = GetCurrentSheriff();
+
+            if (currentSheriff > 0)
+            {
+                var sheriffText = localization.GetString("current_sheriff", "Sheriff: {0}");
+                CurrentSheriffLabel.Text = sheriffText.Replace("{0}", currentSheriff.ToString());
+                CurrentSheriffLabel.IsVisible = true;
+            }
+            else
+            {
+                CurrentSheriffLabel.Text = "";
+                CurrentSheriffLabel.IsVisible = false;
+            }
+        }
+
         private Dictionary<string, object> GetDictionaryValue(object? obj)
         {
             if (obj == null) return new();
@@ -815,6 +839,11 @@ namespace PotatoVillage
                 return;
             }
 
+            // Special case: sheriff vote. Server won't send this, as it is an interrupt.
+            if (hintIndex == 104)
+            {
+                availableTargets.Add(-2);
+            }
             // Track the current displayed state
             currentDisplayedDeadline = userActionDeadline;
             currentDisplayedHint = hintIndex;
@@ -977,6 +1006,9 @@ namespace PotatoVillage
             ConfirmButton.IsEnabled = true;
             ConfirmButton.Text = LocalizationManager.Instance.GetString("confirm");
 
+            // Update current sheriff status label
+            UpdateCurrentSheriffLabel();
+
             // Force layout update on Android to ensure buttons are properly rendered
             TargetButtonsContainer.InvalidateMeasure();
 
@@ -1099,6 +1131,8 @@ namespace PotatoVillage
                 ConfirmButton.IsVisible = false;
                 CountdownLabel.Text = "";
                 TargetButtonsContainer.Clear();
+                CurrentSheriffLabel.Text = "";
+                CurrentSheriffLabel.IsVisible = false;
             });
         }
 
@@ -1109,8 +1143,6 @@ namespace PotatoVillage
             var localization = LocalizationManager.Instance;
             try
             {
-                // Disable confirm button to prevent double-clicks and show feedback
-                ConfirmButton.IsEnabled = false;
                 ConfirmButton.Text = "✓";
 
                 // Send the selected targets to the server via SignalR

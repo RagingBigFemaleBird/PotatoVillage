@@ -115,7 +115,7 @@ namespace ProcedureCore.LangRenSha
                         update[UserAction.dictUserActionTargets] = (isEvil && xiongAlive.Count > 0) ? alivePlayers : new List<int>();
                         update[UserAction.dictUserActionUsers] = xiong;
                         update[UserAction.dictUserActionTargetsCount] = 1;
-                        update[UserAction.dictUserActionTargetsHint] = 9; // Xiong link hint
+                        update[UserAction.dictUserActionTargetsHint] = (int)HintConstant.Xiong_Act;
                         return GameActionResult.Restart;
                     }
                     else
@@ -234,21 +234,21 @@ namespace ProcedureCore.LangRenSha
             var linkedTarget = LangRenSha.GetPlayerProperty(game, deadPlayer, dictXiongLink, 0);
             if (linkedTarget <= 0)
             {
-                return (true, GameActionResult.NotExecuted);
+                return (false, GameActionResult.NotExecuted);
             }
 
             // Check if linked target is still alive
             var targetAlive = LangRenSha.GetPlayerProperty(game, linkedTarget, LangRenSha.dictAlive, 0) == 1;
             if (!targetAlive)
             {
-                return (true, GameActionResult.NotExecuted);
+                return (false, GameActionResult.NotExecuted);
             }
 
             // Check if linked target is already about to die
             var aboutToDie = Game.GetGameDictionaryProperty(game, LangRenSha.dictAboutToDie, new List<int>());
             if (aboutToDie.Contains(linkedTarget))
             {
-                return (true, GameActionResult.NotExecuted);
+                return (false, GameActionResult.NotExecuted);
             }
 
             // Mark the linked target as about to die

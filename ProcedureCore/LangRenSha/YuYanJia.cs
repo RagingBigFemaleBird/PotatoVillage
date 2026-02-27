@@ -120,7 +120,7 @@ namespace ProcedureCore.LangRenSha
                         update[UserAction.dictUserActionTargets] = alivePlayers;
                         update[UserAction.dictUserActionUsers] = yuYanJia;
                         update[UserAction.dictUserActionTargetsCount] = 1;
-                        update[UserAction.dictUserActionTargetsHint] = 2;
+                        update[UserAction.dictUserActionTargetsHint] = (int)HintConstant.YuYanJia_ChaYan;
                         return GameActionResult.Restart;
                     }
                     else
@@ -167,7 +167,7 @@ namespace ProcedureCore.LangRenSha
                         update[UserAction.dictUserActionTargets] = new List<int>() { 0 };
                         update[UserAction.dictUserActionUsers] = yuYanJia;
                         update[UserAction.dictUserActionTargetsCount] = 1;
-                        update[UserAction.dictUserActionTargetsHint] = 7;
+                        update[UserAction.dictUserActionTargetsHint] = (int)HintConstant.YuYanJia_Result;
                         update[UserAction.dictUserActionInfo] = $"{Game.GetGameDictionaryProperty(game, dictYuYanJiaResult, "")}";
                         return GameActionResult.Restart;
                     }

@@ -119,7 +119,8 @@ namespace ProcedureCore.Core
                 return false;
             }
 
-            if ((ua != 0 && ua <= now) || force)
+            // In test mode, always end immediately (simulate instant timeout)
+            if (game.TestMode || (ua != 0 && ua <= now) || force)
             {
                 update[dictUserActionInfo] = null;
                 update[dictUserActionRole] = null;

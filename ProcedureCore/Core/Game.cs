@@ -49,6 +49,11 @@ namespace ProcedureCore.Core
         public Dictionary<string, int> RoleConfiguration { get; set; } = new();
         public bool GameStarted { get; set; } = false;
 
+        /// <summary>
+        /// When true, UserWait returns immediately without blocking. Used for unit tests.
+        /// </summary>
+        public bool TestMode { get; set; } = false;
+
         public int StateUpdate(Dictionary<string, object> stateDiff, bool noClientcallback = false)
         {
             lock (stateLock)
@@ -198,6 +203,12 @@ namespace ProcedureCore.Core
         {
             return (int)StateDictionary[dictRandomSeed];
         }
+
+        public void SetRandomSeed(int seed)
+        {
+            StateDictionary[dictRandomSeed] = seed;
+        }
+
         public int UseRandomNumber(Dictionary<string, object> update)
         {
             var ret = (int)StateDictionary[dictRandomSeed];
@@ -218,6 +229,12 @@ namespace ProcedureCore.Core
 
         public void UserWait(int utcSeconds)
         {
+            // In test mode, never wait - allows tests to run without blocking
+            if (TestMode)
+            {
+                return;
+            }
+
             var now = (int)DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             if (utcSeconds <= now)
             {

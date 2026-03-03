@@ -166,6 +166,7 @@ namespace ProcedureCore.LangRenSha
                         update[UserAction.dictUserActionUsers] = lieRen;
                         update[UserAction.dictUserActionTargetsCount] = 1;
                         update[UserAction.dictUserActionTargetsHint] = (int)HintConstant.HunterKill;
+                        update[UserAction.dictUserActionRole] = Name;
                         update[UserAction.dictUserActionInfo] = nightShootUsed ? "0" : "1";
                         return GameActionResult.Restart;
                     }
@@ -240,6 +241,7 @@ namespace ProcedureCore.LangRenSha
                     update[UserAction.dictUserActionUsers] = new List<int> { deadPlayer };
                     update[UserAction.dictUserActionTargetsCount] = 1;
                     update[UserAction.dictUserActionTargetsHint] = (int)HintConstant.HunterKill;
+                    update[UserAction.dictUserActionRole] = "LangQiang";
                     update[UserAction.dictUserActionInfo] = "1";
                     return (true, GameActionResult.Restart);
                 }

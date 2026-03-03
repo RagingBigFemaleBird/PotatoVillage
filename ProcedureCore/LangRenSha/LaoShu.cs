@@ -151,6 +151,7 @@ namespace ProcedureCore.LangRenSha
                         update[UserAction.dictUserActionUsers] = mice;
                         update[UserAction.dictUserActionTargetsCount] = 1;
                         update[UserAction.dictUserActionTargetsHint] = (int)HintConstant.LaoShu_Tag;
+                        update[UserAction.dictUserActionRole] = Name;
                         return GameActionResult.Restart;
                     }
                     else

@@ -187,15 +187,16 @@ namespace ProcedureCore.LangRenSha
                         bool poisonUsed = false;
                         bool selfAttacked = false;
                         var attackTarget = Game.GetGameDictionaryProperty(game, LangRen.dictAttackTarget, new List<int>());
-                        if (attackTarget.Count > 0 && attackTarget[0] == nvWu[0])
+                        var nvWuPlayer = nvWu.Count > 0 ? nvWu[0] : 0;
+                        if (attackTarget.Count > 0 && attackTarget[0] == nvWuPlayer)
                         {
                             selfAttacked = true;
                         }
-                        if (LangRenSha.GetPlayerProperty(game, nvWu[0], dictSaveUsed, 0) != 0)
+                        if (nvWuPlayer == 0 || LangRenSha.GetPlayerProperty(game, nvWuPlayer, dictSaveUsed, 0) != 0)
                         {
                             saveUsed = true;
                         }
-                        if (LangRenSha.GetPlayerProperty(game, nvWu[0], dictPoisonUsed, 0) != 0)
+                        if (nvWuPlayer == 0 || LangRenSha.GetPlayerProperty(game, nvWuPlayer, dictPoisonUsed, 0) != 0)
                         {
                             poisonUsed = true;
                         }
@@ -213,6 +214,7 @@ namespace ProcedureCore.LangRenSha
                         update[UserAction.dictUserActionUsers] = nvWu;
                         update[UserAction.dictUserActionTargetsCount] = 1;
                         update[UserAction.dictUserActionTargetsHint] = (int)HintConstant.NvWu_Act;
+                        update[UserAction.dictUserActionRole] = Name;
                         var at = attackTarget.Count > 0 ? attackTarget[0] : 0;
                         update[UserAction.dictUserActionInfo] = $"{(saveUsed ? 0 : at)}";
                         return GameActionResult.Restart;

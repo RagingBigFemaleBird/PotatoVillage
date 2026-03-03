@@ -42,12 +42,34 @@ namespace ProcedureCore.LangRenSha
                 return deadPlayerHandlers;
             }
         }
+
+        // AfterSpeak handlers - called after a player finishes speaking during the day
+        private static List<Func<Game, int, Dictionary<string, object>, (bool, GameActionResult)>> afterSpeakHandlers = new();
+
+        public static void RegisterAfterSpeakHandler(Func<Game, int, Dictionary<string, object>, (bool, GameActionResult)> handler)
+        {
+            if (!afterSpeakHandlers.Contains(handler))
+            {
+                afterSpeakHandlers.Add(handler);
+            }
+        }
+
+        public static List<Func<Game, int, Dictionary<string, object>, (bool, GameActionResult)>> AfterSpeakHandlers
+        {
+            get
+            {
+                return afterSpeakHandlers;
+            }
+        }
+
         public LangRenSha()
         {
             players = new List<(int, Role)>();
             RegisterDeadPlayerHandler(LieRen.HandleHunterDeathSkill);
             RegisterDeadPlayerHandler(LangQiang.HandleLangQiangDeathSkill);
             RegisterDeadPlayerHandler(Xiong.HandleXiongDeathSkill);
+            RegisterDeadPlayerHandler(MengMianRen.HandleDeathSkill);
+            RegisterAfterSpeakHandler(MengMianRen.HandleAfterSpeak);
             // Players will be initialized dynamically in GenerateStateDiff based on roleDict
         }
 
@@ -57,6 +79,7 @@ namespace ProcedureCore.LangRenSha
             {
                 "LangRen" => new LangRen(),
                 "YuYanJia" => new YuYanJia(),
+                "TongLingShi" => new TongLingShi(),
                 "NvWu" => new NvWu(),
                 "WuZhe" => new WuZhe(),
                 "JiaMian" => new JiaMian(),
@@ -68,6 +91,8 @@ namespace ProcedureCore.LangRenSha
                 "LaoShu" => new LaoShu(),
                 "SheMengRen" => new SheMengRen(),
                 "Xiong" => new Xiong(),
+                "Thief" => new Thief(),
+                "MengMianRen" => new MengMianRen(),
                 _ => throw new ArgumentException($"Not a role: {roleName}")
             };
         }
@@ -120,8 +145,8 @@ namespace ProcedureCore.LangRenSha
             }
         }
 
-        public static int actionDuraionPlayerReact = 6;
-        public static int actionDurationPlayerSpeak = 5;
+        public static int actionDuraionPlayerReact = 7;
+        public static int actionDurationPlayerSpeak = 90;
 
         public GameActionResult GenerateStateDiff(Game game, Dictionary<string, object> update)
         {
@@ -1115,6 +1140,38 @@ namespace ProcedureCore.LangRenSha
                 }
             }
 
+            // MengMianRen death announcement (speak=101)
+            if (Game.GetGameDictionaryProperty(game, dictSpeak, 0) == (int)SpeakConstant.MengMianRenDeath)
+            {
+                var mengMianRenDeadPlayer = Game.GetGameDictionaryProperty(game, MengMianRen.dictMengMianRenDeadPlayer, 0);
+
+                if (UserAction.EndUserAction(game, update))
+                {
+                    // Return to interrupted task
+                    var interrupted = Game.GetGameDictionaryProperty(game, dictInterrupt, new Dictionary<string, object>());
+                    foreach (var item in interrupted)
+                    {
+                        update[item.Key] = item.Value;
+                    }
+                    update[MengMianRen.dictMengMianRenDeadPlayer] = null;
+                    return GameActionResult.Restart;
+                }
+                else
+                {
+                    // Broadcast MengMianRen death announcement
+                    if (UserAction.StartUserAction(game, 5, update))
+                    {
+                        update[UserAction.dictUserActionTargets] = new List<int>();
+                        update[UserAction.dictUserActionUsers] = new List<int> { -1 }; // Announcement
+                        update[UserAction.dictUserActionTargetsCount] = 0;
+                        update[UserAction.dictUserActionTargetsHint] = (int)HintConstant.MengMianRen_Death;
+                        update[UserAction.dictUserActionInfo] = mengMianRenDeadPlayer.ToString();
+                        return GameActionResult.Restart;
+                    }
+                }
+                return GameActionResult.NotExecuted;
+            }
+
             return GameActionResult.NotExecuted;
         }
 
@@ -1180,6 +1237,19 @@ namespace ProcedureCore.LangRenSha
 
             if (UserAction.EndUserAction(game, update))
             {
+                // Speaking time ended - call AfterSpeak handlers for the current speaker
+                var currentSpeaker = speakers.Count > 0 ? speakers.Last() : 0;
+                if (currentSpeaker > 0)
+                {
+                    foreach (var handler in AfterSpeakHandlers)
+                    {
+                        var (handled2, result) = handler(game, currentSpeaker, update);
+                        if (handled2)
+                        {
+                            return result;
+                        }
+                    }
+                }
                 return GameActionResult.Restart;
             }
             else
@@ -1244,6 +1314,20 @@ namespace ProcedureCore.LangRenSha
                             var value = (List<int>)entry.Value;
                             if (key > 0 && value.Count > 0 && value[0] == -1)
                             {
+                                // Player finished speaking - call AfterSpeak handlers
+                                var currentSpeaker = speakers.Count > 0 ? speakers.Last() : 0;
+                                if (currentSpeaker > 0)
+                                {
+                                    foreach (var handler in AfterSpeakHandlers)
+                                    {
+                                        var (handled2, result) = handler(game, currentSpeaker, update);
+                                        if (handled2)
+                                        {
+                                            UserAction.EndUserAction(game, update, true);
+                                            return result;
+                                        }
+                                    }
+                                }
                                 UserAction.EndUserAction(game, update, true);
                                 return GameActionResult.Restart;
                             }

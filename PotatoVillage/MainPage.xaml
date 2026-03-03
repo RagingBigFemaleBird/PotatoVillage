@@ -12,15 +12,15 @@
             <!-- Game Duration Settings -->
             <Label Text="{m:Translate duration_settings}" FontAttributes="Bold" FontSize="14" Margin="0,12,0,0" />
             <HorizontalStackLayout Spacing="8">
-                <Entry x:Name="SpeechDurationEntry" Text="90" Placeholder="{m:Translate speech_duration}" WidthRequest="80" Keyboard="Numeric" />
+                <Entry x:Name="SpeechDurationEntry" Text="95" Placeholder="{m:Translate speech_duration}" WidthRequest="80" Keyboard="Numeric" />
                 <Label Text="{m:Translate speech_duration}" VerticalOptions="Center" />
             </HorizontalStackLayout>
             <HorizontalStackLayout Spacing="8">
-                <Entry x:Name="WerewolfDurationEntry" Text="120" Placeholder="{m:Translate werewolf_duration}" WidthRequest="80" Keyboard="Numeric" />
+                <Entry x:Name="WerewolfDurationEntry" Text="125" Placeholder="{m:Translate werewolf_duration}" WidthRequest="80" Keyboard="Numeric" />
                 <Label Text="{m:Translate werewolf_duration}" VerticalOptions="Center" />
             </HorizontalStackLayout>
             <HorizontalStackLayout Spacing="8">
-                <Entry x:Name="GodDurationEntry" Text="15" Placeholder="{m:Translate god_duration}" WidthRequest="80" Keyboard="Numeric" />
+                <Entry x:Name="GodDurationEntry" Text="18" Placeholder="{m:Translate god_duration}" WidthRequest="80" Keyboard="Numeric" />
                 <Label Text="{m:Translate god_duration}" VerticalOptions="Center" />
             </HorizontalStackLayout>
 
@@ -56,19 +56,26 @@
             <HorizontalStackLayout Spacing="4">
                 <Button x:Name="NvWuBtn" Text="{m:Translate NvWu}" Clicked="OnNvWuClicked" BackgroundColor="LightGray" />
                 <Button x:Name="YuYanJiaBtn" Text="{m:Translate YuYanJia}" Clicked="OnYuYanJiaClicked" BackgroundColor="LightGray" />
+                <Button x:Name="TongLingShiBtn" Text="{m:Translate TongLingShi}" Clicked="OnTongLingShiClicked" BackgroundColor="LightGray" />
                 <Button x:Name="WuZheBtn" Text="{m:Translate WuZhe}" Clicked="OnWuZheClicked" BackgroundColor="LightGray" />
                 <Button x:Name="LieRenBtn" Text="{m:Translate LieRen}" Clicked="OnLieRenClicked" BackgroundColor="LightGray" />
-                <Button x:Name="LaoShuBtn" Text="{m:Translate LaoShu}" Clicked="OnLaoShuClicked" BackgroundColor="LightGray" />
             </HorizontalStackLayout>
 
             <!-- Row 5: God continued-->
             <HorizontalStackLayout Spacing="4">
+                <Button x:Name="LaoShuBtn" Text="{m:Translate LaoShu}" Clicked="OnLaoShuClicked" BackgroundColor="LightGray" />
                 <Button x:Name="BaiChiBtn" Text="{m:Translate BaiChi}" Clicked="OnBaiChiClicked" BackgroundColor="LightGray" />
                 <Button x:Name="SheMengRenBtn" Text="{m:Translate SheMengRen}" Clicked="OnSheMengRenClicked" BackgroundColor="LightGray" />
                 <Button x:Name="XiongBtn" Text="{m:Translate Xiong}" Clicked="OnXiongClicked" BackgroundColor="LightGray" />
+                <Button x:Name="ThiefBtn" Text="{m:Translate Thief}" Clicked="OnThiefClicked" BackgroundColor="LightGray" />
             </HorizontalStackLayout>
 
-            <!-- Row 6: PingMin (5 buttons) -->
+            <!-- Row 6: God continued-->
+            <HorizontalStackLayout Spacing="4">
+                <Button x:Name="MengMianRenBtn" Text="{m:Translate MengMianRen}" Clicked="OnMengMianRenClicked" BackgroundColor="LightGray" />
+            </HorizontalStackLayout>
+
+            <!-- Row 7: PingMin (5 buttons) -->
             <HorizontalStackLayout Spacing="4">
                 <Button x:Name="PingMin1Btn" StyleId="PingMin1" Text="{m:Translate PingMin}" Clicked="OnPingMinClicked" BackgroundColor="LightGray" />
                 <Button x:Name="PingMin2Btn" StyleId="PingMin2" Text="{m:Translate PingMin}" Clicked="OnPingMinClicked" BackgroundColor="LightGray" />

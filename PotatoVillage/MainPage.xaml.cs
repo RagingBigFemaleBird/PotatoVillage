@@ -20,6 +20,7 @@ namespace PotatoVillage
         private bool selectedJiaMian = false;
         private bool selectedNvWu = false;
         private bool selectedYuYanJia = false;
+        private bool selectedTongLingShi = false;
         private bool selectedWuZhe = false;
         private bool selectedLieRen = false;
         private bool selectedLangQiang = false;
@@ -29,6 +30,8 @@ namespace PotatoVillage
         private bool selectedSheMengRen = false;
         private bool selectedXiong = false;
         private bool selectedShenLangGongWu1 = false;
+        private bool selectedThief = false;
+        private bool selectedMengMianRen = false;
         private HashSet<string> selectedPingMin = new();
 
         public MainPage()
@@ -114,6 +117,7 @@ namespace PotatoVillage
                                    selectedJiaMian || 
                                    selectedNvWu || 
                                    selectedYuYanJia || 
+                                   selectedTongLingShi ||
                                    selectedWuZhe || 
                                    selectedLieRen ||
                                    selectedLangQiang ||
@@ -123,6 +127,8 @@ namespace PotatoVillage
                                    selectedSheMengRen ||
                                    selectedXiong ||
                                    selectedShenLangGongWu1 ||
+                                   selectedThief ||
+                                   selectedMengMianRen ||
                                    selectedPingMin.Count > 0;
             ConnectBtn.IsEnabled = hasRolesSelected;
         }
@@ -174,6 +180,9 @@ namespace PotatoVillage
             if (selectedYuYanJia)
                 roleDict["YuYanJia"] = 1;
 
+            if (selectedTongLingShi)
+                roleDict["TongLingShi"] = 1;
+
             if (selectedWuZhe)
                 roleDict["WuZhe"] = 1;
 
@@ -201,6 +210,12 @@ namespace PotatoVillage
             if (selectedShenLangGongWu1)
                 roleDict["ShenLangGongWu1"] = 1;
 
+            if (selectedThief)
+                roleDict["Thief"] = 1;
+
+            if (selectedMengMianRen)
+                roleDict["MengMianRen"] = 1;
+
             if (selectedPingMin.Count > 0)
                 roleDict["PingMin"] = selectedPingMin.Count;
 
@@ -211,6 +226,9 @@ namespace PotatoVillage
             int totalPlayers = roleDict.Values.Sum() - 1;
             if (roleDict.ContainsKey("ShenLangGongWu1"))
                 totalPlayers -= 1;
+            // Thief requires 3 extra roles, so actual player count is 3 less
+            if (roleDict.ContainsKey("Thief"))
+                totalPlayers -= 3;
             if (totalPlayers == 0)
             {
                 await DisplayAlert("Error", "Please select at least one role", "OK");
@@ -369,6 +387,16 @@ namespace PotatoVillage
             UpdateConnectButtonState();
         }
 
+        private void OnTongLingShiClicked(object? sender, EventArgs e)
+        {
+            selectedTongLingShi = !selectedTongLingShi;
+            if (sender is Button button)
+            {
+                button.BackgroundColor = selectedTongLingShi ? Colors.Green : Colors.LightGray;
+            }
+            UpdateConnectButtonState();
+        }
+
         private void OnWuZheClicked(object? sender, EventArgs e)
         {
             selectedWuZhe = !selectedWuZhe;
@@ -455,6 +483,26 @@ namespace PotatoVillage
             if (sender is Button button)
             {
                 button.BackgroundColor = selectedShenLangGongWu1 ? Colors.Green : Colors.LightGray;
+            }
+            UpdateConnectButtonState();
+        }
+
+        private void OnThiefClicked(object? sender, EventArgs e)
+        {
+            selectedThief = !selectedThief;
+            if (sender is Button button)
+            {
+                button.BackgroundColor = selectedThief ? Colors.Green : Colors.LightGray;
+            }
+            UpdateConnectButtonState();
+        }
+
+        private void OnMengMianRenClicked(object? sender, EventArgs e)
+        {
+            selectedMengMianRen = !selectedMengMianRen;
+            if (sender is Button button)
+            {
+                button.BackgroundColor = selectedMengMianRen ? Colors.Green : Colors.LightGray;
             }
             UpdateConnectButtonState();
         }

@@ -115,6 +115,7 @@ namespace Server
                 { "LangRenSha", new LangRenSha() },
                 { "LangRen", new LangRen() },
                 { "YuYanJia", new YuYanJia() },
+                { "TongLingShi", new TongLingShi() },
                 { "NvWu", new NvWu() },
                 { "WuZhe", new WuZhe() },
                 { "JiaMian", new JiaMian() },
@@ -126,6 +127,8 @@ namespace Server
                 { "LangQiang", new LangQiang() },
                 { "SheMengRen", new SheMengRen() },
                 { "ShenLangGongWu1", new ShenLangGongWu1() },
+                { "Thief", new Thief() },
+                { "MengMianRen", new MengMianRen() },
             };
 
             if (!roleDict.ContainsKey("LangRen"))

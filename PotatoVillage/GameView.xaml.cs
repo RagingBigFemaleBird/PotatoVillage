@@ -30,6 +30,7 @@ namespace PotatoVillage
         private const string DictUserActionTargets = "user_targets";
         private const string DictUserActionTargetsCount = "user_targets_count";
         private const string DictUserActionTargetsHint = "user_targets_hint";
+        private const string DictUserActionRole = "user_role";
         private const string DictUserActionInfo = "user_info";
         private const string DictUserActionResponse = "user_response";
         private const string DictUserActionPauseStart = "user_pause_start";
@@ -58,7 +59,9 @@ namespace PotatoVillage
         {
             { 3, NvWuInfoHandler },
             { 5, LangRenSuccessionHandler },
+            { 10, ThiefPickRoleHandler },
             { 12, LangRenSuccessionHandler },
+            { 14, TongLingShiResultHandler },
             { 62, LangRenSuccessionHandler },
             { 6, JiaMianInfoHandler },
             { 7, YuYanJiaInfoHandler },
@@ -74,9 +77,18 @@ namespace PotatoVillage
         // Handlers for announcements (DisplayCurrentlyActing path, user == -1)
         private static readonly Dictionary<int, Func<string, string>> AnnouncementInfoHandlers = new()
         {
+            { 77, MengMianRenDeathHandler },
             { 152, DeathAnnouncementHandler },
             { 1003, GameWinnerHandler },
         };
+
+        private static string MengMianRenDeathHandler(string userInfo)
+        {
+            // userInfo contains the player ID
+            var txt = LocalizationManager.Instance.GetString("mengmianren_death", "Player {0} has died from wounds");
+            return txt.Replace("{0}", userInfo);
+        }
+
         private static string LieRenInfoHandler(string userInfo)
         {
             if (userInfo == "1")
@@ -87,6 +99,21 @@ namespace PotatoVillage
             {
                 return LocalizationManager.Instance.GetString("lieren_cannot_shoot", "Shooting disabled.");
             }
+        }
+
+        private static string ThiefPickRoleHandler(string userInfo)
+        {
+            // userInfo contains comma-separated role names, displayed as buttons
+            // Just return the instruction text
+            return LocalizationManager.Instance.GetString("thief_pick_role", "Pick a role to become:");
+        }
+
+        private static string TongLingShiResultHandler(string userInfo)
+        {
+            // userInfo contains the role name - translate it
+            var roleName = LocalizationManager.Instance.GetString(userInfo, userInfo);
+            var txt = LocalizationManager.Instance.GetString("tonglingshi_result_info", "Prophet result: {0}");
+            return txt.Replace("{0}", roleName);
         }
 
         private static string GiftedPoisonHandler(string userInfo)
@@ -449,8 +476,11 @@ namespace PotatoVillage
                 7 => "yuyanjia_result",
                 8 => "shemengren_act",
                 9 => "xiong_act",
+                10 => "thief_pick_role",
                 11 => "langren_kill_target",
                 12 => "converted_langren_succession",
+                13 => "tonglingshi_chayan",
+                14 => "tonglingshi_result",
                 50 => "open_eyes",
                 51 => "close_eyes",
                 52 => "lucky_one_open_eyes",
@@ -458,6 +488,7 @@ namespace PotatoVillage
                 54 => "converted_open_eyes",
                 55 => "converted_close_eyes",
                 75 => "check_mice",
+                77 => "mengmianren_death",
                 100 => "volunteer_sheriff",
                 101 => "vote_sheriff",
                 102 => "round_table",
@@ -637,6 +668,7 @@ namespace PotatoVillage
                 var userTargets = GetInt32List(gameDict.TryGetValue(DictUserActionTargets, out var utObj) ? utObj : null);
                 var userTargetsCount = GetInt32Value(gameDict.TryGetValue(DictUserActionTargetsCount, out var utcObj) ? utcObj : null) ?? 0;
                 var userTargetsHint = GetInt32Value(gameDict.TryGetValue(DictUserActionTargetsHint, out var uthObj) ? uthObj : null) ?? -1;
+                var userRole = GetStringValue(gameDict.TryGetValue(DictUserActionRole, out var uroleObj) ? uroleObj : null) ?? "";
                 var userInfo = GetStringValue(gameDict.TryGetValue(DictUserActionInfo, out var uiObj) ? uiObj : null) ?? "";
                 var userResponse = GetDictionaryValue(gameDict.TryGetValue(DictUserActionResponse, out var urObj) ? urObj : null);
 
@@ -664,11 +696,11 @@ namespace PotatoVillage
                     HideTargetSelection();
                 }
 
-                if (userAction != 0 && userUsers.Count > 0)
+                if (userAction != 0)
                 {
                     // Pass isSelfActable to avoid double-managing the countdown
                     // When isSelfActable is true, DisplayTargetSelection already handles the countdown
-                    DisplayCurrentlyActing(userAction, userUsers, userTargetsHint, userInfo, speaker, phaseValue ?? 0, !isSelfActable);
+                    DisplayCurrentlyActing(userAction, userUsers, userTargetsHint, userInfo, userRole, speaker, phaseValue ?? 0, !isSelfActable);
                 }
                 else
                 {
@@ -678,7 +710,7 @@ namespace PotatoVillage
             });
         }
 
-        private void DisplayCurrentlyActing(int deadline, List<int> actingPlayerIds, int userTargetsHint, string userInfo, int speaker = 0, int phaseValue = 0, bool manageCountdown = true)
+        private void DisplayCurrentlyActing(int deadline, List<int> actingPlayerIds, int userTargetsHint, string userInfo, string userRole, int speaker = 0, int phaseValue = 0, bool manageCountdown = true)
         {
             // Only manage countdown if we're not showing target selection (which has its own countdown)
             if (manageCountdown)
@@ -726,29 +758,13 @@ namespace PotatoVillage
             }
             else
             {
-                // Night phase - get the roles of acting players
                 var actingRoles = new HashSet<string>();
-                if (userTargetsHint == 76 || userTargetsHint == 52 || userTargetsHint == 53)
+
+                if (!string.IsNullOrEmpty(userRole))
                 {
-                    actingRoles.Add(LocalizationManager.Instance.GetString("lucky_one"));
+                    // Use the role provided by the server
+                    actingRoles.Add(LocalizationManager.Instance.GetString(userRole));
                 }
-                else
-                    if (userTargetsHint == 1 || userTargetsHint == 11 || userTargetsHint == 12)
-                    {
-                        actingRoles.Add(LocalizationManager.Instance.GetString("LangRen"));
-                    }
-                    else
-                    {
-                        foreach (var playerId in actingPlayerIds)
-                        {
-                            var role = GetPlayerRole(playerId);
-                            if (!string.IsNullOrEmpty(role))
-                            {
-                                var rs = LocalizationManager.Instance.GetString(role);
-                                actingRoles.Add(rs);
-                            }
-                        }
-                    }
 
                 // Display the acting roles
                 string actingText = actingRoles.Count > 0
@@ -972,10 +988,23 @@ namespace PotatoVillage
 
                 var buttonText = targetId.ToString();
 
-                // Add response count and indicator if available
-                if (responsesByTarget.TryGetValue(targetId, out var respondents))
+                // Special handling for Thief role picking - show role names instead of indices
+                if (hintIndex == 10 && !string.IsNullOrEmpty(userInfo))
                 {
-                    buttonText += $" ({respondents.Count})";
+                    var roleNames = userInfo.Split(',');
+                    if (targetId > 0 && targetId <= roleNames.Length)
+                    {
+                        var roleName = roleNames[targetId - 1].Trim();
+                        buttonText = localization.GetString(roleName, roleName);
+                    }
+                }
+                else
+                {
+                    // Add response count and indicator if available
+                    if (responsesByTarget.TryGetValue(targetId, out var respondents))
+                    {
+                        buttonText += $" ({respondents.Count})";
+                    }
                 }
 
                 var button = new Button
@@ -1065,10 +1094,12 @@ namespace PotatoVillage
                     // Adjust client time using server offset to account for clock skew
                     int adjustedNow = clientNow + serverTimeOffset;
 
-                    // Check if game is paused
+                    // Check if game is paused and get current phase
                     var gameDict = connectionManager?.GetGameDictionary() ?? new();
                     var pauseStart = GetInt32Value(gameDict.TryGetValue(DictUserActionPauseStart, out var psObj) ? psObj : null) ?? 0;
                     bool isPaused = pauseStart != 0;
+                    var phaseValue = GetInt32Value(gameDict.TryGetValue("phase", out var phaseObj) ? phaseObj : null) ?? 0;
+                    bool isDayPhase = phaseValue == 1;
 
                     // Calculate effective deadline accounting for current pause
                     int effectiveDeadline = deadline;
@@ -1087,8 +1118,8 @@ namespace PotatoVillage
                         break;
                     }
 
-                    // Play warning beep when countdown reaches 15 seconds
-                    if (!isPaused && timeRemaining == 15 && !warningBeepPlayed && IsAnnouncerEnabled)
+                    // Play warning beep when countdown reaches 15 seconds (only during day phase)
+                    if (!isPaused && isDayPhase && timeRemaining == 15 && !warningBeepPlayed && IsAnnouncerEnabled)
                     {
                         warningBeepPlayed = true;
                         MainThread.BeginInvokeOnMainThread(() => PlayWarningBeep());

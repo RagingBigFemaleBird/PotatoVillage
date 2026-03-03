@@ -8,6 +8,7 @@ namespace ProcedureCore.LangRenSha
     {
         // === Game Setup (1-10) ===
         ShenLangGongWu1_Convert = 1,
+        Thief_Setup = 2,
         GameBeginAnnouncement = 5,
         RoleCheck = 6,
         PutDownDevice = 7,
@@ -17,10 +18,16 @@ namespace ProcedureCore.LangRenSha
         ShenLangGongWu1_Check = 11,
         ShenLangGongWu1_CloseEyes = 12,
 
-        // === DaMao (20-22) ===
-        DaMao_OpenEyes = 20,
-        DaMao_Act = 21,
-        DaMao_CloseEyes = 22,
+        // === Thief (15-18) ===
+        Thief_OpenEyes = 15,
+        Thief_PickRole = 16,
+        Thief_ShowAttackStatus = 17,
+        Thief_CloseEyes = 18,
+
+        // === DaMao (25-27) ===
+        DaMao_OpenEyes = 25,
+        DaMao_Act = 26,
+        DaMao_CloseEyes = 27,
 
         // === LaoShu (30-38) ===
         LaoShu_OpenEyes = 30,
@@ -68,6 +75,12 @@ namespace ProcedureCore.LangRenSha
         YuYanJia_Result = 151,
         YuYanJia_CloseEyes = 152,
 
+        // === TongLingShi (153-156) ===
+        TongLingShi_OpenEyes = 153,
+        TongLingShi_ChaYan = 154,
+        TongLingShi_Result = 155,
+        TongLingShi_CloseEyes = 156,
+
         // === Xiong (160-162) ===
         Xiong_OpenEyes = 160,
         Xiong_Act = 161,
@@ -83,8 +96,12 @@ namespace ProcedureCore.LangRenSha
         LangQiang_Act = 276,
         LangQiang_CloseEyes = 277,
 
+        // === MengMianRen (350) - Must be last night action ===
+        MengMianRen_Act = 350,
+
         // === Day Time (1000) ===
         DayTimeAnnouncement = 1000,
+
     }
 
     /// <summary>
@@ -123,11 +140,12 @@ namespace ProcedureCore.LangRenSha
         // === End of Day (40) ===
         EndOfDay = 40,
 
-        // === Death Handling (97-100) ===
+        // === Death Handling (97-101) ===
         DeathHandlingInterrupt = 97,
         DeadPlayerSkillsProcessing = 98,
         DeadPlayerSheriffHandover = 99,
         DeadPlayerSpeak = 100,
+        MengMianRenDeath = 101,
     }
 
     /// <summary>
@@ -145,6 +163,10 @@ namespace ProcedureCore.LangRenSha
         YuYanJia_ChaYan = 2,
         YuYanJia_Result = 7,
 
+        // === TongLingShi (13-14) ===
+        TongLingShi_ChaYan = 13,
+        TongLingShi_Result = 14,
+
         // === NvWu (3) ===
         NvWu_Act = 3,
 
@@ -161,6 +183,9 @@ namespace ProcedureCore.LangRenSha
         // === Xiong (9) ===
         Xiong_Act = 9,
 
+        // === Thief (10) ===
+        Thief_PickRole = 10,
+
         // === Open/Close Eyes Announcements (50-55) ===
         OpenEyes = 50,
         CloseEyes = 51,
@@ -176,6 +201,9 @@ namespace ProcedureCore.LangRenSha
         LaoShu_Tag = 72,
         LaoShu_CheckMice = 75,
         LaoShu_GiftedPoison = 76,
+
+        // === MengMianRen (77) ===
+        MengMianRen_Death = 77,
 
         // === Sheriff Election (100-105) ===
         SheriffVolunteer = 100,

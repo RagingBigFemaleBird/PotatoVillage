@@ -27,6 +27,7 @@ namespace ProcedureCore.Core
         public static string dictUserActionTargets = "user_targets";
         public static string dictUserActionTargetsCount = "user_targets_count";
         public static string dictUserActionTargetsHint = "user_targets_hint";
+        public static string dictUserActionRole = "user_role"; // Role name currently acting (for client display)
         public static string dictUserActionInfo = "user_info";
         public static string dictUserActionResponse = "user_response";
         public static string dictUserActionSelects = "user_selects";
@@ -121,6 +122,7 @@ namespace ProcedureCore.Core
             if ((ua != 0 && ua <= now) || force)
             {
                 update[dictUserActionInfo] = null;
+                update[dictUserActionRole] = null;
                 update[dictUserAction] = 0;
                 update[dictUserActionPauseStart] = null;
                 return true;

@@ -116,6 +116,7 @@ namespace ProcedureCore.LangRenSha
                         update[UserAction.dictUserActionUsers] = xiong;
                         update[UserAction.dictUserActionTargetsCount] = 1;
                         update[UserAction.dictUserActionTargetsHint] = (int)HintConstant.Xiong_Act;
+                        update[UserAction.dictUserActionRole] = Name;
                         return GameActionResult.Restart;
                     }
                     else

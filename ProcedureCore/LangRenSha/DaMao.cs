@@ -110,6 +110,7 @@ namespace ProcedureCore.LangRenSha
                         update[UserAction.dictUserActionUsers] = daMao;
                         update[UserAction.dictUserActionTargetsCount] = 1;
                         update[UserAction.dictUserActionTargetsHint] = (int)HintConstant.DaMao_Act;
+                        update[UserAction.dictUserActionRole] = Name;
                         if (langRenAlive.Count + langRenSuccession1Alive.Count == 0)
                         {
                             update[UserAction.dictUserActionInfo] = "Succession";

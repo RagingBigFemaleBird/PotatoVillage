@@ -114,6 +114,7 @@ namespace ProcedureCore.LangRenSha
                         update[UserAction.dictUserActionUsers] = wuZhe;
                         update[UserAction.dictUserActionTargetsCount] = 3;
                         update[UserAction.dictUserActionTargetsHint] = (int)HintConstant.WuZhe_Act;
+                        update[UserAction.dictUserActionRole] = Name;
                         return GameActionResult.Restart;
                     }
                     else

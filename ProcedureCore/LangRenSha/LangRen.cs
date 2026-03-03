@@ -153,11 +153,11 @@ namespace ProcedureCore.LangRenSha
 
             if (Game.GetGameDictionaryProperty(game, LangRenSha.dictAction, 0) == ActionOrders[1])
             {
-                var langRen = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == Name);
+                var langRen = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == Name && (!x.ContainsKey(dictSuceession) || (int)x[dictSuceession] == 0 || (int)x[dictSuceession] == 1));
                 var langRenSuccession1 = LangRenSha.GetPlayers(game, x => x.ContainsKey(dictSuceession) && (int)x[dictSuceession] == 1);
                 var langRenSuccession2 = LangRenSha.GetPlayers(game, x => x.ContainsKey(dictSuceession) && (int)x[dictSuceession] == 2);
                 var langRenSuccession3 = LangRenSha.GetPlayers(game, x => x.ContainsKey(dictSuceession) && (int)x[dictSuceession] == 3);
-                var langRenAlive = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == Name && (int)x[LangRenSha.dictAlive] == 1);
+                var langRenAlive = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == Name && (int)x[LangRenSha.dictAlive] == 1 && (!x.ContainsKey(dictSuceession) || (int)x[dictSuceession] == 0 || (int)x[dictSuceession] == 1));
                 var langRenSuccession1Alive = LangRenSha.GetPlayers(game, x => x.ContainsKey(dictSuceession) && (int)x[dictSuceession] == 1 && (int)x[LangRenSha.dictAlive] == 1);
                 var langRenSuccession2Alive = LangRenSha.GetPlayers(game, x => x.ContainsKey(dictSuceession) && (int)x[dictSuceession] == 2 && (int)x[LangRenSha.dictAlive] == 1);
                 var langRenSuccession3Alive = LangRenSha.GetPlayers(game, x => x.ContainsKey(dictSuceession) && (int)x[dictSuceession] == 3 && (int)x[LangRenSha.dictAlive] == 1);
@@ -208,6 +208,7 @@ namespace ProcedureCore.LangRenSha
                         update[UserAction.dictUserActionUsers] = langRen;
                         update[UserAction.dictUserActionTargetsCount] = 1;
                         update[UserAction.dictUserActionTargetsHint] = (int)HintConstant.LangRen_Kill;
+                        update[UserAction.dictUserActionRole] = Name;
                         return GameActionResult.Restart;
                     }
                     else
@@ -246,11 +247,11 @@ namespace ProcedureCore.LangRenSha
 
             if (Game.GetGameDictionaryProperty(game, LangRenSha.dictAction, 0) == ActionOrders[2])
             {
-                var langRen = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == Name);
+                var langRen = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == Name && (!x.ContainsKey(dictSuceession) || (int)x[dictSuceession] == 0 || (int)x[dictSuceession] == 1));
                 var langRenSuccession1 = LangRenSha.GetPlayers(game, x => x.ContainsKey(dictSuceession) && (int)x[dictSuceession] == 1);
                 var langRenSuccession2 = LangRenSha.GetPlayers(game, x => x.ContainsKey(dictSuceession) && (int)x[dictSuceession] == 2);
                 var langRenSuccession3 = LangRenSha.GetPlayers(game, x => x.ContainsKey(dictSuceession) && (int)x[dictSuceession] == 3);
-                var langRenAlive = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == Name && (int)x[LangRenSha.dictAlive] == 1);
+                var langRenAlive = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == Name && (int)x[LangRenSha.dictAlive] == 1 && (!x.ContainsKey(dictSuceession) || (int)x[dictSuceession] == 0 || (int)x[dictSuceession] == 1));
                 var langRenSuccession1Alive = LangRenSha.GetPlayers(game, x => x.ContainsKey(dictSuceession) && (int)x[dictSuceession] == 1 && (int)x[LangRenSha.dictAlive] == 1);
                 var langRenSuccession2Alive = LangRenSha.GetPlayers(game, x => x.ContainsKey(dictSuceession) && (int)x[dictSuceession] == 2 && (int)x[LangRenSha.dictAlive] == 1);
                 var langRenSuccession3Alive = LangRenSha.GetPlayers(game, x => x.ContainsKey(dictSuceession) && (int)x[dictSuceession] == 3 && (int)x[LangRenSha.dictAlive] == 1);
@@ -289,6 +290,7 @@ namespace ProcedureCore.LangRenSha
                         update[UserAction.dictUserActionUsers] = langRen;
                         update[UserAction.dictUserActionTargetsCount] = 1;
                         update[UserAction.dictUserActionTargetsHint] = (int)HintConstant.LangRen_KillTarget;
+                        update[UserAction.dictUserActionRole] = Name;
                         var at = Game.GetGameDictionaryProperty(game, dictAttackTarget, new List<int>());
                         update[UserAction.dictUserActionInfo] = string.Join(", ", at);
                         return GameActionResult.Restart;

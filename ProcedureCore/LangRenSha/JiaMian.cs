@@ -109,6 +109,7 @@ namespace ProcedureCore.LangRenSha
                         update[UserAction.dictUserActionUsers] = jiaMian;
                         update[UserAction.dictUserActionTargetsCount] = 1;
                         update[UserAction.dictUserActionTargetsHint] = (int)HintConstant.JiaMian_OpenEyes;
+                        update[UserAction.dictUserActionRole] = Name;
                         if (langRenAlive.Count + langRenSuccession1Alive.Count == 0)
                         {
                             update[UserAction.dictUserActionInfo] = "Succession";
@@ -161,6 +162,7 @@ namespace ProcedureCore.LangRenSha
                         update[UserAction.dictUserActionUsers] = jiaMian;
                         update[UserAction.dictUserActionTargetsCount] = 1;
                         update[UserAction.dictUserActionTargetsHint] = (int)HintConstant.JiaMian_ChaYan;
+                        update[UserAction.dictUserActionRole] = Name;
                         var chayan = Game.GetGameDictionaryProperty(game, dictJiaMianChaYan, 0);
                         update[UserAction.dictUserActionInfo] = chayan.ToString();
                         return GameActionResult.Restart;

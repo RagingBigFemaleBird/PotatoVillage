@@ -145,7 +145,7 @@ namespace ProcedureCore.LangRenSha
             }
         }
 
-        public static int actionDuraionPlayerReact = 7;
+        public static int actionDuraionPlayerReact = 8;
         public static int actionDurationPlayerSpeak = 90;
 
         public GameActionResult GenerateStateDiff(Game game, Dictionary<string, object> update)

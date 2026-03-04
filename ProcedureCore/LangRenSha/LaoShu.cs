@@ -294,6 +294,8 @@ namespace ProcedureCore.LangRenSha
                             {
                                 LangRenSha.MarkPlayerAboutToDie(game, target, update);
                             }
+                            // Mark the poisoned target as cat trapped - if DaMao visits them, DaMao dies
+                            LangRenSha.SetPlayerProperty(game, target, DaMao.dictCatTrapped, 1, update);
                             LangRenSha.SetPlayerProperty(game, tagged, dictMiceGifted, 0, update);
                             UserAction.EndUserAction(game, update, true);
                             LangRenSha.AdvanceAction(game, update);

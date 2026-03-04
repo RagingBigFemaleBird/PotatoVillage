@@ -10,6 +10,7 @@ namespace ProcedureCore.LangRenSha
     public class DaMao : Role
     {
         public static string dictCatMark = "cat_mark";
+        public static string dictCatTrapped = "cat_trapped";
 
         private static Dictionary<string, object> roleDict = new()
             {
@@ -90,11 +91,12 @@ namespace ProcedureCore.LangRenSha
             {
                 var daMao = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == Name);
                 var daMaoAlive = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == Name && (int)x[LangRenSha.dictAlive] == 1);
-                
+
                 var alivePlayers = LangRenSha.GetPlayers(game, x => (int)x[LangRenSha.dictAlive] == 1);
-                
+
                 if (UserAction.EndUserAction(game, update))
                 {
+                    // Time expired - just advance, ignore any response (no cat trap check)
                     LangRenSha.AdvanceAction(game, update);
                     return GameActionResult.Restart;
                 }
@@ -127,7 +129,28 @@ namespace ProcedureCore.LangRenSha
                             {
                                 return GameActionResult.NotExecuted;
                             }
-                            update[dictCatMark] = targets[0];
+                            var target = targets[0];
+
+                            // Check if target is cat trapped (gifted player) - DaMao dies if visiting them
+                            if (target > 0 && daMaoAlive.Count > 0)
+                            {
+                                var isCatTrapped = LangRenSha.GetPlayerProperty(game, target, dictCatTrapped, 0);
+                                if (isCatTrapped == 1)
+                                {
+                                    // DaMao dies when visiting a cat trapped player
+                                    LangRenSha.MarkPlayerAboutToDie(game, daMaoAlive[0], update);
+                                    update[dictCatMark] = 0; // No cat mark since DaMao died
+                                }
+                                else
+                                {
+                                    update[dictCatMark] = target;
+                                }
+                            }
+                            else
+                            {
+                                update[dictCatMark] = target;
+                            }
+
                             UserAction.EndUserAction(game, update, true);
                             LangRenSha.AdvanceAction(game, update);
                             return GameActionResult.Restart;

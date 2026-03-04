@@ -1,9 +1,10 @@
-﻿using System.Collections.ObjectModel;
-using System.Text.Json;
-using System.Text;
-using System.Linq;
-using Microsoft.Maui.Controls;
+﻿using Microsoft.Maui.Controls;
 using PotatoVillage.Services;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
+using System.Text;
+using System.Text.Json;
 
 namespace PotatoVillage
 {
@@ -45,6 +46,7 @@ namespace PotatoVillage
         // Second level: indexed by special target values (<= 0)
         private static readonly Dictionary<int, Dictionary<int, string>> SpecialTargets = new Dictionary<int, Dictionary<int, string>>()
         {
+            { 1, new Dictionary<int, string> { { -100, "DoNotAttack"} } },
             { 3, new Dictionary<int, string> { { 0, "JiuRen" }, { -100, "DoNotUse"} } },
             { 100, new Dictionary<int, string> { { -1, "Volunteer" }, { 0, "Abstain" } } },
             { 102, new Dictionary<int, string> { { -1, "Done speaking" }, { 0, "Pause game" } } },
@@ -640,22 +642,7 @@ namespace PotatoVillage
                 UpdateGameStatusFontSize();
 
                 // Show/hide Reveal button based on day time (phaseValue == 1)
-                if (phaseValue == 1)
-                {
-                    // Add Reveal button if not already in toolbar
-                    if (!ToolbarItems.Contains(RevealBtn))
-                    {
-                        ToolbarItems.Insert(0, RevealBtn);
-                    }
-                }
-                else
-                {
-                    // Remove Reveal button if it's in toolbar
-                    if (ToolbarItems.Contains(RevealBtn))
-                    {
-                        ToolbarItems.Remove(RevealBtn);
-                    }
-                }
+                RevealBtn.IsVisible = (phaseValue == 1);
 
                 // Check if current player is dead and update player ID color
                 var isPlayerDead = IsPlayerDead(playerId);

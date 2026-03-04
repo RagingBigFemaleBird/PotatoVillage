@@ -42,7 +42,9 @@ namespace PotatoVillage.Services
             { "摄梦人", "shemengren" },
             { "狼枪", "langqiang" },
             { "熊", "xiong" },
-            { "转换者", "zhuanhuanzhe" }, 
+            { "转换者", "zhuanhuanzhe" },
+            { "通灵师", "tonglingshi" },
+            { "盗宝大师", "daobaodashi" },
             { "警长", "jingzhang" },
             
             // Common phrases
@@ -300,38 +302,147 @@ namespace PotatoVillage.Services
 #endif
 
 #if IOS
-        private AVFoundation.AVAudioPlayer? _audioPlayer;
-        
+        private bool _audioSessionConfigured = false;
+
+        private void ConfigureAudioSession()
+        {
+            if (_audioSessionConfigured) return;
+
+            try
+            {
+                var audioSession = AVFoundation.AVAudioSession.SharedInstance();
+
+                Foundation.NSError? setCategoryError;
+                audioSession.SetCategory(AVFoundation.AVAudioSession.CategoryPlayback, out setCategoryError);
+                if (setCategoryError != null)
+                {
+                    System.Diagnostics.Debug.WriteLine($"iOS SetCategory error: {setCategoryError.LocalizedDescription}");
+                    return;
+                }
+
+                Foundation.NSError? setActiveError;
+                audioSession.SetActive(true, out setActiveError);
+                if (setActiveError != null)
+                {
+                    System.Diagnostics.Debug.WriteLine($"iOS SetActive error: {setActiveError.LocalizedDescription}");
+                    return;
+                }
+
+                _audioSessionConfigured = true;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Failed to configure iOS audio session: {ex.Message}");
+            }
+        }
+
         private async Task PlayAudioiOSAsync(Stream stream)
         {
             var tempFile = Path.Combine(FileSystem.CacheDirectory, $"temp_audio_{Guid.NewGuid()}.mp3");
+            AVFoundation.AVAudioPlayer? player = null;
+
             try
             {
+                // Write stream to temp file (can be done off main thread)
                 using (var fileStream = File.Create(tempFile))
                 {
                     await stream.CopyToAsync(fileStream);
                 }
 
                 var tcs = new TaskCompletionSource<bool>();
-                
-                _audioPlayer?.Dispose();
-                var url = Foundation.NSUrl.FromFilename(tempFile);
-                _audioPlayer = AVFoundation.AVAudioPlayer.FromUrl(url, out var error);
-                
-                if (error != null)
+
+                // All AVFoundation operations must be on main thread
+                await MainThread.InvokeOnMainThreadAsync(() =>
                 {
-                    tcs.TrySetResult(false);
-                }
-                else
+                    try
+                    {
+                        // Configure audio session on main thread
+                        ConfigureAudioSession();
+
+                        var url = Foundation.NSUrl.FromFilename(tempFile);
+                        if (url == null)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"iOS audio: Failed to create URL from {tempFile}");
+                            tcs.TrySetResult(false);
+                            return;
+                        }
+
+                        player = AVFoundation.AVAudioPlayer.FromUrl(url, out var error);
+
+                        if (error != null)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"iOS audio error: {error.LocalizedDescription}");
+                            tcs.TrySetResult(false);
+                            return;
+                        }
+
+                        if (player == null)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"iOS audio: AVAudioPlayer is null");
+                            tcs.TrySetResult(false);
+                            return;
+                        }
+
+                        // Use delegate pattern instead of event to avoid disposal issues
+                        player.FinishedPlaying += (s, e) => 
+                        {
+                            tcs.TrySetResult(e.Status);
+                        };
+
+                        if (!player.PrepareToPlay())
+                        {
+                            System.Diagnostics.Debug.WriteLine($"iOS audio: PrepareToPlay failed");
+                            tcs.TrySetResult(false);
+                            return;
+                        }
+
+                        if (!player.Play())
+                        {
+                            System.Diagnostics.Debug.WriteLine($"iOS audio: Play failed");
+                            tcs.TrySetResult(false);
+                            return;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"iOS audio setup error: {ex.Message}");
+                        tcs.TrySetResult(false);
+                    }
+                });
+
+                // Wait for playback to complete with timeout (outside of main thread invoke)
+                var timeoutTask = Task.Delay(TimeSpan.FromSeconds(30));
+                var completedTask = await Task.WhenAny(tcs.Task, timeoutTask);
+
+                if (completedTask == timeoutTask)
                 {
-                    _audioPlayer.FinishedPlaying += (s, e) => tcs.TrySetResult(true);
-                    _audioPlayer.Play();
+                    System.Diagnostics.Debug.WriteLine($"iOS audio: Playback timed out");
+                    player?.Stop();
                 }
 
-                await tcs.Task;
+                // Small delay to ensure callback has completed before cleanup
+                await Task.Delay(100);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"iOS audio playback error: {ex.Message}");
             }
             finally
             {
+                // Dispose player on main thread after a delay to ensure callbacks are done
+                if (player != null)
+                {
+                    await MainThread.InvokeOnMainThreadAsync(() =>
+                    {
+                        try
+                        {
+                            player.Stop();
+                            player.Dispose();
+                        }
+                        catch { }
+                    });
+                }
+
                 try { File.Delete(tempFile); } catch { }
             }
         }

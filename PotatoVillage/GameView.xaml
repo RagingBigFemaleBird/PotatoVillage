@@ -1,23 +1,38 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             x:Class="PotatoVillage.GameView">
+             x:Class="PotatoVillage.GameView"
+             Shell.NavBarIsVisible="False">
 
-    <ContentPage.ToolbarItems>
-        <ToolbarItem x:Name="RevealBtn"
-                     Text="Reveal"
-                     Clicked="OnRevealClicked"
-                     Priority="0" />
-        <ToolbarItem Text="?"
-                     Clicked="OnDisconnectClicked"
-                     Priority="1" />
-    </ContentPage.ToolbarItems>
+    <!-- Custom compact toolbar -->
+    <Grid RowDefinitions="24,*">
+        <HorizontalStackLayout Grid.Row="0" 
+                               BackgroundColor="#6200EE"
+                               HorizontalOptions="End"
+                               Spacing="8"
+                               Padding="8,0">
+            <Button x:Name="RevealBtn"
+                    Text="Reveal"
+                    Clicked="OnRevealClicked"
+                    HeightRequest="22"
+                    FontSize="11"
+                    Padding="8,0"
+                    BackgroundColor="Transparent"
+                    TextColor="White" />
+            <Button Text="?"
+                    Clicked="OnDisconnectClicked"
+                    HeightRequest="22"
+                    FontSize="11"
+                    Padding="8,0"
+                    BackgroundColor="Transparent"
+                    TextColor="White" />
+        </HorizontalStackLayout>
 
-    <Grid ColumnDefinitions="1*,2*" RowDefinitions="*">
-        <!-- Left side: Player ID display (1/3 of screen) -->
-        <Grid Grid.Column="0" RowDefinitions="1*,Auto,1*">
-            <!-- Top: Upside down player ID -->
-            <Label x:Name="PlayerIdTopLabel"
+        <Grid Grid.Row="1" ColumnDefinitions="1*,2*" RowDefinitions="*">
+            <!-- Left side: Player ID display (1/3 of screen) -->
+            <Grid Grid.Column="0" RowDefinitions="1*,Auto,1*">
+                <!-- Top: Upside down player ID -->
+                <Label x:Name="PlayerIdTopLabel"
                    Grid.Row="0"
                    FontSize="200"
                    HorizontalTextAlignment="Center"
@@ -169,6 +184,7 @@
                 </Frame>
             </Grid>
         </Grid>
+    </Grid>
     </Grid>
 
 </ContentPage>

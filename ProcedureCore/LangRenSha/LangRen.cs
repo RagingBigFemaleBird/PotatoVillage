@@ -161,6 +161,7 @@ namespace ProcedureCore.LangRenSha
                 var langRenSuccession1Alive = LangRenSha.GetPlayers(game, x => x.ContainsKey(dictSuceession) && (int)x[dictSuceession] == 1 && (int)x[LangRenSha.dictAlive] == 1);
                 var langRenSuccession2Alive = LangRenSha.GetPlayers(game, x => x.ContainsKey(dictSuceession) && (int)x[dictSuceession] == 2 && (int)x[LangRenSha.dictAlive] == 1);
                 var langRenSuccession3Alive = LangRenSha.GetPlayers(game, x => x.ContainsKey(dictSuceession) && (int)x[dictSuceession] == 3 && (int)x[LangRenSha.dictAlive] == 1);
+                var day0 = Game.GetGameDictionaryProperty(game, LangRenSha.dictDay, 0) == 0;
 
                 langRen.AddRange(langRenSuccession1);
                 langRenAlive.AddRange(langRenSuccession1Alive);
@@ -182,6 +183,13 @@ namespace ProcedureCore.LangRenSha
                 }
 
                 var alivePlayers = LangRenSha.GetPlayers(game, x => (int)x[LangRenSha.dictAlive] == 1);
+                var thiefPresent = Game.GetGameDictionaryProperty(game, Thief.dictThiefPlayer, 0) > 0;
+                if (thiefPresent && day0)
+                {
+                    alivePlayers.Clear();
+                }
+                alivePlayers.Add(-100);
+
                 if (UserAction.EndUserAction(game, update))
                 {
                     (var inputValid, var input, var input_others) = UserAction.GetUserResponse(game, true, langRenAlive, update);
@@ -189,7 +197,7 @@ namespace ProcedureCore.LangRenSha
                     {
                         var targets = UserAction.TallyUserInput(input, 0, UserAction.UserInputMode.VoteMost, -1);
                         var choose = new List<int>();
-                        if (targets.Count > 0)
+                        if (targets.Count > 0 && targets[0] > 0)
                         {
                             choose.Add(targets[0]);
                         }
@@ -230,7 +238,7 @@ namespace ProcedureCore.LangRenSha
                                 (inputValid, input, input_others) = UserAction.GetUserResponse(game, true, langRenAlive, update);
                                 var targets = UserAction.TallyUserInput(input, 0, UserAction.UserInputMode.VoteMost, -1);
                                 var choose = new List<int>();
-                                if (targets.Count > 0)
+                                if (targets.Count > 0 && targets[0] > 0)
                                 {
                                     choose.Add(targets[0]);
                                 }

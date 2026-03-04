@@ -229,7 +229,7 @@ namespace PotatoVillage
             // Thief requires 3 extra roles, so actual player count is 3 less
             if (roleDict.ContainsKey("Thief"))
                 totalPlayers -= 3;
-            if (totalPlayers == 0)
+            if (totalPlayers <= 0)
             {
                 await DisplayAlert("Error", "Please select at least one role", "OK");
                 ConnectBtn.IsEnabled = true;

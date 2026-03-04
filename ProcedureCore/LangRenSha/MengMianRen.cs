@@ -115,7 +115,10 @@ namespace ProcedureCore.LangRenSha
             {
                 return (false, GameActionResult.NotExecuted);
             }
-
+            if (Game.GetGameDictionaryProperty(game, LangRenSha.dictSpeak, 0) != (int)SpeakConstant.DaySpeech)
+            {
+                return (false, GameActionResult.NotExecuted);
+            }
             // Check if player is still alive
             var isAlive = LangRenSha.GetPlayerProperty(game, player, LangRenSha.dictAlive, 1);
             if (isAlive != 1)

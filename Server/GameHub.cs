@@ -487,18 +487,48 @@ namespace Server
         public Task UserAction(string clientId, int gameId, int playerId, List<int> targets)
         {
             Console.WriteLine($"Received user action for Game {gameId}, Player {playerId}, Targets: {string.Join(", ", targets)}");
-            if (games.ContainsKey(gameId))
+
+            if (!games.ContainsKey(gameId))
             {
-                var game = games[gameId];
-                if (game.PlayerToId.TryGetValue(clientId, out int registeredPlayerId) && registeredPlayerId == playerId)
+                Console.WriteLine($"[UserAction] Game {gameId} does not exist. ClientId={clientId}, PlayerId={playerId}");
+                return Task.CompletedTask;
+            }
+
+            var game = games[gameId];
+
+            if (game.PlayerToId.TryGetValue(clientId, out int registeredPlayerId))
+            {
+                if (registeredPlayerId == playerId)
                 {
                     ProcedureCore.Core.UserAction.UserActionRespond(game, playerId, targets);
                 }
                 else
                 {
-                    Console.WriteLine($"Player {playerId} is not registered for Game {gameId}");
+                    // ClientId exists but playerId doesn't match
+                    Console.WriteLine($"[UserAction] PlayerId mismatch for Game {gameId}. " +
+                        $"ClientId={clientId}, ClaimedPlayerId={playerId}, RegisteredPlayerId={registeredPlayerId}, " +
+                        $"GameStarted={game.GameStarted}, TotalPlayers={game.TotalPlayers}, " +
+                        $"PlayerToIdCount={game.PlayerToId.Count}, IdToPlayerCount={game.IdToPlayer.Count}");
                 }
             }
+            else
+            {
+                // ClientId not found in PlayerToId
+                var clientIdInGameId = ClientIdToGameId.TryGetValue(clientId, out var trackedGameId) ? trackedGameId.ToString() : "none";
+                var clientIdInGame = ClientIdToGame.ContainsKey(clientId) ? "yes" : "no";
+                var connectionHasClientId = ConnectionIdToClientId.Values.Contains(clientId) ? "yes" : "no";
+                var playerIdOwner = game.IdToPlayer.TryGetValue(playerId, out var ownerClientId) ? ownerClientId : "none";
+
+                Console.WriteLine($"[UserAction] ClientId not registered for Game {gameId}. " +
+                    $"ClientId={clientId}, ClaimedPlayerId={playerId}, " +
+                    $"ClientIdToGameId={clientIdInGameId}, ClientIdToGame={clientIdInGame}, " +
+                    $"ConnectionHasClientId={connectionHasClientId}, " +
+                    $"PlayerIdCurrentOwner={playerIdOwner}, " +
+                    $"GameStarted={game.GameStarted}, TotalPlayers={game.TotalPlayers}, " +
+                    $"PlayerToIdCount={game.PlayerToId.Count}, " +
+                    $"RegisteredClientIds=[{string.Join(", ", game.PlayerToId.Keys.Take(5))}{(game.PlayerToId.Count > 5 ? "..." : "")}]");
+            }
+
             return Task.CompletedTask;
         }
     }

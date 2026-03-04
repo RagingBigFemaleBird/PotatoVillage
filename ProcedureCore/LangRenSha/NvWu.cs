@@ -156,7 +156,9 @@ namespace ProcedureCore.LangRenSha
                 return GameActionResult.Continue;
             }
 
-            if (LangRenSha.AnnouncerAction(game, update, false, ActionOrders[0], ActionOrders[2], 50, 51, Name, 4) == GameActionResult.Restart)
+            var thiefPresent = Game.GetGameDictionaryProperty(game, Thief.dictThiefPlayer, 0) > 0;
+
+            if (LangRenSha.AnnouncerAction(game, update, thiefPresent, ActionOrders[0], ActionOrders[2], 50, 51, Name, 4) == GameActionResult.Restart)
             {
                 return GameActionResult.Restart;
             }
@@ -168,12 +170,14 @@ namespace ProcedureCore.LangRenSha
                 var nvWuAlive = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == Name && (int)x[LangRenSha.dictAlive] == 1);
                 var alivePlayers = LangRenSha.GetPlayers(game, x => (int)x[LangRenSha.dictAlive] == 1);
                 var actionDuration = Game.GetGameDictionaryProperty(game, LangRenSha.dictDurationPlayerReact, ActionDuration);
+                var day0 = Game.GetGameDictionaryProperty(game, LangRenSha.dictDay, 0) == 0;
+
                 if (nvWuAlive.Count == 0)
                 {
                     actionDuration = new Random().Next(3, 6);
                 }
 
-                if (UserAction.EndUserAction(game, update))
+                if ((day0 && thiefPresent) || UserAction.EndUserAction(game, update))
                 {
                     LangRenSha.AdvanceAction(game, update);
                     return GameActionResult.Restart;
@@ -192,7 +196,7 @@ namespace ProcedureCore.LangRenSha
                         {
                             selfAttacked = true;
                         }
-                        if (nvWuPlayer == 0 || LangRenSha.GetPlayerProperty(game, nvWuPlayer, dictSaveUsed, 0) != 0)
+                        if (thiefPresent || nvWuPlayer == 0 || LangRenSha.GetPlayerProperty(game, nvWuPlayer, dictSaveUsed, 0) != 0)
                         {
                             saveUsed = true;
                         }

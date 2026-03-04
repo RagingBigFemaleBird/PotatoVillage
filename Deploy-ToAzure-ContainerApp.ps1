@@ -152,6 +152,7 @@ Write-Host ""
 # Build and push the container image
 Write-Host "Building and pushing container image..." -ForegroundColor Yellow
 az containerapp up --name $deployedContainerAppName --resource-group $ResourceGroupName --source .
+#az containerapp up --name potatovillage-server --resource-group pv-resource-group-eastus --source .
 if ($LASTEXITCODE -ne 0) {
     Write-Host "Failed to update Container App." -ForegroundColor Red
     exit 1

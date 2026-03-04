@@ -48,7 +48,7 @@ namespace ProcedureCore.LangRenSha
 
         public int ActionDuration
         {
-            get { return 5; }
+            get { return 10; }
         }
 
         // Dictionary keys for Thief-specific data
@@ -99,6 +99,12 @@ namespace ProcedureCore.LangRenSha
             {
                 var thiefPlayer = Game.GetGameDictionaryProperty(game, dictThiefPlayer, 0);
                 var thiefAlive = thiefPlayer > 0 && LangRenSha.GetPlayerProperty(game, thiefPlayer, LangRenSha.dictAlive, 0) == 1;
+                var actionDuration = Game.GetGameDictionaryProperty(game, LangRenSha.dictDurationPlayerReact, ActionDuration);
+
+                if (!thiefAlive)
+                {
+                    actionDuration = new Random().Next(5, 10);
+                }
 
                 // Check if thief is still "Thief" role (hasn't picked yet or picked on previous days)
                 var currentRole = thiefPlayer > 0 ? LangRenSha.GetPlayerProperty(game, thiefPlayer, LangRenSha.dictRole, "") : "";
@@ -153,7 +159,7 @@ namespace ProcedureCore.LangRenSha
                 }
                 else
                 {
-                    if (UserAction.StartUserAction(game, ActionDuration, update))
+                    if (UserAction.StartUserAction(game, actionDuration, update))
                     {
                         // Create target list as indices into available roles
                         var targets = new List<int>();
@@ -216,7 +222,7 @@ namespace ProcedureCore.LangRenSha
                 }
                 else
                 {
-                    if (UserAction.StartUserAction(game, 8, update))
+                    if (UserAction.StartUserAction(game, 7, update))
                     {
                         var langRenAlive = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == "LangRen" && (int)x[LangRenSha.dictAlive] == 1);
                         var langRenSuccession1Alive = LangRenSha.GetPlayers(game, x => x.ContainsKey(LangRen.dictSuceession) && (int)x[LangRen.dictSuceession] == 1 && (int)x[LangRenSha.dictAlive] == 1);

@@ -174,7 +174,7 @@
                        Margin="5,0,0,0">
                     <Label x:Name="CountdownLabel" 
                            Text=""
-                           FontSize="36"
+                           FontSize="26"
                            FontAttributes="Bold"
                            TextColor="Red"
                            HorizontalTextAlignment="Center"

@@ -312,8 +312,10 @@ namespace PotatoVillage.Services
             {
                 var audioSession = AVFoundation.AVAudioSession.SharedInstance();
 
+                // Use SoloAmbient for foreground-only audio playback
+                // This doesn't require UIBackgroundModes and works for short audio clips
                 Foundation.NSError? setCategoryError;
-                audioSession.SetCategory(AVFoundation.AVAudioSession.CategoryPlayback, out setCategoryError);
+                audioSession.SetCategory(AVFoundation.AVAudioSession.CategorySoloAmbient, out setCategoryError);
                 if (setCategoryError != null)
                 {
                     System.Diagnostics.Debug.WriteLine($"iOS SetCategory error: {setCategoryError.LocalizedDescription}");

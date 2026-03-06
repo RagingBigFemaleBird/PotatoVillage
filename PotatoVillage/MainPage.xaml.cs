@@ -240,9 +240,11 @@ namespace PotatoVillage
             int speechDuration = int.TryParse(SpeechDurationEntry.Text, out var sd) ? sd : 120;
             int werewolfDuration = int.TryParse(WerewolfDurationEntry.Text, out var wd) ? wd : 60;
             int godDuration = int.TryParse(GodDurationEntry.Text, out var gd) ? gd : 30;
+            int roundTableMode = RoundTableModeSwitch.IsToggled ? 1 : 0;
+            int ownerControlEnabled = OwnerControlSwitch.IsToggled ? 1 : 0;
 
             isGameOwner = true;  // Creator is the owner
-            if (!await connectionManager.CreateRoomAsync(totalPlayers, roleDict, speechDuration, werewolfDuration, godDuration))
+            if (!await connectionManager.CreateRoomAsync2(totalPlayers, roleDict, speechDuration, werewolfDuration, godDuration, roundTableMode, ownerControlEnabled))
             {
                 ConnectBtn.IsEnabled = true;
                 return;

@@ -49,9 +49,11 @@ namespace PotatoVillage
             { 1, new Dictionary<int, string> { { -100, "DoNotAttack"} } },
             { 3, new Dictionary<int, string> { { 0, "JiuRen" }, { -100, "DoNotUse"} } },
             { 100, new Dictionary<int, string> { { -1, "Volunteer" }, { 0, "Abstain" } } },
-            { 102, new Dictionary<int, string> { { -1, "Done speaking" }, { 0, "Pause game" } } },
-            { 104, new Dictionary<int, string> { { -1, "Done speaking" }, { 0, "Pause game" }, { -2, "Withdraw" } } },
+            { 102, new Dictionary<int, string> { { -1, "Done speaking" }, { 0, "Pause game" }, { -100, "OwnerVoteOverride" } } },
+            { 104, new Dictionary<int, string> { { -1, "Done speaking" }, { 0, "Pause game" }, { -2, "Withdraw" }, { -101, "OwnerSheriffOverride" } } },
             { 105, new Dictionary<int, string> { { -1, "Done speaking" }, { 0, "Pause game" } } },
+            { 106, new Dictionary<int, string> { { 0, "NoSheriff" } } },
+            { 112, new Dictionary<int, string> { { 0, "SkipVote" } } },
             { 151, new Dictionary<int, string> { { -100, "DoNotUse"} } },
             { 153, new Dictionary<int, string> { { -2, "Left" }, { -1, "Right"} } },
         };
@@ -497,8 +499,10 @@ namespace PotatoVillage
                 103 => "vote_sheriff_vote",
                 104 => "sheriff_speech",
                 105 => "sheriff_pk",
+                106 => "owner_sheriff_select",
                 110 => "sheriff_recommend_vote",
                 111 => "voteout",
+                112 => "owner_vote_select",
                 150 => "sheriff_handover",
                 151 => "hunter_kill",
                 152 => "death_announcement",
@@ -847,6 +851,19 @@ namespace PotatoVillage
             {
                 availableTargets.Add(-2);
             }
+
+            // Special case: owner vote override during day speech. Server won't send this.
+            if (hintIndex == 102 && isOwner && !availableTargets.Contains(-100))
+            {
+                availableTargets.Add(-100);
+            }
+
+            // Special case: owner sheriff override during sheriff speech. Server won't send this.
+            if (hintIndex == 104 && isOwner && !availableTargets.Contains(-101))
+            {
+                availableTargets.Add(-101);
+            }
+
             // Track the current displayed state
             currentDisplayedDeadline = userActionDeadline;
             currentDisplayedHint = hintIndex;
@@ -929,6 +946,8 @@ namespace PotatoVillage
             {
                 foreach (var specialTarget in specialTargetsForHint.Keys.OrderBy(x => x))
                 {
+                    // Only show special targets that are in availableTargets
+                    // (owner vote override -100 was already added to availableTargets above for owners)
                     if (!availableTargets.Contains(specialTarget))
                         continue;
 

@@ -251,6 +251,35 @@ namespace PotatoVillage
             }
         }
 
+        public async Task<bool> CreateRoomAsync2(int numberOfPlayers, Dictionary<string, int> roleDict, int speechDuration = 120, int werewolfDuration = 60, int godDuration = 30, int roundTableMode = 0, int ownerControlEnabled = 0)
+        {
+            try
+            {
+                if (connection == null)
+                {
+                    ConnectionFailed?.Invoke("Not connected");
+                    return false;
+                }
+
+                var gameOptions = new Dictionary<string, int>
+                {
+                    { "duration_speech", speechDuration },
+                    { "duration_langren", werewolfDuration },
+                    { "duration_player_react", godDuration },
+                    { "round_table_mode", roundTableMode },
+                    { "owner_control_enabled", ownerControlEnabled }
+                };
+
+                await connection.InvokeAsync("CreateRoom", clientId, nickname, numberOfPlayers, roleDict, gameOptions);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                ConnectionFailed?.Invoke($"Create room failed: {ex.Message}");
+                return false;
+            }
+        }
+
         public async Task<(bool success, string errorMessage)> JoinGameAsync(int gameId, int playerId)
         {
             try

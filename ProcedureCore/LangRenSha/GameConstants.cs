@@ -110,7 +110,7 @@ namespace ProcedureCore.LangRenSha
     /// </summary>
     public enum SpeakConstant
     {
-        // === Sheriff Election (0-6) ===
+        // === Sheriff Election (0-7) ===
         SheriffVolunteer = 0,
         SheriffSpeech = 1,
         SheriffVoteTally = 2,
@@ -118,10 +118,12 @@ namespace ProcedureCore.LangRenSha
         SheriffPKSpeech = 4,
         SheriffPKVote = 5,
         SheriffPKResult = 6,
+        OwnerSheriffSelect = 7,
 
         // === Death Announcement (9-10) ===
         DeathAnnouncement = 9,
         DeathProcessingEntry = 10,
+
 
         // === Win Condition (20) ===
         WinConditionCheck = 20,
@@ -136,6 +138,7 @@ namespace ProcedureCore.LangRenSha
         Vote2 = 36,
         Vote2Result = 37,
         VotedOut = 38,
+        OwnerVoteSelect = 39,
 
         // === End of Day (40) ===
         EndOfDay = 40,
@@ -212,11 +215,12 @@ namespace ProcedureCore.LangRenSha
         SheriffVoteVote = 103,
         SheriffSpeech = 104,
         SheriffPK = 105,
+        OwnerSheriffSelect = 106,
 
-        // === Day Voting (110-111) ===
+        // === Day Voting (110-112) ===
         SheriffRecommendVote = 110,
         VoteOut = 111,
-
+        OwnerVoteSelect = 112,
         // === Death Handling (150-154) ===
         SheriffHandover = 150,
         HunterKill = 151,

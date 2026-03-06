@@ -15,7 +15,7 @@ namespace ProcedureCore.LangRenSha
     {
         private List<(int, Role)> players;
         private static List<Func<Game, int, List<int>, Dictionary<string, object>, GameActionResult>> interruptHandlers = new()
-            { LangRen.RevealSelf, LangQiang.RevealSelf, LangRenSha.WithdrawSheriff };
+            { LangRen.RevealSelf, LangQiang.RevealSelf, LangRenSha.WithdrawSheriff, LangRenSha.OverrideDayVote, LangRenSha.OverrideSheriffVote };
         public static List<Func<Game, int, List<int>, Dictionary<string, object>, GameActionResult>> InterruptHandlers
         {
             get
@@ -23,6 +23,9 @@ namespace ProcedureCore.LangRenSha
                 return interruptHandlers;
             }
         }
+
+        // Dictionary key for owner vote override
+        public static string dictOwnerVoteOverride = "owner_vote_override";
 
         // Dead player skill handlers - return true if handled, false if not handled
         private static List<Func<Game, int, Dictionary<string, object>, (bool, GameActionResult)>> deadPlayerHandlers = new();
@@ -132,10 +135,13 @@ namespace ProcedureCore.LangRenSha
         public static string dictSkipDaySpeech = "skip_day_speech";
         public static string dictDay0AnnouncementDone = "day0_announcement_done";
         public static string dictGameWinner = "game_winner";
+        public static string dictGameOwner = "game_owner";
 
         public static string dictDurationLangRen = "duration_langren";
         public static string dictDurationSpeech = "duration_speech";
         public static string dictDurationPlayerReact = "duration_player_react";
+        public static string dictRoundTableMode = "round_table_mode"; // 0 = start from sheriff, 1 = start from dead player (if single dead)
+        public static string dictOwnerControlEnabled = "owner_control_enabled"; // 0 = disabled, 1 = owner can override day flow
 
         public int Version
         {
@@ -381,6 +387,78 @@ namespace ProcedureCore.LangRenSha
 
         }
 
+        /// <summary>
+        /// Interrupt handler for game owner to override day vote.
+        /// When triggered with target -100 during DaySpeech phase, it interrupts the voting flow
+        /// and transitions to OwnerVoteSelect phase where the owner chooses who to vote out.
+        /// Only works if owner_control_enabled is set to 1.
+        /// </summary>
+        public static GameActionResult OverrideDayVote(Game game, int player, List<int> targets, Dictionary<string, object> update)
+        {
+            // Check if this is a vote override request (contains -100)
+            if (!targets.Contains(-100))
+            {
+                return GameActionResult.NotExecuted;
+            }
+
+            // Check if owner control is enabled
+            var ownerControlEnabled = Game.GetGameDictionaryProperty(game, dictOwnerControlEnabled, 0);
+            if (ownerControlEnabled != 1)
+            {
+                return GameActionResult.NotExecuted;
+            }
+
+            // Only allow during DaySpeech phase
+            var currentSpeak = Game.GetGameDictionaryProperty(game, LangRenSha.dictSpeak, 0);
+            if (currentSpeak != (int)SpeakConstant.DaySpeech)
+            {
+                return GameActionResult.NotExecuted;
+            }
+
+            // End current user action and jump to owner vote select phase
+            UserAction.EndUserAction(game, update, true);
+            update[dictSpeak] = (int)SpeakConstant.OwnerVoteSelect;
+            update[dictSpeaker] = null; // Clear speaker state
+
+            return GameActionResult.Restart;
+        }
+
+        /// <summary>
+        /// Interrupt handler for game owner to override sheriff vote.
+        /// When triggered with target -101 during SheriffSpeech phase, it interrupts the sheriff voting flow
+        /// and transitions to OwnerSheriffSelect phase where the owner chooses who becomes sheriff.
+        /// Only works if owner_control_enabled is set to 1.
+        /// </summary>
+        public static GameActionResult OverrideSheriffVote(Game game, int player, List<int> targets, Dictionary<string, object> update)
+        {
+            // Check if this is a sheriff override request (contains -101)
+            if (!targets.Contains(-101))
+            {
+                return GameActionResult.NotExecuted;
+            }
+
+            // Check if owner control is enabled
+            var ownerControlEnabled = Game.GetGameDictionaryProperty(game, dictOwnerControlEnabled, 0);
+            if (ownerControlEnabled != 1)
+            {
+                return GameActionResult.NotExecuted;
+            }
+
+            // Only allow during SheriffSpeech phase
+            var currentSpeak = Game.GetGameDictionaryProperty(game, LangRenSha.dictSpeak, 0);
+            if (currentSpeak != (int)SpeakConstant.SheriffSpeech)
+            {
+                return GameActionResult.NotExecuted;
+            }
+
+            // End current user action and jump to owner sheriff select phase
+            UserAction.EndUserAction(game, update, true);
+            update[dictSpeak] = (int)SpeakConstant.OwnerSheriffSelect;
+            update[dictSpeaker] = null; // Clear speaker state
+
+            return GameActionResult.Restart;
+        }
+
         public static GameActionResult HandleSpeaker(Game game, Dictionary<string, object> update)
         {
             var allPlayers = LangRenSha.GetPlayers(game, x => true);
@@ -618,6 +696,66 @@ namespace ProcedureCore.LangRenSha
                 }
                 return GameActionResult.NotExecuted;
             }
+            // Owner sheriff select - game owner manually chooses who becomes sheriff
+            if (Game.GetGameDictionaryProperty(game, dictSpeak, 0) == (int)SpeakConstant.OwnerSheriffSelect)
+            {
+                // Get the game owner player ID
+                var gameOwner = Game.GetGameDictionaryProperty(game, dictGameOwner, 0);
+                var ownerList = gameOwner > 0 ? new List<int> { gameOwner } : new List<int>();
+                var sheriffCandidates = Game.GetGameDictionaryProperty(game, dictSheriff, new List<int>());
+
+                // Owner selects who becomes sheriff
+                if (UserAction.EndUserAction(game, update))
+                {
+                    // No one selected, no sheriff
+                    update[dictCurrentSheriff] = 0;
+                    update[dictSpeak] = (int)SpeakConstant.DeathAnnouncement;
+                    return GameActionResult.Restart;
+                }
+                else
+                {
+                    if (UserAction.StartUserAction(game, 999, update))
+                    {
+                        // Show sheriff candidates as selectable targets (plus 0 for no sheriff)
+                        var selectableTargets = new List<int>(sheriffCandidates);
+                        selectableTargets.Insert(0, 0); // Add 0 at the beginning for "no sheriff"
+                        update[UserAction.dictUserActionTargets] = selectableTargets;
+                        update[UserAction.dictUserActionUsers] = ownerList;
+                        update[UserAction.dictUserActionTargetsCount] = 1;
+                        update[UserAction.dictUserActionTargetsHint] = (int)HintConstant.OwnerSheriffSelect;
+                        return GameActionResult.Restart;
+                    }
+                    else
+                    {
+                        // Check for early completion
+                        (var inputValid, var input, var input_others) = UserAction.GetUserResponse(game, true, ownerList, update);
+                        if (inputValid)
+                        {
+                            foreach (var entry in input)
+                            {
+                                var targets = (List<int>)entry.Value;
+                                if (targets.Count > 0 && targets[0] > 0)
+                                {
+                                    // Set the selected player as sheriff
+                                    update[dictCurrentSheriff] = targets[0];
+                                    update[dictSpeak] = (int)SpeakConstant.DeathAnnouncement;
+                                    UserAction.EndUserAction(game, update, true);
+                                    return GameActionResult.Restart;
+                                }
+                                if (targets.Count > 0 && targets[0] == 0)
+                                {
+                                    // Owner selected no one (0 = no sheriff)
+                                    update[dictCurrentSheriff] = 0;
+                                    update[dictSpeak] = (int)SpeakConstant.DeathAnnouncement;
+                                    UserAction.EndUserAction(game, update, true);
+                                    return GameActionResult.Restart;
+                                }
+                            }
+                        }
+                    }
+                }
+                return GameActionResult.NotExecuted;
+            }
             // Death announcement
             if (Game.GetGameDictionaryProperty(game, dictSpeak, 0) == (int)SpeakConstant.DeathAnnouncement)
             {
@@ -718,21 +856,43 @@ namespace ProcedureCore.LangRenSha
             if (Game.GetGameDictionaryProperty(game, dictSpeak, 0) == (int)SpeakConstant.SheriffChooseDirection)
             {
                 var sheriff = Game.GetGameDictionaryProperty(game, dictCurrentSheriff, 0);
+                var gameOwner = Game.GetGameDictionaryProperty(game, dictGameOwner, 0);
 
-                // Only ask sheriff if one exists, otherwise default to left (false)
+                // Build list of users who can respond (sheriff and/or owner)
+                var respondUsers = new List<int>();
                 if (sheriff != 0)
+                {
+                    respondUsers.Add(sheriff);
+                }
+                if (gameOwner > 0 && !respondUsers.Contains(gameOwner))
+                {
+                    respondUsers.Add(gameOwner);
+                }
+
+                // Only ask if there's someone to ask
+                if (respondUsers.Count > 0)
                 {
                     if (UserAction.EndUserAction(game, update))
                     {
-                        (var inputValid, var input, var input_others) = UserAction.GetUserResponse(game, true, new List<int> { sheriff }, update);
+                        (var inputValid, var input, var input_others) = UserAction.GetUserResponse(game, true, respondUsers, update);
 
                         bool directionRight = false;
-                        if (inputValid && input.ContainsKey(sheriff.ToString()))
+                        // Check sheriff's response first, then owner's
+                        foreach (var user in respondUsers)
                         {
-                            var targets = (List<int>)input[sheriff.ToString()];
-                            if (targets.Count > 0 && targets[0] != -2)
+                            if (inputValid && input.ContainsKey(user.ToString()))
                             {
-                                directionRight = true;
+                                var targets = (List<int>)input[user.ToString()];
+                                if (targets.Count > 0 && targets[0] == -1)
+                                {
+                                    directionRight = true;
+                                    break;
+                                }
+                                if (targets.Count > 0 && targets[0] == -2)
+                                {
+                                    directionRight = false;
+                                    break;
+                                }
                             }
                         }
 
@@ -746,44 +906,46 @@ namespace ProcedureCore.LangRenSha
                         if (UserAction.StartUserAction(game, actionDuraionPlayerReact, update))
                         {
                             update[UserAction.dictUserActionTargets] = new List<int> { -2, -1 }; // -2 = left, -1 = right
-                            update[UserAction.dictUserActionUsers] = new List<int> { sheriff };
+                            update[UserAction.dictUserActionUsers] = respondUsers;
                             update[UserAction.dictUserActionTargetsCount] = 1;
                             update[UserAction.dictUserActionTargetsHint] = (int)HintConstant.SheriffChooseDirection;
                             return GameActionResult.Restart;
                         }
                         else
                         {
-                            (var inputValid, var input, var input_others) = UserAction.GetUserResponse(game, true, new List<int> { sheriff }, update);
+                            (var inputValid, var input, var input_others) = UserAction.GetUserResponse(game, true, respondUsers, update);
 
-                            bool directionRight = false;
-                            if (inputValid && input.ContainsKey(sheriff.ToString()))
+                            // Check for early completion from any respondUser
+                            foreach (var user in respondUsers)
                             {
-                                var targets = (List<int>)input[sheriff.ToString()];
-                                if (targets.Count > 0 && targets[0] == -1)
+                                if (inputValid && input.ContainsKey(user.ToString()))
                                 {
-                                    directionRight = true;
-                                    update[UserAction.dictUserActionUsers] = new List<int>();
-                                    update[dictSpeak] = (int)SpeakConstant.DaySpeech;
-                                    update[dictDaySpeechDirection] = directionRight;
-                                    return GameActionResult.Restart;
-                                }
-                                if (targets.Count > 0 && targets[0] == -2)
-                                {
-                                    directionRight = false;
-                                    update[UserAction.dictUserActionUsers] = new List<int>();
-                                    update[dictSpeak] = (int)SpeakConstant.DaySpeech;
-                                    update[dictDaySpeechDirection] = directionRight;
-                                    return GameActionResult.Restart;
+                                    var targets = (List<int>)input[user.ToString()];
+                                    if (targets.Count > 0 && targets[0] == -1)
+                                    {
+                                        update[UserAction.dictUserActionUsers] = new List<int>();
+                                        update[dictSpeak] = (int)SpeakConstant.DaySpeech;
+                                        update[dictDaySpeechDirection] = true;
+                                        UserAction.EndUserAction(game, update, true);
+                                        return GameActionResult.Restart;
+                                    }
+                                    if (targets.Count > 0 && targets[0] == -2)
+                                    {
+                                        update[UserAction.dictUserActionUsers] = new List<int>();
+                                        update[dictSpeak] = (int)SpeakConstant.DaySpeech;
+                                        update[dictDaySpeechDirection] = false;
+                                        UserAction.EndUserAction(game, update, true);
+                                        return GameActionResult.Restart;
+                                    }
                                 }
                             }
-
                         }
                     }
                     return GameActionResult.NotExecuted;
                 }
                 else
                 {
-                    // No sheriff, default to left
+                    // No sheriff and no owner, default to left
                     update[dictSpeak] = (int)SpeakConstant.DaySpeech;
                     update[dictDaySpeechDirection] = false;
                     return GameActionResult.Restart;
@@ -795,19 +957,39 @@ namespace ProcedureCore.LangRenSha
                 var ap = LangRenSha.GetPlayers(game, x => (int)x[LangRenSha.dictAlive] == 1);
                 var sheriff = Game.GetGameDictionaryProperty(game, dictCurrentSheriff, 0);
                 var directionRight = Game.GetGameDictionaryProperty(game, dictDaySpeechDirection, false);
+                var roundTableMode = Game.GetGameDictionaryProperty(game, dictRoundTableMode, 0);
+                var deadPlayers = Game.GetGameDictionaryProperty(game, dictDeadPlayerAction, new List<int>());
 
                 int first = 0;
-                if (sheriff != 0)
+                int lastPlayer = -1; // Sheriff speaks last in mode 1
+
+                if (roundTableMode == 1 && deadPlayers.Count == 1)
                 {
-                    first = sheriff;
+                    // Mode 1: Start from left/right of the dead player (if single dead)
+                    // Sheriff speaks last
+                    var deadPlayer = deadPlayers[0];
+                    first = deadPlayer;
+                    if (sheriff != 0 && ap.Contains(sheriff))
+                    {
+                        lastPlayer = sheriff;
+                    }
                 }
                 else
                 {
-                    first = ap[game.GetRandomNumber() % (ap.Count == 0 ? 1 : ap.Count)];
+                    // Mode 0 (default) or multiple dead: Start from sheriff
+                    if (sheriff != 0)
+                    {
+                        first = sheriff;
+                    }
+                    else
+                    {
+                        first = ap[game.GetRandomNumber() % (ap.Count == 0 ? 1 : ap.Count)];
+                    }
                 }
+
                 bool dir = directionRight;
 
-                return HandleRoundTableSpeak(game, ap, first, dir, update, (int)SpeakConstant.SheriffRecommendVote, (int)HintConstant.RoundTable);
+                return HandleRoundTableSpeak(game, ap, first, dir, update, (int)SpeakConstant.SheriffRecommendVote, (int)HintConstant.RoundTable, null, lastPlayer);
             }
             // Sheriff recommend vote
             if (Game.GetGameDictionaryProperty(game, dictSpeak, 0) == (int)SpeakConstant.SheriffRecommendVote)
@@ -1036,6 +1218,72 @@ namespace ProcedureCore.LangRenSha
                 }
                 return GameActionResult.NotExecuted;
             }
+            // Owner vote select - game owner manually chooses who to vote out
+            if (Game.GetGameDictionaryProperty(game, dictSpeak, 0) == (int)SpeakConstant.OwnerVoteSelect)
+            {
+                // Get the game owner player ID
+                var gameOwner = Game.GetGameDictionaryProperty(game, dictGameOwner, 0);
+                var ownerList = gameOwner > 0 ? new List<int> { gameOwner } : new List<int>();
+
+                // Owner selects who to vote out
+                if (UserAction.EndUserAction(game, update))
+                {
+                    // No one selected, skip to end of day
+                    update[dictSpeak] = (int)SpeakConstant.EndOfDay;
+                    update[dictOwnerVoteOverride] = 1;
+                    return GameActionResult.Restart;
+                }
+                else
+                {
+                    if (UserAction.StartUserAction(game, 999, update))
+                    {
+                        // Show all alive players as selectable targets (plus 0 for skip)
+                        var selectableTargets = new List<int>(alivePlayers);
+                        selectableTargets.Insert(0, 0); // Add 0 at the beginning for "skip/no one"
+                        update[UserAction.dictUserActionTargets] = selectableTargets;
+                        update[UserAction.dictUserActionUsers] = ownerList;
+                        update[UserAction.dictUserActionTargetsCount] = 1;
+                        update[UserAction.dictUserActionTargetsHint] = (int)HintConstant.OwnerVoteSelect;
+                        return GameActionResult.Restart;
+                    }
+                    else
+                    {
+                        // Check for early completion
+                        (var inputValid, var input, var input_others) = UserAction.GetUserResponse(game, true, ownerList, update);
+                        if (inputValid)
+                        {
+                            foreach (var entry in input)
+                            {
+                                var targets = (List<int>)entry.Value;
+                                if (targets.Count > 0 && targets[0] > 0)
+                                {
+                                    // Mark the selected player as about to die
+                                    MarkPlayerAboutToDie(game, targets[0], update);
+
+                                    // Set up interrupt to go through death handling then end of day
+                                    var interrupted = new Dictionary<string, object>();
+                                    interrupted[dictSpeak] = (int)SpeakConstant.EndOfDay;
+                                    update[dictSpeak] = (int)SpeakConstant.DeathHandlingInterrupt;
+                                    update[dictInterrupt] = interrupted;
+                                    update[dictVoteInfo] = $"Owner selected: {targets[0]}";
+                                    update[dictOwnerVoteOverride] = 1;
+                                    UserAction.EndUserAction(game, update, true);
+                                    return GameActionResult.Restart;
+                                }
+                                if (targets.Count > 0 && targets[0] == 0)
+                                {
+                                    // Owner selected no one (0 = skip)
+                                    update[dictSpeak] = (int)SpeakConstant.EndOfDay;
+                                    update[dictOwnerVoteOverride] = 1;
+                                    UserAction.EndUserAction(game, update, true);
+                                    return GameActionResult.Restart;
+                                }
+                            }
+                        }
+                    }
+                }
+                return GameActionResult.NotExecuted;
+            }
             // voted out
             if (Game.GetGameDictionaryProperty(game, dictSpeak, 0) == (int)SpeakConstant.VotedOut)
             {
@@ -1223,7 +1471,7 @@ namespace ProcedureCore.LangRenSha
             return (false, GameActionResult.NotExecuted);
         }
 
-        public static GameActionResult HandleRoundTableSpeak(Game game, List<int> players, int startingPlayer, bool directionPlus, Dictionary<string, object> update, int nextSpeak, int hint = 102, string userinfo = null)
+        public static GameActionResult HandleRoundTableSpeak(Game game, List<int> players, int startingPlayer, bool directionPlus, Dictionary<string, object> update, int nextSpeak, int hint = 102, string userinfo = null, int lastPlayer = -1)
         {
             var speakers = Game.GetGameDictionaryProperty(game, dictSpeaker, new List<int>());
             var allPlayers = LangRenSha.GetPlayers(game, x => true);
@@ -1261,6 +1509,16 @@ namespace ProcedureCore.LangRenSha
                     var last = speakers.Count == 0 ? startingPlayer : speakers.Last();
                     var first = speakers.Count == 0 ? startingPlayer : speakers.First();
                     var next = last;
+
+                    // Determine which players still need to speak (excluding those who already spoke)
+                    var remainingPlayers = players.Where(p => !speakers.Contains(p)).ToList();
+
+                    // Check if only lastPlayer remains to speak
+                    bool onlyLastPlayerRemains = lastPlayer > 0 && 
+                                                  remainingPlayers.Count == 1 && 
+                                                  remainingPlayers.Contains(lastPlayer);
+
+                    // Circular logic to find the next player
                     do
                     {
                         if (directionPlus)
@@ -1279,19 +1537,34 @@ namespace ProcedureCore.LangRenSha
                                 next = allPlayers.Count;
                             }
                         }
+
+                        if (next == lastPlayer && !onlyLastPlayerRemains)
+                        {
+                            continue; // Skip lastPlayer for now if they are not the only one remaining
+                        }
+
+                        // Check if this player should speak
                         if (players.Contains(next))
                         {
                             break;
                         }
                     } while (next != last);
-                    speakers.Add(next);
+
+                    if (speakers.Contains(next) && onlyLastPlayerRemains)
+                    {
+                        speakers.Add(lastPlayer);
+                    }
+                    else
+                    {
+                        speakers.Add(next);
+                    }
                     var (h, ir) = RestoreInterrupted(game, speakers, nextSpeak, update);
                     if (h)
                     {
                         UserAction.EndUserAction(game, update, true);
                         return ir;
                     }
-                        
+
                     update[dictSpeaker] = speakers;
                     update[UserAction.dictUserActionTargets] = new List<int> { -1, 0 };
                     update[UserAction.dictUserActionUsers] = allPlayers;
@@ -1381,27 +1654,13 @@ namespace ProcedureCore.LangRenSha
 
             foreach (var player in alivePlayers)
             {
-                var factionObj = GetPlayerProperty<object>(game, player, dictPlayerFaction, PlayerFaction.Civilian);
+                var faction = GetPlayerProperty(game, player, dictPlayerFaction, (int)PlayerFaction.Civilian);
 
-                PlayerFaction faction;
-                if (factionObj is PlayerFaction pf)
-                {
-                    faction = pf;
-                }
-                else if (factionObj is int factionInt)
-                {
-                    faction = (PlayerFaction)factionInt;
-                }
-                else
-                {
-                    faction = PlayerFaction.Civilian;
-                }
-
-                if ((faction & PlayerFaction.Evil) != 0)
+                if ((faction & (int)PlayerFaction.Evil) != 0)
                     hasEvil = true;
-                else if ((faction & PlayerFaction.God) != 0)
+                else if ((faction & (int)PlayerFaction.God) != 0)
                     hasGod = true;
-                else if ((faction & PlayerFaction.Civilian) != 0)
+                else if ((faction & (int)PlayerFaction.Civilian) != 0)
                     hasCivilian = true;
             }
 

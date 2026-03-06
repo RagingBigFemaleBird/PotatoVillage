@@ -330,6 +330,17 @@ namespace Server
                 return;
             }
 
+            // Set the game owner in the game state (use player ID, not client ID)
+            if (game.PlayerToId.TryGetValue(clientId, out var ownerPlayerId))
+            {
+                var ownerUpdate = new Dictionary<string, object>
+                {
+                    { LangRenSha.dictGameOwner, ownerPlayerId }
+                };
+                game.StateUpdate(ownerUpdate, true);
+                Console.WriteLine($"Game {gameId} owner set to Player {ownerPlayerId}");
+            }
+
             game.GameStarted = true;
 
             // Notify all clients that game has started

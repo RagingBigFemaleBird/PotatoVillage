@@ -24,6 +24,18 @@
                 <Label Text="{m:Translate god_duration}" VerticalOptions="Center" />
             </HorizontalStackLayout>
 
+            <!-- Round Table Mode Setting -->
+            <HorizontalStackLayout Spacing="8" HeightRequest="40">
+                <Switch x:Name="RoundTableModeSwitch" IsToggled="False" VerticalOptions="Center" MinimumWidthRequest="60" />
+                <Label Text="{m:Translate round_table_mode}" VerticalOptions="Center" />
+            </HorizontalStackLayout>
+
+            <!-- Owner Control Setting -->
+            <HorizontalStackLayout Spacing="8" HeightRequest="40">
+                <Switch x:Name="OwnerControlSwitch" IsToggled="False" VerticalOptions="Center" MinimumWidthRequest="60" />
+                <Label Text="{m:Translate owner_control_mode}" VerticalOptions="Center" />
+            </HorizontalStackLayout>
+
             <HorizontalStackLayout Spacing="8">
                 <Button x:Name="ConnectBtn" Text="{m:Translate connect}" Clicked="OnConnectClicked" IsEnabled="False" />
             </HorizontalStackLayout>

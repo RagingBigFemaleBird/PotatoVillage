@@ -60,6 +60,7 @@ namespace PotatoVillage
             { 112, new Dictionary<int, string> { { 0, "SkipVote" } } },
             { 151, new Dictionary<int, string> { { -100, "DoNotUse"} } },
             { 153, new Dictionary<int, string> { { -2, "Left" }, { -1, "Right"} } },
+            { 1000, new Dictionary<int, string> { { 0, "acknowledge"} }  },
         };
 
         // Handlers for user actions (DisplayTargetSelection path)
@@ -311,8 +312,21 @@ namespace PotatoVillage
             {
                 connectionManager.GameStateUpdated += UpdateGameStatus;
                 connectionManager.GameEnded += OnGameEnded;
+                connectionManager.SequenceMismatch += OnSequenceMismatch;
                 UpdateGameStatus();
             }
+        }
+
+        private async void OnSequenceMismatch(string message)
+        {
+            await MainThread.InvokeOnMainThreadAsync(async () =>
+            {
+                await DisplayAlert(
+                    LocalizationManager.Instance.GetString("error"),
+                    message,
+                    LocalizationManager.Instance.GetString("yes"));
+                await Navigation.PopToRootAsync();
+            });
         }
 
         private async void OnGameEnded(string message)
@@ -344,6 +358,7 @@ namespace PotatoVillage
             {
                 connectionManager.GameStateUpdated -= UpdateGameStatus;
                 connectionManager.GameEnded -= OnGameEnded;
+                connectionManager.SequenceMismatch -= OnSequenceMismatch;
             }
 
             this.SizeChanged -= OnPageSizeChanged;

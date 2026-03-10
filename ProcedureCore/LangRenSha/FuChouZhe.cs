@@ -329,7 +329,7 @@ namespace ProcedureCore.LangRenSha
                     targets.Add(-100);
 
                     update[UserAction.dictUserActionTargets] = targets;
-                    update[UserAction.dictUserActionUsers] = combined;
+                    update[UserAction.dictUserActionUsers] = isThirdParty ? combinedAlive : fuChouZheAlive;
                     update[UserAction.dictUserActionTargetsCount] = 1;
                     update[UserAction.dictUserActionTargetsHint] = hintToUse;
                     update[UserAction.dictUserActionInfo] = infoToShow;

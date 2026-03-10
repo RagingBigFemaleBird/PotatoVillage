@@ -115,6 +115,7 @@ namespace ProcedureCore.LangRenSha
         public static string dictPlayers = "players";
         public static string dictRole = "role";
         public static string dictRoleVersion = "role_version";
+        public static string dictRoleCheckComplete = "role_check_complete";
         public static string dictNightOrders = "night_orders";
         public static string dictAlive = "alive";
         public static string dictDay = "day";
@@ -224,19 +225,64 @@ namespace ProcedureCore.LangRenSha
             {
                 if (Game.GetGameDictionaryProperty(game, LangRenSha.dictDay, 0) != 0 || UserAction.EndUserAction(game, update))
                 {
+                    update[dictRoleCheckComplete] = null; // Clear role check tracking
                     LangRenSha.AdvanceAction(game, update);
                     return GameActionResult.Restart;
                 }
                 else
                 {
-                    if (UserAction.StartUserAction(game, 5, update))
+                    var allPlayers = LangRenSha.GetPlayers(game, x => true);
+                    var roleCheckComplete = Game.GetGameDictionaryProperty(game, dictRoleCheckComplete, new List<int>());
+
+                    if (UserAction.StartUserAction(game, 60, update))
                     {
-                        var allPlayers = LangRenSha.GetPlayers(game, x => true);
-                        update[UserAction.dictUserActionTargets] = new List<int>();
-                        update[UserAction.dictUserActionUsers] = allPlayers;
+                        // Only include players who haven't completed role check yet
+                        var pendingPlayers = allPlayers.Where(p => !roleCheckComplete.Contains(p)).ToList();
+                        update[UserAction.dictUserActionTargets] = new List<int>() { 0 };
+                        update[UserAction.dictUserActionUsers] = pendingPlayers;
                         update[UserAction.dictUserActionTargetsCount] = 1;
                         update[UserAction.dictUserActionTargetsHint] = (int)HintConstant.CheckPrivate;
                         return GameActionResult.Restart;
+                    }
+                    else
+                    {
+                        // Check for early completions
+                        var pendingPlayers = allPlayers.Where(p => !roleCheckComplete.Contains(p)).ToList();
+                        (var inputValid, var input, var input_others) = UserAction.GetUserResponse(game, true, pendingPlayers, update);
+                        if (inputValid)
+                        {
+                            bool anyNewComplete = false;
+                            foreach (var entry in input)
+                            {
+                                var player = int.Parse(entry.Key);
+                                var targets = (List<int>)entry.Value;
+                                // If player responded (any response means they acknowledged their role)
+                                if (targets.Count > 0 && !roleCheckComplete.Contains(player))
+                                {
+                                    roleCheckComplete.Add(player);
+                                    anyNewComplete = true;
+                                }
+                            }
+
+                            if (anyNewComplete)
+                            {
+                                update[dictRoleCheckComplete] = roleCheckComplete;
+
+                                // Check if everyone has completed
+                                if (roleCheckComplete.Count >= allPlayers.Count)
+                                {
+                                    update[dictRoleCheckComplete] = null;
+                                    UserAction.EndUserAction(game, update, true);
+                                    LangRenSha.AdvanceAction(game, update);
+                                    return GameActionResult.Restart;
+                                }
+
+                                // Update the action users to exclude completed players
+                                var remainingPlayers = allPlayers.Where(p => !roleCheckComplete.Contains(p)).ToList();
+                                update[UserAction.dictUserActionUsers] = remainingPlayers;
+                                return GameActionResult.Continue;
+                            }
+                        }
                     }
                 }
             }
@@ -1401,6 +1447,14 @@ namespace ProcedureCore.LangRenSha
 
                 if (UserAction.EndUserAction(game, update))
                 {
+                    var winner = CheckWinCondition(game);
+                    if (winner != null)
+                    {
+                        update[dictGameWinner] = winner;
+                        // Game over - display winner
+                        // Game ends here
+                        return GameActionResult.GameOver;
+                    }
                     // Return to interrupted task
                     var interrupted = Game.GetGameDictionaryProperty(game, dictInterrupt, new Dictionary<string, object>());
                     foreach (var item in interrupted)

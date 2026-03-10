@@ -6,27 +6,52 @@
              Title="{m:Translate room_title}">
 
     <Grid RowDefinitions="Auto,*,Auto" Padding="20">
-        <!-- Room Info Header -->
-        <VerticalStackLayout Grid.Row="0" Spacing="8">
-            <HorizontalStackLayout Spacing="12">
-                <Label Text="{m:Translate room_number_label}" FontAttributes="Bold" FontSize="18" />
-                <Label x:Name="RoomNumberLabel" FontSize="18" />
-            </HorizontalStackLayout>
-            <HorizontalStackLayout Spacing="12">
-                <Label Text="{m:Translate your_seat}" FontAttributes="Bold" FontSize="16" />
-                <Label x:Name="YourSeatLabel" FontSize="16" />
-            </HorizontalStackLayout>
-            <HorizontalStackLayout Spacing="12">
-                <Label Text="{m:Translate players_joined}" FontAttributes="Bold" FontSize="14" />
-                <Label x:Name="PlayersCountLabel" FontSize="14" />
-            </HorizontalStackLayout>
-        </VerticalStackLayout>
+        <!-- Room Info Header with Leave Button -->
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <VerticalStackLayout Grid.Column="0" Spacing="8">
+                <HorizontalStackLayout Spacing="12">
+                    <Label Text="{m:Translate room_number_label}" FontAttributes="Bold" FontSize="18" />
+                    <Label x:Name="RoomNumberLabel" FontSize="18" />
+                </HorizontalStackLayout>
+                <HorizontalStackLayout Spacing="12">
+                    <Label Text="{m:Translate your_seat}" FontAttributes="Bold" FontSize="16" />
+                    <Label x:Name="YourSeatLabel" FontSize="16" />
+                </HorizontalStackLayout>
+                <HorizontalStackLayout Spacing="12">
+                    <Label Text="{m:Translate players_joined}" FontAttributes="Bold" FontSize="14" />
+                    <Label x:Name="PlayersCountLabel" FontSize="14" />
+                </HorizontalStackLayout>
+            </VerticalStackLayout>
+
+            <!-- Leave Room Button (top right) -->
+            <Button x:Name="LeaveRoomBtn" 
+                    Grid.Column="1"
+                    Text="✕"
+                    Clicked="OnLeaveRoomClicked"
+                    BackgroundColor="#FF3B30"
+                    TextColor="White"
+                    FontSize="14"
+                    WidthRequest="36"
+                    HeightRequest="36"
+                    CornerRadius="18"
+                    Padding="0"
+                    VerticalOptions="Start" />
+        </Grid>
 
         <!-- Player List -->
         <ScrollView Grid.Row="1" Margin="0,20,0,20">
-            <VerticalStackLayout x:Name="PlayerListContainer" Spacing="8">
+            <FlexLayout x:Name="PlayerListContainer" 
+                        Wrap="Wrap" 
+                        JustifyContent="Start"
+                        AlignItems="Start"
+                        AlignContent="Start">
                 <!-- Player entries will be added dynamically -->
-            </VerticalStackLayout>
+            </FlexLayout>
         </ScrollView>
 
         <!-- Bottom Buttons -->
@@ -40,13 +65,6 @@
                        LineBreakMode="WordWrap" />
             </Frame>
 
-            <!-- Switch Seat Section -->
-            <HorizontalStackLayout Spacing="8">
-                <Label Text="{m:Translate switch_to_seat}" VerticalOptions="Center" />
-                <Entry x:Name="NewSeatEntry" Placeholder="1" WidthRequest="80" Keyboard="Numeric" />
-                <Button x:Name="SwitchSeatBtn" Text="{m:Translate switch_seat}" Clicked="OnSwitchSeatClicked" />
-            </HorizontalStackLayout>
-            
             <!-- Start Game Button (only visible to owner) -->
             <Button x:Name="StartGameBtn" 
                     Text="{m:Translate start_game}" 
@@ -56,13 +74,6 @@
                     TextColor="White"
                     FontSize="18"
                     HeightRequest="50" />
-            
-            <!-- Leave Room Button -->
-            <Button x:Name="LeaveRoomBtn" 
-                    Text="{m:Translate leave_room}" 
-                    Clicked="OnLeaveRoomClicked"
-                    BackgroundColor="#FF3B30"
-                    TextColor="White" />
         </VerticalStackLayout>
     </Grid>
 

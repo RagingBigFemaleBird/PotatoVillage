@@ -49,7 +49,7 @@ namespace PotatoVillage
                 if (connectionManager == null) return;
 
                 var roomState = connectionManager.RoomState;
-                
+
                 // Update player ID in case it was switched
                 playerId = connectionManager.RegisteredPlayerId;
                 YourSeatLabel.Text = playerId.ToString();
@@ -66,9 +66,18 @@ namespace PotatoVillage
                     StartGameBtn.IsEnabled = joinedCount >= totalPlayers;
                 }
 
-                // Update player list
+                // Get owner ID for badge display
+                int? ownerId = GetInt32Value(roomState, "ownerId");
+
+                // Update player list with box layout (4 per row)
                 PlayerListContainer.Clear();
-                
+
+                // Calculate box width for 4 columns with margins
+                // FlexLayout will handle wrapping automatically
+                double boxWidth = 80;
+                double boxHeight = 90;
+                double margin = 4;
+
                 for (int i = 1; i <= totalPlayers; i++)
                 {
                     var playerKey = i.ToString();
@@ -81,62 +90,102 @@ namespace PotatoVillage
                         isJoined = true;
                     }
 
+                    // Create a box frame for each player
                     var frame = new Frame
                     {
-                        Padding = new Thickness(12, 8),
+                        Padding = new Thickness(6),
                         CornerRadius = 8,
                         BackgroundColor = isJoined ? Colors.LightGreen : Colors.LightGray,
                         BorderColor = i == playerId ? Colors.Blue : Colors.Transparent,
+                        WidthRequest = boxWidth,
+                        HeightRequest = boxHeight,
+                        Margin = new Thickness(margin),
                     };
 
-                    var stack = new HorizontalStackLayout { Spacing = 12 };
-                    
+                    var stack = new VerticalStackLayout 
+                    { 
+                        Spacing = 4,
+                        HorizontalOptions = LayoutOptions.Center,
+                        VerticalOptions = LayoutOptions.Center
+                    };
+
+                    // Seat number (large, centered)
                     var seatLabel = new Label
                     {
                         Text = $"#{i}",
                         FontAttributes = FontAttributes.Bold,
-                        FontSize = 16,
-                        VerticalOptions = LayoutOptions.Center,
-                        WidthRequest = 40
+                        FontSize = 20,
+                        HorizontalOptions = LayoutOptions.Center,
+                        HorizontalTextAlignment = TextAlignment.Center
                     };
                     stack.Add(seatLabel);
 
+                    // Nickname (smaller, centered, truncated)
+                    var displayName = isJoined 
+                        ? (string.IsNullOrEmpty(nickname) ? "-" : (nickname.Length > 6 ? nickname.Substring(0, 6) + ".." : nickname))
+                        : LocalizationManager.Instance.GetString("empty_seat");
+
                     var nicknameLabel = new Label
                     {
-                        Text = isJoined ? (string.IsNullOrEmpty(nickname) ? "(No nickname)" : nickname) : LocalizationManager.Instance.GetString("empty_seat"),
-                        FontSize = 14,
-                        VerticalOptions = LayoutOptions.Center,
-                        TextColor = isJoined ? Colors.Black : Colors.Gray
+                        Text = displayName,
+                        FontSize = 11,
+                        HorizontalOptions = LayoutOptions.Center,
+                        HorizontalTextAlignment = TextAlignment.Center,
+                        TextColor = isJoined ? Colors.Black : Colors.Gray,
+                        LineBreakMode = LineBreakMode.TailTruncation,
+                        MaxLines = 1
                     };
                     stack.Add(nicknameLabel);
+
+                    // Badge row for "You" and "Owner" indicators
+                    var badgeStack = new HorizontalStackLayout
+                    {
+                        HorizontalOptions = LayoutOptions.Center,
+                        Spacing = 2
+                    };
 
                     if (i == playerId)
                     {
                         var youLabel = new Label
                         {
                             Text = LocalizationManager.Instance.GetString("you"),
-                            FontSize = 12,
-                            TextColor = Colors.Blue,
-                            VerticalOptions = LayoutOptions.Center
+                            FontSize = 10,
+                            TextColor = Colors.White,
+                            BackgroundColor = Colors.Blue,
+                            Padding = new Thickness(4, 1),
                         };
-                        stack.Add(youLabel);
+                        badgeStack.Add(youLabel);
                     }
 
-                    // Check if this is the owner
-                    int? ownerId = GetInt32Value(roomState, "ownerId");
                     if (ownerId.HasValue && ownerId.Value == i)
                     {
                         var ownerLabel = new Label
                         {
                             Text = LocalizationManager.Instance.GetString("owner"),
-                            FontSize = 12,
-                            TextColor = Colors.Orange,
-                            VerticalOptions = LayoutOptions.Center
+                            FontSize = 10,
+                            TextColor = Colors.White,
+                            BackgroundColor = Colors.Orange,
+                            Padding = new Thickness(4, 1),
                         };
-                        stack.Add(ownerLabel);
+                        badgeStack.Add(ownerLabel);
+                    }
+
+                    if (badgeStack.Children.Count > 0)
+                    {
+                        stack.Add(badgeStack);
                     }
 
                     frame.Content = stack;
+
+                    // Add tap gesture to empty seats for switching
+                    if (!isJoined)
+                    {
+                        var seatNumber = i; // Capture for closure
+                        var tapGesture = new TapGestureRecognizer();
+                        tapGesture.Tapped += async (s, e) => await OnEmptySeatTapped(seatNumber);
+                        frame.GestureRecognizers.Add(tapGesture);
+                    }
+
                     PlayerListContainer.Add(frame);
                 }
             });
@@ -177,20 +226,11 @@ namespace PotatoVillage
             // If successful, the GameStarted event will handle navigation
         }
 
-        private async void OnSwitchSeatClicked(object? sender, EventArgs e)
+        private async Task OnEmptySeatTapped(int newSeat)
         {
             if (connectionManager == null) return;
 
             var localization = LocalizationManager.Instance;
-
-            if (!int.TryParse(NewSeatEntry.Text, out int newSeat) || newSeat <= 0)
-            {
-                await DisplayAlert(
-                    localization.GetString("error"),
-                    localization.GetString("invalid_seat_number"),
-                    localization.GetString("yes"));
-                return;
-            }
 
             var (success, errorMessage) = await connectionManager.SwitchSeatAsync(gameId, newSeat);
             if (!success)
@@ -199,10 +239,6 @@ namespace PotatoVillage
                     localization.GetString("error"),
                     errorMessage,
                     localization.GetString("yes"));
-            }
-            else
-            {
-                NewSeatEntry.Text = "";
             }
         }
 

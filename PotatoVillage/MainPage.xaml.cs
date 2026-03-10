@@ -15,6 +15,9 @@ namespace PotatoVillage
         private bool isGameOwner;
         private bool isDiscovering = false;
 
+        // Preferences key for storing nickname
+        private const string NicknamePreferenceKey = "user_nickname";
+
         // Track selected roles
         private HashSet<string> selectedLangRen = new();
         private bool selectedJiaMian = false;
@@ -53,6 +56,12 @@ namespace PotatoVillage
 
             // Re-enable all inputs when returning to this page
             ResetUIState();
+
+            // Load stored nickname if the entry is empty
+            if (string.IsNullOrEmpty(NicknameEntry.Text))
+            {
+                NicknameEntry.Text = Preferences.Get(NicknamePreferenceKey, "");
+            }
 
             // Re-discover server if URL is empty
             if (string.IsNullOrEmpty(HubUrlEntry.Text))
@@ -154,6 +163,10 @@ namespace PotatoVillage
             }
 
             var nickname = NicknameEntry.Text?.Trim() ?? "";
+
+            // Save nickname to preferences
+            Preferences.Set(NicknamePreferenceKey, nickname);
+
             connectionManager = new HubConnectionManager(nickname);
             connectionManager.ConnectionFailed += async (msg) =>
             {
@@ -323,6 +336,10 @@ namespace PotatoVillage
 
             var hubUrl = HubUrlEntry.Text?.Trim();
             var nickname = NicknameEntry.Text?.Trim() ?? "";
+
+            // Save nickname to preferences
+            Preferences.Set(NicknamePreferenceKey, nickname);
+
             connectionManager = new HubConnectionManager(nickname);
             connectionManager.ConnectionFailed += async (msg) =>
             {

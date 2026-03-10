@@ -16,12 +16,14 @@ namespace PotatoVillage
         private string nickname;
         private TaskCompletionSource<(bool, string)>? joinCompletionSource;
         private TaskCompletionSource<(bool, string)>? switchSeatCompletionSource;
+        private int expectedSequenceNumber = 0;
 
         public event Action? GameStateUpdated;
         public event Action? RoomStateUpdated;
         public event Action? GameStarted;
         public event Action<string>? GameEnded;
         public event Action<string>? ConnectionFailed;
+        public event Action<string>? SequenceMismatch; // Fired when sequence number is incorrect
         public event Action<int, int, bool>? Registered; // Fired when actually registered with actual gameId, playerId, and gameStarted flag
 
         public int RegisteredGameId => registeredGameId;
@@ -80,6 +82,7 @@ namespace PotatoVillage
                 roomState.Clear();
                 registeredGameId = 0;
                 registeredPlayerId = 0;
+                expectedSequenceNumber = 0;
 
                 // Retry connection with exponential backoff
                 int maxRetries = 3;
@@ -164,7 +167,19 @@ namespace PotatoVillage
             {
                 registeredGameId = gameId;
                 registeredPlayerId = playerId;
-                MergeGameDict(JsonSerializer.Deserialize<Dictionary<string, object>>(gameStateJson) ?? new());
+                var initialState = JsonSerializer.Deserialize<Dictionary<string, object>>(gameStateJson) ?? new();
+
+                // Initialize expected sequence number from initial state
+                if (initialState.TryGetValue("sequence", out var seqObj))
+                {
+                    expectedSequenceNumber = GetInt32FromObject(seqObj) ?? 0;
+                }
+                else
+                {
+                    expectedSequenceNumber = 0;
+                }
+
+                MergeGameDict(initialState);
                 roomState = JsonSerializer.Deserialize<Dictionary<string, object>>(roomStateJson) ?? new();
 
                 // Check if game has already started
@@ -189,9 +204,29 @@ namespace PotatoVillage
                 joinCompletionSource?.TrySetResult((false, errorMessage));
             });
 
-            connection.On<string>("GameStateUpdate", (stateDiffJson) =>
+            connection.On<string>("GameStateUpdate", async (stateDiffJson) =>
             {
                 var diff = JsonSerializer.Deserialize<Dictionary<string, object>>(stateDiffJson) ?? new();
+
+                // Validate sequence number
+                if (diff.TryGetValue("sequence", out var seqObj))
+                {
+                    var receivedSequence = GetInt32FromObject(seqObj) ?? 0;
+
+                    // Check if sequence is what we expect (current + 1) or a valid reset (0 or 1)
+                    if (receivedSequence != expectedSequenceNumber + 1 && receivedSequence > 1)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"Sequence mismatch! Expected {expectedSequenceNumber + 1}, received {receivedSequence}");
+
+                        // Disconnect and notify
+                        SequenceMismatch?.Invoke($"State sync error: expected sequence {expectedSequenceNumber + 1}, got {receivedSequence}. Please rejoin the game.");
+                        await Disconnect();
+                        return;
+                    }
+
+                    expectedSequenceNumber = receivedSequence;
+                }
+
                 MergeGameDict(diff);
                 GameStateUpdated?.Invoke();
             });
@@ -424,6 +459,19 @@ namespace PotatoVillage
                     gameDict[kv.Key] = kv.Value;
                 }
             }
+        }
+
+        private int? GetInt32FromObject(object? obj)
+        {
+            if (obj == null) return null;
+            if (obj is int intValue) return intValue;
+            if (obj is long longValue) return (int)longValue;
+            if (obj is JsonElement je)
+            {
+                if (je.ValueKind == JsonValueKind.Number) return je.GetInt32();
+            }
+            if (int.TryParse(obj.ToString(), out var parsed)) return parsed;
+            return null;
         }
     }
 }

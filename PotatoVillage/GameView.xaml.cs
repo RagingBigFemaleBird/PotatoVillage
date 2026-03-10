@@ -48,6 +48,10 @@ namespace PotatoVillage
         {
             { 1, new Dictionary<int, string> { { -100, "DoNotAttack"} } },
             { 3, new Dictionary<int, string> { { 0, "JiuRen" }, { -100, "DoNotUse"} } },
+            { 70, new Dictionary<int, string> { { -100, "DoNotUse"} } },
+            { 80, new Dictionary<int, string> { { -100, "DoNotUse"} } },
+            { 81, new Dictionary<int, string> { { -100, "DoNotUse"} } },
+            { 82, new Dictionary<int, string> { { -100, "confirm"} } },
             { 100, new Dictionary<int, string> { { -1, "Volunteer" }, { 0, "Abstain" } } },
             { 102, new Dictionary<int, string> { { -1, "Done speaking" }, { 0, "Pause game" }, { -100, "OwnerVoteOverride" } } },
             { 104, new Dictionary<int, string> { { -1, "Done speaking" }, { 0, "Pause game" }, { -2, "Withdraw" }, { -101, "OwnerSheriffOverride" } } },
@@ -70,6 +74,8 @@ namespace PotatoVillage
             { 6, JiaMianInfoHandler },
             { 7, YuYanJiaInfoHandler },
             { 76, GiftedPoisonHandler },
+            { 79, YingZiInfoHandler },
+            { 82, FuChouZheAllianceInfoHandler },
             { 104, SheriffSpeechHandler },
             { 105, SheriffPKHandler },
             { 151, LieRenInfoHandler },
@@ -127,6 +133,28 @@ namespace PotatoVillage
                 return LocalizationManager.Instance.GetString("not_gifted_yet", "Not gifted yet");
             }
             return LocalizationManager.Instance.GetString("gifted_use_trap", "Gifted, use cat trap:");
+        }
+
+        private static string YingZiInfoHandler(string userInfo)
+        {
+            // Check if YingZi became ThirdParty (shadowed FuChouZhe)
+            if (userInfo == "thirdparty")
+            {
+                return LocalizationManager.Instance.GetString("yingzi_thirdparty", "You are third party, please open eyes on Revenger's turn");
+            }
+
+            // Legacy: userInfo contains the new role name of the shadowed target
+            var roleName = LocalizationManager.Instance.GetString(userInfo, userInfo);
+            var txt = LocalizationManager.Instance.GetString("yingzi_role_changed", "Shadowed target's role changed to: {0}");
+            return txt.Replace("{0}", roleName);
+        }
+
+        private static string FuChouZheAllianceInfoHandler(string userInfo)
+        {
+            // userInfo is "good" or "evil"
+            var allianceName = LocalizationManager.Instance.GetString(userInfo, userInfo);
+            var txt = LocalizationManager.Instance.GetString("fuchouzhe_alliance_info", "Your alliance: {0}");
+            return txt.Replace("{0}", allianceName);
         }
 
         private static string GameWinnerHandler(string userInfo)
@@ -491,8 +519,14 @@ namespace PotatoVillage
                 53 => "lucky_one_close_eyes",
                 54 => "converted_open_eyes",
                 55 => "converted_close_eyes",
+                70 => "shouwei_act",
                 75 => "check_mice",
                 77 => "mengmianren_death",
+                78 => "yingzi_act",
+                79 => "yingzi_info",
+                80 => "fuchouzhe_dead_shoot",
+                81 => "fuchouzhe_thirdparty_kill",
+                82 => "fuchouzhe_alliance",
                 100 => "volunteer_sheriff",
                 101 => "vote_sheriff",
                 102 => "round_table",

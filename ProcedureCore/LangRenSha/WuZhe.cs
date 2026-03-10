@@ -89,7 +89,7 @@ namespace ProcedureCore.LangRenSha
                 var wuZhe = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == Name);
                 var wuZheAlive = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == Name && (int)x[LangRenSha.dictAlive] == 1);
                 var alivePlayers = LangRenSha.GetPlayers(game, x => (int)x[LangRenSha.dictAlive] == 1);
-                var actionDuration = Game.GetGameDictionaryProperty(game, LangRenSha.dictDurationPlayerReact, ActionDuration) + 15;
+                var actionDuration = Game.GetGameDictionaryProperty(game, LangRenSha.dictDurationPlayerReact, ActionDuration) + 30;
 
                 if (Game.GetGameDictionaryProperty(game, LangRenSha.dictDay, 0) == 0 || UserAction.EndUserAction(game, update))
                 {

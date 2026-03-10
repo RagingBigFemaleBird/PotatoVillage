@@ -94,8 +94,7 @@ namespace ProcedureCore.LangRenSha
             var aboutToDie = Game.GetGameDictionaryProperty(game, LangRenSha.dictAboutToDie, new List<int>());
             foreach (var target in targets)
             {
-                int guardTarget = -1;
-                var shouWei = Game.GetGameDictionaryProperty(game, ShouWei.dictGuardTarget, 0);
+                var guardTarget = Game.GetGameDictionaryProperty(game, ShouWei.dictGuardTarget, 0);
                 var wuZhe = Game.GetGameDictionaryProperty(game, WuZhe.dictDanced, new List<int>());
                 var miceTag = Game.GetGameDictionaryProperty(game, LaoShu.dictMiceTag, 0);
                 var laoShu = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == "LaoShu");

@@ -32,6 +32,9 @@ namespace PotatoVillage
         private bool selectedShenLangGongWu1 = false;
         private bool selectedThief = false;
         private bool selectedMengMianRen = false;
+        private bool selectedShouWei = false;
+        private bool selectedYingZi = false;
+        private bool selectedFuChouZhe = false;
         private HashSet<string> selectedPingMin = new();
 
         public MainPage()
@@ -42,6 +45,7 @@ namespace PotatoVillage
             // Auto-discover server on startup
             _ = DiscoverServerAsync();
         }
+
 
         protected override void OnAppearing()
         {
@@ -129,6 +133,9 @@ namespace PotatoVillage
                                    selectedShenLangGongWu1 ||
                                    selectedThief ||
                                    selectedMengMianRen ||
+                                   selectedShouWei ||
+                                   selectedYingZi ||
+                                   selectedFuChouZhe ||
                                    selectedPingMin.Count > 0;
             ConnectBtn.IsEnabled = hasRolesSelected;
         }
@@ -216,6 +223,15 @@ namespace PotatoVillage
             if (selectedMengMianRen)
                 roleDict["MengMianRen"] = 1;
 
+            if (selectedShouWei)
+                roleDict["ShouWei"] = 1;
+
+            if (selectedYingZi)
+                roleDict["YingZi"] = 1;
+
+            if (selectedFuChouZhe)
+                roleDict["FuChouZhe"] = 1;
+
             if (selectedPingMin.Count > 0)
                 roleDict["PingMin"] = selectedPingMin.Count;
 
@@ -242,9 +258,10 @@ namespace PotatoVillage
             int godDuration = int.TryParse(GodDurationEntry.Text, out var gd) ? gd : 30;
             int roundTableMode = RoundTableModeSwitch.IsToggled ? 1 : 0;
             int ownerControlEnabled = OwnerControlSwitch.IsToggled ? 1 : 0;
+            int seatCounterClockwise = SeatCounterClockwiseSwitch.IsToggled ? 1 : 0;
 
             isGameOwner = true;  // Creator is the owner
-            if (!await connectionManager.CreateRoomAsync2(totalPlayers, roleDict, speechDuration, werewolfDuration, godDuration, roundTableMode, ownerControlEnabled))
+            if (!await connectionManager.CreateRoomAsync2(totalPlayers, roleDict, speechDuration, werewolfDuration, godDuration, roundTableMode, ownerControlEnabled, seatCounterClockwise))
             {
                 ConnectBtn.IsEnabled = true;
                 return;
@@ -505,6 +522,36 @@ namespace PotatoVillage
             if (sender is Button button)
             {
                 button.BackgroundColor = selectedMengMianRen ? Colors.Green : Colors.LightGray;
+            }
+            UpdateConnectButtonState();
+        }
+
+        private void OnShouWeiClicked(object? sender, EventArgs e)
+        {
+            selectedShouWei = !selectedShouWei;
+            if (sender is Button button)
+            {
+                button.BackgroundColor = selectedShouWei ? Colors.Green : Colors.LightGray;
+            }
+            UpdateConnectButtonState();
+        }
+
+        private void OnYingZiClicked(object? sender, EventArgs e)
+        {
+            selectedYingZi = !selectedYingZi;
+            if (sender is Button button)
+            {
+                button.BackgroundColor = selectedYingZi ? Colors.Green : Colors.LightGray;
+            }
+            UpdateConnectButtonState();
+        }
+
+        private void OnFuChouZheClicked(object? sender, EventArgs e)
+        {
+            selectedFuChouZhe = !selectedFuChouZhe;
+            if (sender is Button button)
+            {
+                button.BackgroundColor = selectedFuChouZhe ? Colors.Green : Colors.LightGray;
             }
             UpdateConnectButtonState();
         }

@@ -129,6 +129,9 @@ namespace Server
                 { "ShenLangGongWu1", new ShenLangGongWu1() },
                 { "Thief", new Thief() },
                 { "MengMianRen", new MengMianRen() },
+                { "ShouWei", new ShouWei() },
+                { "YingZi", new YingZi() },
+                { "FuChouZhe",  new FuChouZhe() },
             };
 
             if (!roleDict.ContainsKey("LangRen"))

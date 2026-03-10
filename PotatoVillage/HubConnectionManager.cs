@@ -251,7 +251,7 @@ namespace PotatoVillage
             }
         }
 
-        public async Task<bool> CreateRoomAsync2(int numberOfPlayers, Dictionary<string, int> roleDict, int speechDuration = 120, int werewolfDuration = 60, int godDuration = 30, int roundTableMode = 0, int ownerControlEnabled = 0)
+        public async Task<bool> CreateRoomAsync2(int numberOfPlayers, Dictionary<string, int> roleDict, int speechDuration = 120, int werewolfDuration = 60, int godDuration = 30, int roundTableMode = 0, int ownerControlEnabled = 0, int seatCounterClockwise = 0)
         {
             try
             {
@@ -267,7 +267,8 @@ namespace PotatoVillage
                     { "duration_langren", werewolfDuration },
                     { "duration_player_react", godDuration },
                     { "round_table_mode", roundTableMode },
-                    { "owner_control_enabled", ownerControlEnabled }
+                    { "owner_control_enabled", ownerControlEnabled },
+                    { "seat_counter_clockwise", seatCounterClockwise }
                 };
 
                 await connection.InvokeAsync("CreateRoom", clientId, nickname, numberOfPlayers, roleDict, gameOptions);

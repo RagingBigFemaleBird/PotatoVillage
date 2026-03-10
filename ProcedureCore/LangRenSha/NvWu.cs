@@ -129,12 +129,24 @@ namespace ProcedureCore.LangRenSha
             var attackTarget = Game.GetGameDictionaryProperty(game, LangRen.dictAttackTarget, new List<int>());
             var nvWu = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == Name);
             var miceTagged = Game.GetGameDictionaryProperty(game, LaoShu.dictMiceTag, 0) == nvWu[0];
+            var guardTarget = Game.GetGameDictionaryProperty(game, ShouWei.dictGuardTarget, 0);
 
             if (attackTarget.Count > 0)
             {
-                // TODO: shou wei
-                attackTarget.Remove(attackTarget[0]);
-                update[LangRen.dictAttackTarget] = attackTarget;
+                if (attackTarget[0] != guardTarget)
+                {
+                    attackTarget.Remove(attackTarget[0]);
+                    update[LangRen.dictAttackTarget] = attackTarget;
+                }
+                else
+                {
+                    var aboutToDie = Game.GetGameDictionaryProperty(game, LangRenSha.dictAboutToDie, new List<int>());
+                    if (!aboutToDie.Contains(guardTarget))
+                    {
+                        aboutToDie.Add(guardTarget);
+                        update[LangRenSha.dictAboutToDie] = aboutToDie;
+                    }
+                }
                 if (!miceTagged)
                 {
                     LangRenSha.SetPlayerProperty(game, nvWu[0], dictSaveUsed, 1, update);

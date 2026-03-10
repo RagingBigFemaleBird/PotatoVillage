@@ -71,6 +71,7 @@ namespace ProcedureCore.LangRenSha
             RegisterDeadPlayerHandler(LieRen.HandleHunterDeathSkill);
             RegisterDeadPlayerHandler(LangQiang.HandleLangQiangDeathSkill);
             RegisterDeadPlayerHandler(Xiong.HandleXiongDeathSkill);
+            RegisterDeadPlayerHandler(FuChouZhe.HandleRevengerDeathSkill);
             RegisterDeadPlayerHandler(MengMianRen.HandleDeathSkill);
             RegisterAfterSpeakHandler(MengMianRen.HandleAfterSpeak);
             // Players will be initialized dynamically in GenerateStateDiff based on roleDict
@@ -96,6 +97,9 @@ namespace ProcedureCore.LangRenSha
                 "Xiong" => new Xiong(),
                 "Thief" => new Thief(),
                 "MengMianRen" => new MengMianRen(),
+                "ShouWei" => new ShouWei(),
+                "YingZi" => new YingZi(),
+                "FuChouZhe" => new FuChouZhe(),
                 _ => throw new ArgumentException($"Not a role: {roleName}")
             };
         }
@@ -142,6 +146,7 @@ namespace ProcedureCore.LangRenSha
         public static string dictDurationPlayerReact = "duration_player_react";
         public static string dictRoundTableMode = "round_table_mode"; // 0 = start from sheriff, 1 = start from dead player (if single dead)
         public static string dictOwnerControlEnabled = "owner_control_enabled"; // 0 = disabled, 1 = owner can override day flow
+        public static string dictSeatCounterClockwise = "seat_counter_clockwise"; // 0 = clockwise (default), 1 = counter-clockwise
 
         public int Version
         {
@@ -151,7 +156,7 @@ namespace ProcedureCore.LangRenSha
             }
         }
 
-        public static int actionDuraionPlayerReact = 8;
+        public static int actionDuraionPlayerReact = 10;
         public static int actionDurationPlayerSpeak = 90;
 
         public GameActionResult GenerateStateDiff(Game game, Dictionary<string, object> update)
@@ -224,7 +229,7 @@ namespace ProcedureCore.LangRenSha
                 }
                 else
                 {
-                    if (UserAction.StartUserAction(game, 4, update))
+                    if (UserAction.StartUserAction(game, 5, update))
                     {
                         var allPlayers = LangRenSha.GetPlayers(game, x => true);
                         update[UserAction.dictUserActionTargets] = new List<int>();
@@ -857,16 +862,17 @@ namespace ProcedureCore.LangRenSha
             {
                 var sheriff = Game.GetGameDictionaryProperty(game, dictCurrentSheriff, 0);
                 var gameOwner = Game.GetGameDictionaryProperty(game, dictGameOwner, 0);
+                var ownerControlEnabled = Game.GetGameDictionaryProperty(game, dictOwnerControlEnabled, 0);
 
                 // Build list of users who can respond (sheriff and/or owner)
                 var respondUsers = new List<int>();
                 if (sheriff != 0)
                 {
                     respondUsers.Add(sheriff);
-                }
-                if (gameOwner > 0 && !respondUsers.Contains(gameOwner))
-                {
-                    respondUsers.Add(gameOwner);
+                    if (gameOwner > 0 && ownerControlEnabled == 1 && !respondUsers.Contains(gameOwner))
+                    {
+                        respondUsers.Add(gameOwner);
+                    }
                 }
 
                 // Only ask if there's someone to ask
@@ -961,11 +967,11 @@ namespace ProcedureCore.LangRenSha
                 var deadPlayers = Game.GetGameDictionaryProperty(game, dictDeadPlayerAction, new List<int>());
 
                 int first = 0;
-                int lastPlayer = -1; // Sheriff speaks last in mode 1
+                int lastPlayer = -1; // Sheriff speaks last in mode 0
 
-                if (roundTableMode == 1 && deadPlayers.Count == 1)
+                if (roundTableMode == 0 && deadPlayers.Count == 1)
                 {
-                    // Mode 1: Start from left/right of the dead player (if single dead)
+                    // Mode 0: Start from left/right of the dead player (if single dead)
                     // Sheriff speaks last
                     var deadPlayer = deadPlayers[0];
                     first = deadPlayer;
@@ -1475,6 +1481,12 @@ namespace ProcedureCore.LangRenSha
         {
             var speakers = Game.GetGameDictionaryProperty(game, dictSpeaker, new List<int>());
             var allPlayers = LangRenSha.GetPlayers(game, x => true);
+            var counterClockWise = Game.GetGameDictionaryProperty(game, dictSeatCounterClockwise, 1);
+
+            if (counterClockWise == 0)
+            {
+                directionPlus = !directionPlus;
+            }
 
             var (handled, intResult) = RestoreInterrupted(game, speakers, nextSpeak, update);
             if (handled)
@@ -1651,6 +1663,7 @@ namespace ProcedureCore.LangRenSha
             bool hasEvil = false;
             bool hasGod = false;
             bool hasCivilian = false;
+            bool hasThirdParty = false;
 
             foreach (var player in alivePlayers)
             {
@@ -1662,6 +1675,8 @@ namespace ProcedureCore.LangRenSha
                     hasGod = true;
                 else if ((faction & (int)PlayerFaction.Civilian) != 0)
                     hasCivilian = true;
+                else if ((faction & (int)PlayerFaction.ThirdParty) != 0)
+                    hasThirdParty = true;
             }
 
             if (!hasCivilian)
@@ -1672,7 +1687,7 @@ namespace ProcedureCore.LangRenSha
             {
                 return "evil";
             }
-            if (!hasEvil)
+            if (!hasEvil && !hasThirdParty)
             {
                 return "good";
             }

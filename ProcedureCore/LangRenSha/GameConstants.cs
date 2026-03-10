@@ -24,6 +24,12 @@ namespace ProcedureCore.LangRenSha
         Thief_ShowAttackStatus = 17,
         Thief_CloseEyes = 18,
 
+        // === YingZi (20-23) ===
+        YingZi_OpenEyes = 20,
+        YingZi_Act = 21,
+        YingZi_Info = 22,
+        YingZi_CloseEyes = 23,
+
         // === DaMao (25-27) ===
         DaMao_OpenEyes = 25,
         DaMao_Act = 26,
@@ -44,6 +50,11 @@ namespace ProcedureCore.LangRenSha
         SheMengRen_OpenEyes = 40,
         SheMengRen_Act = 41,
         SheMengRen_CloseEyes = 42,
+
+        // === ShouWei (45-47) ===
+        ShouWei_OpenEyes = 45,
+        ShouWei_Act = 46,
+        ShouWei_CloseEyes = 47,
 
         // === WuZhe (59-61, 130) ===
         WuZhe_OpenEyes = 59,
@@ -95,6 +106,12 @@ namespace ProcedureCore.LangRenSha
         LangQiang_OpenEyes = 275,
         LangQiang_Act = 276,
         LangQiang_CloseEyes = 277,
+
+        // === FuChouZhe (280-283) ===
+        FuChouZhe_OpenEyes = 280,
+        FuChouZhe_ThirdPartyKill = 281,
+        FuChouZhe_DeadShoot = 282,
+        FuChouZhe_CloseEyes = 283,
 
         // === MengMianRen (350) - Must be last night action ===
         MengMianRen_Act = 350,
@@ -179,6 +196,18 @@ namespace ProcedureCore.LangRenSha
         // === JiaMian (5-6) ===
         JiaMian_OpenEyes = 5,
         JiaMian_ChaYan = 6,
+
+        // === ShouWei (70) ===
+        ShouWei_Act = 70,
+
+        // === YingZi (78-79) ===
+        YingZi_Act = 78,
+        YingZi_Info = 79,
+
+        // === FuChouZhe (80-82) ===
+        FuChouZhe_DeadShoot = 80,
+        FuChouZhe_ThirdPartyKill = 81,
+        FuChouZhe_AllianceInfo = 82,
 
         // === SheMengRen (8) ===
         SheMengRen_Act = 8,

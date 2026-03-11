@@ -4,8 +4,15 @@
              x:Class="PotatoVillage.GameView"
              Shell.NavBarIsVisible="False">
 
-    <!-- Custom compact toolbar -->
-    <Grid RowDefinitions="24,*">
+    <!-- Orange border around entire UI -->
+    <Border Stroke="Orange" 
+            StrokeThickness="3" 
+            StrokeShape="RoundRectangle 4"
+            Padding="0"
+            Margin="2">
+
+        <!-- Custom compact toolbar -->
+        <Grid RowDefinitions="24,*">
         <HorizontalStackLayout Grid.Row="0" 
                                BackgroundColor="#6200EE"
                                HorizontalOptions="End"
@@ -184,7 +191,8 @@
                 </Frame>
             </Grid>
         </Grid>
+        </Grid>
     </Grid>
-    </Grid>
+    </Border>
 
 </ContentPage>

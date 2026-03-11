@@ -16,7 +16,7 @@ namespace ProcedureCore.LangRenSha
             { LangRenSha.dictPlayerFaction, LangRenSha.PlayerFaction.God },
         };
 
-        private static List<int> actionOrders = new() { (int)ActionConstant.Xiong_OpenEyes, (int)ActionConstant.Xiong_Act, (int)ActionConstant.Xiong_CloseEyes };
+        private static List<int> actionOrders = new() { (int)ActionConstant.Xiong_OpenEyes, (int)ActionConstant.Xiong_Act, (int)ActionConstant.Xiong_CloseEyes, (int)ActionConstant.Xiong_BarkCheck };
 
         public Xiong()
         {
@@ -72,7 +72,7 @@ namespace ProcedureCore.LangRenSha
                 return GameActionResult.Restart;
             }
 
-            // Action 181: Xiong selects a target to link (only if evil)
+            // Action 161: Xiong selects a target to link (only if evil)
             if (Game.GetGameDictionaryProperty(game, LangRenSha.dictAction, 0) == ActionOrders[1])
             {
                 var xiong = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == Name);
@@ -100,9 +100,6 @@ namespace ProcedureCore.LangRenSha
 
                 if (UserAction.EndUserAction(game, update))
                 {
-                    // Check for barking after action completes
-                    CheckAndSetBark(game, xiongPlayer, update);
-
                     LangRenSha.AdvanceAction(game, update);
                     return GameActionResult.Restart;
                 }
@@ -131,9 +128,6 @@ namespace ProcedureCore.LangRenSha
                                 // Store the linked target as player property
                                 LangRenSha.SetPlayerProperty(game, xiongPlayer, dictXiongLink, targets[0], update);
 
-                                // Check for barking
-                                CheckAndSetBark(game, xiongPlayer, update);
-
                                 UserAction.EndUserAction(game, update, true);
                                 LangRenSha.AdvanceAction(game, update);
                                 return GameActionResult.Restart;
@@ -142,6 +136,19 @@ namespace ProcedureCore.LangRenSha
                     }
                 }
                 return GameActionResult.NotExecuted;
+            }
+
+            // Action 230: Xiong bark check - runs after attack resolution when AboutToDie is set
+            if (Game.GetGameDictionaryProperty(game, LangRenSha.dictAction, 0) == (int)ActionConstant.Xiong_BarkCheck)
+            {
+                var xiongAlive = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == Name && (int)x[LangRenSha.dictAlive] == 1);
+                var xiongPlayer = xiongAlive.Count > 0 ? xiongAlive[0] : 0;
+
+                // Check for barking (accounts for AboutToDie)
+                CheckAndSetBark(game, xiongPlayer, update);
+
+                LangRenSha.AdvanceAction(game, update);
+                return GameActionResult.Restart;
             }
 
             return GameActionResult.NotExecuted;

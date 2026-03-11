@@ -92,10 +92,11 @@ namespace ProcedureCore.LangRenSha
         TongLingShi_Result = 155,
         TongLingShi_CloseEyes = 156,
 
-        // === Xiong (160-162) ===
+        // === Xiong (160-162, 230) ===
         Xiong_OpenEyes = 160,
         Xiong_Act = 161,
         Xiong_CloseEyes = 162,
+        Xiong_BarkCheck = 290,
 
         // === LieRen (270-272) ===
         LieRen_OpenEyes = 270,

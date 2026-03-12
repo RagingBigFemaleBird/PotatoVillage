@@ -1531,7 +1531,7 @@ namespace ProcedureCore.LangRenSha
             return (false, GameActionResult.NotExecuted);
         }
 
-        public static GameActionResult HandleRoundTableSpeak(Game game, List<int> players, int startingPlayer, bool directionPlus, Dictionary<string, object> update, int nextSpeak, int hint = 102, string userinfo = null, int lastPlayer = -1)
+        public static GameActionResult HandleRoundTableSpeak(Game game, List<int> players, int startingPlayer, bool directionPlus, Dictionary<string, object> update, int nextSpeak, int hint = 102, string? userinfo = null, int lastPlayer = -1)
         {
             var speakers = Game.GetGameDictionaryProperty(game, dictSpeaker, new List<int>());
             var allPlayers = LangRenSha.GetPlayers(game, x => true);

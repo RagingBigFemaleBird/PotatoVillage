@@ -335,6 +335,13 @@ namespace PotatoVillage
             }
 
             var hubUrl = HubUrlEntry.Text?.Trim();
+            if (string.IsNullOrEmpty(hubUrl))
+            {
+                await DisplayAlert("Error", "Hub URL is required", "OK");
+                JoinBtn.IsEnabled = true;
+                return;
+            }
+
             var nickname = NicknameEntry.Text?.Trim() ?? "";
 
             // Save nickname to preferences

@@ -815,7 +815,7 @@ namespace PotatoVillage
             }
 
             // Start countdown timer only if we're managing it
-            if (manageCountdown)
+            if (manageCountdown && countdownCts != null)
             {
                 StartCountdown(deadline, countdownCts.Token);
             }

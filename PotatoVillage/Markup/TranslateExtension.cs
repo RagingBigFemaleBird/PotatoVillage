@@ -4,6 +4,7 @@ using PotatoVillage.Services;
 namespace PotatoVillage.Markup
 {
     [ContentProperty(nameof(Key))]
+    [AcceptEmptyServiceProvider]
     public class TranslateExtension : IMarkupExtension<string>
     {
         public string Key { get; set; } = string.Empty;

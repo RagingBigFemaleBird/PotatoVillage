@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Microsoft.Maui.Controls.Shapes;
 using PotatoVillage.Services;
 
 namespace PotatoVillage
@@ -90,13 +91,13 @@ namespace PotatoVillage
                         isJoined = true;
                     }
 
-                    // Create a box frame for each player
-                    var frame = new Frame
+                    // Create a box border for each player
+                    var border = new Border
                     {
                         Padding = new Thickness(6),
-                        CornerRadius = 8,
+                        StrokeShape = new RoundRectangle { CornerRadius = 8 },
                         BackgroundColor = isJoined ? Colors.LightGreen : Colors.LightGray,
-                        BorderColor = i == playerId ? Colors.Blue : Colors.Transparent,
+                        Stroke = i == playerId ? Colors.Blue : Colors.Transparent,
                         WidthRequest = boxWidth,
                         HeightRequest = boxHeight,
                         Margin = new Thickness(margin),
@@ -175,7 +176,7 @@ namespace PotatoVillage
                         stack.Add(badgeStack);
                     }
 
-                    frame.Content = stack;
+                    border.Content = stack;
 
                     // Add tap gesture to empty seats for switching
                     if (!isJoined)
@@ -183,10 +184,10 @@ namespace PotatoVillage
                         var seatNumber = i; // Capture for closure
                         var tapGesture = new TapGestureRecognizer();
                         tapGesture.Tapped += async (s, e) => await OnEmptySeatTapped(seatNumber);
-                        frame.GestureRecognizers.Add(tapGesture);
+                        border.GestureRecognizers.Add(tapGesture);
                     }
 
-                    PlayerListContainer.Add(frame);
+                    PlayerListContainer.Add(border);
                 }
             });
         }

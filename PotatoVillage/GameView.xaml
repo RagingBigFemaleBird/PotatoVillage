@@ -83,18 +83,18 @@
             <ScrollView Grid.Row="0" Padding="5">
                 <VerticalStackLayout Spacing="8">
                     <!-- Target selection area (initially hidden) -->
-                    <Frame x:Name="TargetSelectionContainer" 
+                    <Border x:Name="TargetSelectionContainer" 
                            IsVisible="False"
                            Padding="10"
-                           CornerRadius="8"
-                           BackgroundColor="#F0F0F0"
-                           HasShadow="True">
+                           StrokeShape="RoundRectangle 8"
+                           BackgroundColor="#FFFDD0"
+                           Stroke="Transparent">
                         <Grid RowDefinitions="Auto,*,Auto">
                             <Label x:Name="TargetInstructionLabel" 
                                    Grid.Row="0"
                                    Text="" 
                                    FontSize="18"
-                                   TextColor="#666666" />
+                                   TextColor="Brown" />
 
                             <!-- Target buttons container -->
                             <FlexLayout x:Name="TargetButtonsContainer"
@@ -132,26 +132,26 @@
                                        HorizontalOptions="End" />
                             </Grid>
                         </Grid>
-                    </Frame>
+                    </Border>
                 </VerticalStackLayout>
             </ScrollView>
 
             <!-- Bottom 1/4: Status bar (6 parts) and Counter (1 part) -->
             <Grid Grid.Row="1" ColumnDefinitions="6*,1*" Padding="5,0">
                 <!-- Left 6/7: Game Status -->
-                <Frame x:Name="GameStatusFrame"
+                <Border x:Name="GameStatusFrame"
                        Grid.Column="0" 
                        Padding="10"
-                       CornerRadius="8"
-                       HasShadow="False"
+                       StrokeShape="RoundRectangle 8"
                        BackgroundColor="#F8F8F8"
-                       BorderColor="#E0E0E0">
+                       Stroke="#E0E0E0">
                     <Grid>
                         <Label x:Name="GameStatusLabel" 
                                Text="" 
                                LineBreakMode="TailTruncation"
                                FontSize="20"
                                MaxLines="3"
+                               TextColor="Teal"
                                VerticalOptions="Center"
                                HorizontalOptions="Start"
                                VerticalTextAlignment="Center"
@@ -169,15 +169,14 @@
                                 VerticalOptions="End"
                                 Clicked="OnAnnouncerToggleClicked" />
                     </Grid>
-                </Frame>
+                </Border>
 
                 <!-- Right 1/7: Countdown timer -->
-                <Frame Grid.Column="1" 
+                <Border Grid.Column="1" 
                        Padding="5"
-                       CornerRadius="8"
-                       HasShadow="False"
+                       StrokeShape="RoundRectangle 8"
                        BackgroundColor="#FFE0E0"
-                       BorderColor="#FF8080"
+                       Stroke="#FF8080"
                        Margin="5,0,0,0">
                     <Label x:Name="CountdownLabel" 
                            Text=""
@@ -188,7 +187,7 @@
                            VerticalTextAlignment="Center"
                            HorizontalOptions="Center"
                            VerticalOptions="Center" />
-                </Frame>
+                </Border>
             </Grid>
         </Grid>
         </Grid>

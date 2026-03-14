@@ -339,8 +339,8 @@ namespace ProcedureCore.LangRenSha
 
                 bool canSelect = category switch
                 {
-                    "langren" => !hasLangRen,
-                    "god" => godCount < 2,
+                    "langren" => !hasLangRen && godCount < 2,
+                    "god" => godCount == 0 || (godCount == 1 && !hasLangRen),
                     "civilian" => civilianCount < 2,
                     _ => false
                 };

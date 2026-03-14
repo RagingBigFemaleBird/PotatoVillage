@@ -132,6 +132,7 @@ namespace Server
                 { "ShouWei", new ShouWei() },
                 { "YingZi", new YingZi() },
                 { "FuChouZhe",  new FuChouZhe() },
+                { "HunZi", new HunZi() },
             };
 
             if (!roleDict.ContainsKey("LangRen"))

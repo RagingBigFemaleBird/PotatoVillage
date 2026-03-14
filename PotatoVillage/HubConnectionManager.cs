@@ -1,6 +1,4 @@
 using Microsoft.AspNetCore.SignalR.Client;
-using System.Security.Cryptography;
-using System.Text;
 using System.Text.Json;
 
 namespace PotatoVillage
@@ -39,23 +37,25 @@ namespace PotatoVillage
 
         private string GenerateClientId(string nickname)
         {
-            var machineName = Environment.MachineName;
-            var userName = Environment.UserName;
-            var combined = $"{machineName}_{userName}";
-            
-            // Create hash of combined machine + user
-            using (var sha256 = SHA256.Create())
+            // Use a persistent device ID stored in preferences
+            // This ensures uniqueness across all devices
+            const string DeviceIdKey = "PotatoVillage_DeviceId";
+
+            string? deviceId = Preferences.Get(DeviceIdKey, null);
+
+            if (string.IsNullOrEmpty(deviceId))
             {
-                var hashedBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(combined));
-                var hash = Convert.ToHexString(hashedBytes).Substring(0, 8);
-                
-                // Combine hash with nickname
-                if (string.IsNullOrEmpty(nickname))
-                {
-                    return hash;
-                }
-                return $"{hash}_{nickname}";
+                // Generate a new unique device ID (GUID) and store it
+                deviceId = Guid.NewGuid().ToString("N").Substring(0, 12);
+                Preferences.Set(DeviceIdKey, deviceId);
             }
+
+            // Combine device ID with nickname
+            if (string.IsNullOrEmpty(nickname))
+            {
+                return deviceId;
+            }
+            return $"{deviceId}_{nickname}";
         }
 
         public async Task<bool> ConnectAsync(string hubUrl)

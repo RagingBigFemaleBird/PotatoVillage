@@ -170,14 +170,26 @@ namespace ProcedureCore.LangRenSha
                                 // Store the shadow target
                                 update[dictYingZiTarget] = selectedTarget;
                                 var fuChouZhe = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == "FuChouZhe");
+                                var hunZi = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == "HunZi");
+                                int hunZiTarget = 0;
+                                if (hunZi.Count > 0)
+                                {
+                                    hunZiTarget = LangRenSha.GetPlayerProperty(game, hunZi[0], HunZi.dictHunZiTarget, 0);
+                                }
 
-                                if (fuChouZhe.Contains(selectedTarget))
+                                if (fuChouZhe.Contains(selectedTarget) || (hunZi.Contains(selectedTarget) && fuChouZhe.Contains(hunZiTarget)))
                                 {
                                     // Both YingZi and FuChouZhe become ThirdParty
                                     LangRenSha.SetPlayerProperty(game, yingZiPlayer, LangRenSha.dictPlayerFaction, (int)LangRenSha.PlayerFaction.ThirdParty, update);
                                     LangRenSha.SetPlayerProperty(game, yingZiPlayer, LangRenSha.dictPlayerAlliance, 3, update);
                                     LangRenSha.SetPlayerProperty(game, selectedTarget, LangRenSha.dictPlayerFaction, (int)LangRenSha.PlayerFaction.ThirdParty, update);
                                     LangRenSha.SetPlayerProperty(game, selectedTarget, LangRenSha.dictPlayerAlliance, 3, update);
+                                    if (!fuChouZhe.Contains(selectedTarget))
+                                    {
+                                        var fuChouZhePlayer = fuChouZhe[0];
+                                        LangRenSha.SetPlayerProperty(game, fuChouZhePlayer, LangRenSha.dictPlayerFaction, (int)LangRenSha.PlayerFaction.ThirdParty, update);
+                                        LangRenSha.SetPlayerProperty(game, fuChouZhePlayer, LangRenSha.dictPlayerAlliance, 3, update);
+                                    }
 
                                     // Mark that YingZi is now ThirdParty (for info display)
                                     update[dictYingZiIsThirdParty] = 1;

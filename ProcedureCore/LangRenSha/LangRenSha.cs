@@ -100,6 +100,7 @@ namespace ProcedureCore.LangRenSha
                 "ShouWei" => new ShouWei(),
                 "YingZi" => new YingZi(),
                 "FuChouZhe" => new FuChouZhe(),
+                "HunZi" => new HunZi(),
                 _ => throw new ArgumentException($"Not a role: {roleName}")
             };
         }
@@ -422,7 +423,7 @@ namespace ProcedureCore.LangRenSha
 
         public static GameActionResult WithdrawSheriff(Game game, int player, List<int> targets, Dictionary<string, object> update)
         {
-            if (Game.GetGameDictionaryProperty(game, LangRenSha.dictSpeak, 0) == (int)SpeakConstant.SheriffSpeech)
+            if (Game.GetGameDictionaryProperty(game, LangRenSha.dictSpeak, 0) == (int)SpeakConstant.SheriffSpeech || Game.GetGameDictionaryProperty(game, LangRenSha.dictSpeak, 0) == (int)SpeakConstant.WithdrawOrReveal)
             {
                 if (targets.Contains(-2))
                 {
@@ -476,7 +477,7 @@ namespace ProcedureCore.LangRenSha
 
         /// <summary>
         /// Interrupt handler for game owner to override sheriff vote.
-        /// When triggered with target -101 during SheriffSpeech phase, it interrupts the sheriff voting flow
+        /// When triggered with target -101 during SheriffSpeech or WithdrawOrReveal phase, it interrupts the sheriff voting flow
         /// and transitions to OwnerSheriffSelect phase where the owner chooses who becomes sheriff.
         /// Only works if owner_control_enabled is set to 1.
         /// </summary>
@@ -495,9 +496,9 @@ namespace ProcedureCore.LangRenSha
                 return GameActionResult.NotExecuted;
             }
 
-            // Only allow during SheriffSpeech phase
+            // Only allow during SheriffSpeech or WithdrawOrReveal phase
             var currentSpeak = Game.GetGameDictionaryProperty(game, LangRenSha.dictSpeak, 0);
-            if (currentSpeak != (int)SpeakConstant.SheriffSpeech)
+            if (currentSpeak != (int)SpeakConstant.SheriffSpeech && currentSpeak != (int)SpeakConstant.WithdrawOrReveal)
             {
                 return GameActionResult.NotExecuted;
             }
@@ -518,9 +519,11 @@ namespace ProcedureCore.LangRenSha
             // Sheriff volunteer
             if (Game.GetGameDictionaryProperty(game, dictSpeak, 0) == (int)SpeakConstant.SheriffVolunteer)
             {
+                var day = Game.GetGameDictionaryProperty(game, dictDay, 0);
 
-                if (Game.GetGameDictionaryProperty(game, dictDay, 0) == 0)
+                if (day == 0)
                 {
+                    // Day 0: Full sheriff volunteer phase
                     if (UserAction.EndUserAction(game, update))
                     {
                         (var inputValid, var input, var input_others) = UserAction.GetUserResponse(game, true, allPlayers, update);
@@ -567,8 +570,27 @@ namespace ProcedureCore.LangRenSha
                     }
                     return GameActionResult.NotExecuted;
                 }
+                else if (day == 1)
+                {
+                    // Day 1: Check if there are pending sheriff candidates, go to WithdrawOrReveal
+                    var sheriffPlayers = Game.GetGameDictionaryProperty(game, dictSheriff, new List<int>());
+                    var currentSheriff = Game.GetGameDictionaryProperty(game, dictCurrentSheriff, 0);
+
+                    if (currentSheriff == 0 && sheriffPlayers.Count > 1)
+                    {
+                        // No sheriff elected yet and multiple candidates - go to WithdrawOrReveal
+                        update[dictSpeak] = (int)SpeakConstant.WithdrawOrReveal;
+                    }
+                    else
+                    {
+                        // Sheriff already elected or no candidates - proceed to death announcement
+                        update[dictSpeak] = (int)SpeakConstant.DeathAnnouncement;
+                    }
+                    return GameActionResult.Restart;
+                }
                 else
                 {
+                    // Day 2+: Skip directly to DeathAnnouncement
                     update[dictSpeak] = (int)SpeakConstant.DeathAnnouncement;
                     return GameActionResult.Restart;
                 }
@@ -579,7 +601,103 @@ namespace ProcedureCore.LangRenSha
             {
                 var sheriffPlayers = Game.GetGameDictionaryProperty(game, dictSheriff, new List<int>());
                 var volunteersInfo = string.Join(", ", sheriffPlayers);
-                return HandleRoundTableSpeak(game, sheriffPlayers, sheriffPlayers[game.GetRandomNumber() % sheriffPlayers.Count], (game.GetRandomNumber() % 2) == 1, update, (int)SpeakConstant.SheriffVoteTally, (int)HintConstant.SheriffSpeech, volunteersInfo);
+                return HandleRoundTableSpeak(game, sheriffPlayers, sheriffPlayers[game.GetRandomNumber() % sheriffPlayers.Count], (game.GetRandomNumber() % 2) == 1, update, (int)SpeakConstant.WithdrawOrReveal, (int)HintConstant.SheriffSpeech, volunteersInfo);
+            }
+            // WithdrawOrReveal phase (退水自爆) - Players can withdraw from sheriff or LangRen can reveal
+            if (Game.GetGameDictionaryProperty(game, dictSpeak, 0) == (int)SpeakConstant.WithdrawOrReveal)
+            {
+                var sheriffPlayers = Game.GetGameDictionaryProperty(game, dictSheriff, new List<int>());
+                var gameOwner = Game.GetGameDictionaryProperty(game, dictGameOwner, 0);
+
+                if (UserAction.EndUserAction(game, update))
+                {
+                    // Check remaining sheriff candidates after withdrawals
+                    var remainingSheriff = Game.GetGameDictionaryProperty(game, dictSheriff, new List<int>());
+
+                    if (remainingSheriff.Count == 0)
+                    {
+                        // No candidates left, no sheriff
+                        update[dictCurrentSheriff] = 0;
+                        update[dictSpeak] = (int)SpeakConstant.DeathAnnouncement;
+                    }
+                    else if (remainingSheriff.Count == 1)
+                    {
+                        // Only one candidate left, they become sheriff
+                        update[dictCurrentSheriff] = remainingSheriff[0];
+                        update[dictSpeak] = (int)SpeakConstant.DeathAnnouncement;
+                    }
+                    else
+                    {
+                        // Multiple candidates, proceed to vote
+                        update[dictSpeak] = (int)SpeakConstant.SheriffVoteTally;
+                    }
+                    return GameActionResult.Restart;
+                }
+                else
+                {
+                    if (UserAction.StartUserAction(game, actionDuraionPlayerReact, update))
+                    {
+                        // Build list of users who can respond
+                        var respondUsers = new List<int>();
+                        respondUsers.AddRange(allPlayers);
+
+                        // Targets: -2 = withdraw from sheriff
+                        var targets = new List<int> { -2 };
+
+                        update[UserAction.dictUserActionTargets] = targets;
+                        update[UserAction.dictUserActionUsers] = respondUsers;
+                        update[UserAction.dictUserActionTargetsCount] = 1;
+                        update[UserAction.dictUserActionTargetsHint] = (int)HintConstant.WithdrawOrReveal;
+                        return GameActionResult.Restart;
+                    }
+                    else
+                    {
+                        // Check for early completion - process withdrawals and reveals
+                        (var inputValid, var input, var input_others) = UserAction.GetUserResponse(game, true, allPlayers, update);
+                        if (inputValid)
+                        {
+                            bool anyAction = false;
+
+                            // Process withdrawals from sheriff
+                            foreach (var entry in input)
+                            {
+                                var player = int.Parse(entry.Key);
+                                var playerTargets = (List<int>)entry.Value;
+
+                                if (playerTargets.Contains(-2))
+                                {
+                                    // Player withdraws from sheriff
+                                    if (sheriffPlayers.Remove(player))
+                                    {
+                                        update[dictSheriff] = sheriffPlayers;
+                                        anyAction = true;
+                                    }
+                                }
+                            }
+
+                            // Process interrupt handlers (LangRen reveal, owner override)
+                            foreach (var int_input in input_others)
+                            {
+                                var key = int.Parse(int_input.Key);
+                                var value = (List<int>)int_input.Value;
+                                foreach (var handler in LangRenSha.InterruptHandlers)
+                                {
+                                    var result = handler(game, key, value, update);
+                                    if (result != GameActionResult.NotExecuted)
+                                    {
+                                        return result;
+                                    }
+                                }
+                            }
+
+                            if (anyAction)
+                            {
+                                return GameActionResult.Continue;
+                            }
+                        }
+                    }
+                }
+                return GameActionResult.NotExecuted;
             }
             // Sheriff vote - tally only
             if (Game.GetGameDictionaryProperty(game, dictSpeak, 0) == (int)SpeakConstant.SheriffVoteTally)
@@ -587,7 +705,9 @@ namespace ProcedureCore.LangRenSha
                 var sheriffPlayers = Game.GetGameDictionaryProperty(game, dictSheriff, new List<int>());
                 var originalSheriffPlayers = Game.GetGameDictionaryProperty(game, dictOriginalSheriff, new List<int>());
                 var votePlayers = new List<int>();
-                votePlayers.AddRange(allPlayers);
+                var alivePlayers1 = LangRenSha.GetPlayers(game, x => (int)x[dictAlive] == 1);
+                sheriffPlayers.RemoveAll(x => !alivePlayers1.Contains(x));
+                votePlayers.AddRange(alivePlayers1);
                 votePlayers.RemoveAll(x => originalSheriffPlayers.Contains(x));
 
                 if (UserAction.EndUserAction(game, update))
@@ -753,7 +873,7 @@ namespace ProcedureCore.LangRenSha
                 // Get the game owner player ID
                 var gameOwner = Game.GetGameDictionaryProperty(game, dictGameOwner, 0);
                 var ownerList = gameOwner > 0 ? new List<int> { gameOwner } : new List<int>();
-                var sheriffCandidates = Game.GetGameDictionaryProperty(game, dictSheriff, new List<int>());
+                var allAlivePlayers = LangRenSha.GetPlayers(game, x => (int)x[dictAlive] == 1);
 
                 // Owner selects who becomes sheriff
                 if (UserAction.EndUserAction(game, update))
@@ -768,7 +888,7 @@ namespace ProcedureCore.LangRenSha
                     if (UserAction.StartUserAction(game, 999, update))
                     {
                         // Show sheriff candidates as selectable targets (plus 0 for no sheriff)
-                        var selectableTargets = new List<int>(sheriffCandidates);
+                        var selectableTargets = new List<int>(allAlivePlayers);
                         selectableTargets.Insert(0, 0); // Add 0 at the beginning for "no sheriff"
                         update[UserAction.dictUserActionTargets] = selectableTargets;
                         update[UserAction.dictUserActionUsers] = ownerList;
@@ -1869,7 +1989,7 @@ namespace ProcedureCore.LangRenSha
                 {
                     info += "| ";
                 }
-                info += $"{p}: {string.Join(", ", voters)}";
+                info += $"{string.Join(", ", voters)} > {p}";
             }
             return info;
         }

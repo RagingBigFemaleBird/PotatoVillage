@@ -38,6 +38,7 @@ namespace PotatoVillage
         private bool selectedShouWei = false;
         private bool selectedYingZi = false;
         private bool selectedFuChouZhe = false;
+        private bool selectedHunZi = false;
         private HashSet<string> selectedPingMin = new();
 
         public MainPage()
@@ -145,6 +146,7 @@ namespace PotatoVillage
                                    selectedShouWei ||
                                    selectedYingZi ||
                                    selectedFuChouZhe ||
+                                   selectedHunZi ||
                                    selectedPingMin.Count > 0;
             ConnectBtn.IsEnabled = hasRolesSelected;
         }
@@ -244,6 +246,9 @@ namespace PotatoVillage
 
             if (selectedFuChouZhe)
                 roleDict["FuChouZhe"] = 1;
+
+            if (selectedHunZi)
+                roleDict["HunZi"] = 1;
 
             if (selectedPingMin.Count > 0)
                 roleDict["PingMin"] = selectedPingMin.Count;
@@ -576,6 +581,16 @@ namespace PotatoVillage
             if (sender is Button button)
             {
                 button.BackgroundColor = selectedFuChouZhe ? Colors.Green : Colors.LightGray;
+            }
+            UpdateConnectButtonState();
+        }
+
+        private void OnHunZiClicked(object? sender, EventArgs e)
+        {
+            selectedHunZi = !selectedHunZi;
+            if (sender is Button button)
+            {
+                button.BackgroundColor = selectedHunZi ? Colors.Green : Colors.LightGray;
             }
             UpdateConnectButtonState();
         }

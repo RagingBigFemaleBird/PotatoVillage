@@ -57,6 +57,7 @@ namespace PotatoVillage
             { 104, new Dictionary<int, string> { { -1, "Done speaking" }, { 0, "Pause game" }, { -2, "Withdraw" }, { -101, "OwnerSheriffOverride" } } },
             { 105, new Dictionary<int, string> { { -1, "Done speaking" }, { 0, "Pause game" } } },
             { 106, new Dictionary<int, string> { { 0, "NoSheriff" } } },
+            { 107, new Dictionary<int, string> { { -2, "Withdraw" }, { -101, "OwnerSheriffOverride" } } },
             { 112, new Dictionary<int, string> { { 0, "SkipVote" } } },
             { 151, new Dictionary<int, string> { { -100, "DoNotUse"} } },
             { 153, new Dictionary<int, string> { { -2, "Left" }, { -1, "Right"} } },
@@ -528,6 +529,7 @@ namespace PotatoVillage
                 12 => "converted_langren_succession",
                 13 => "tonglingshi_chayan",
                 14 => "tonglingshi_result",
+                15 => "hunzi_act",
                 50 => "open_eyes",
                 51 => "close_eyes",
                 52 => "lucky_one_open_eyes",
@@ -549,6 +551,7 @@ namespace PotatoVillage
                 104 => "sheriff_speech",
                 105 => "sheriff_pk",
                 106 => "owner_sheriff_select",
+                107 => "withdraw_or_reveal",
                 110 => "sheriff_recommend_vote",
                 111 => "voteout",
                 112 => "owner_vote_select",
@@ -908,7 +911,7 @@ namespace PotatoVillage
             }
 
             // Special case: owner sheriff override during sheriff speech. Server won't send this.
-            if (hintIndex == 104 && isOwner && !availableTargets.Contains(-101))
+            if ((hintIndex == 104 || hintIndex == 107) && isOwner && !availableTargets.Contains(-101))
             {
                 availableTargets.Add(-101);
             }
@@ -1276,6 +1279,18 @@ namespace PotatoVillage
             if (connectionManager == null)
                 return;
 
+            var localization = LocalizationManager.Instance;
+
+            // Show confirmation dialog
+            bool confirm = await DisplayAlert(
+                localization.GetString("reveal"),
+                localization.GetString("reveal_confirm"),
+                localization.GetString("yes"),
+                localization.GetString("no"));
+
+            if (!confirm)
+                return;
+
             try
             {
                 // Send action -10 to the server
@@ -1283,7 +1298,6 @@ namespace PotatoVillage
             }
             catch (Exception ex)
             {
-                var localization = LocalizationManager.Instance;
                 await DisplayAlert(
                     localization.GetString("error"),
                     localization.GetString("failed_send_selection") + ": " + ex.Message,

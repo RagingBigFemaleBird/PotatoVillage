@@ -80,61 +80,60 @@
         <!-- Right side: Target selection (top 3/4), Status bar and Counter (bottom 1/4) -->
         <Grid Grid.Column="1" RowDefinitions="3*,1*">
             <!-- Top 3/4: Target selection area -->
-            <ScrollView Grid.Row="0" Padding="5">
-                <VerticalStackLayout Spacing="8">
-                    <!-- Target selection area (initially hidden) -->
-                    <Border x:Name="TargetSelectionContainer" 
-                           IsVisible="False"
-                           Padding="10"
-                           StrokeShape="RoundRectangle 8"
-                           BackgroundColor="#FFFDD0"
-                           Stroke="Transparent">
-                        <Grid RowDefinitions="Auto,*,Auto">
-                            <Label x:Name="TargetInstructionLabel" 
-                                   Grid.Row="0"
-                                   Text="" 
-                                   FontSize="18"
-                                   TextColor="Brown" />
+            <Border x:Name="TargetSelectionContainer" 
+                   Grid.Row="0"
+                   IsVisible="False"
+                   Padding="10"
+                   Margin="5"
+                   StrokeShape="RoundRectangle 8"
+                   BackgroundColor="#FFFDD0"
+                   Stroke="Transparent"
+                   VerticalOptions="Fill"
+                   HorizontalOptions="Fill">
+                <Grid RowDefinitions="Auto,*,Auto">
+                    <Label x:Name="TargetInstructionLabel" 
+                           Grid.Row="0"
+                           Text="" 
+                           FontSize="18"
+                           TextColor="Brown" />
 
-                            <!-- Target buttons container -->
-                            <FlexLayout x:Name="TargetButtonsContainer"
-                                        Grid.Row="1"
-                                        Wrap="Wrap"
-                                        JustifyContent="Start"
-                                        AlignItems="Center"
-                                        AlignContent="Start"
-                                        Direction="Row"
-                                        MinimumHeightRequest="50"
-                                        Margin="0,8,0,0" />
+                    <!-- Target buttons container with scroll -->
+                    <ScrollView Grid.Row="1" Margin="0,8,0,0">
+                        <FlexLayout x:Name="TargetButtonsContainer"
+                                    Wrap="Wrap"
+                                    JustifyContent="Start"
+                                    AlignItems="Center"
+                                    AlignContent="Start"
+                                    Direction="Row"
+                                    MinimumHeightRequest="50" />
+                    </ScrollView>
 
-                            <!-- Bottom row: Confirm button and Sheriff status -->
-                            <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="0,8,0,0">
-                                <!-- Confirm button -->
-                                <Button x:Name="ConfirmButton"
-                                        Grid.Column="0"
-                                        Text="Confirmed"
-                                        IsVisible="False"
-                                        Clicked="OnConfirmClicked"
-                                        BackgroundColor="#007AFF"
-                                        TextColor="White"
-                                        FontSize="18"
-                                        Padding="8,4"
-                                        HorizontalOptions="Start" />
+                    <!-- Bottom row: Confirm button and Sheriff status -->
+                    <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="0,8,0,0">
+                        <!-- Confirm button -->
+                        <Button x:Name="ConfirmButton"
+                                Grid.Column="0"
+                                Text="Confirmed"
+                                IsVisible="False"
+                                Clicked="OnConfirmClicked"
+                                BackgroundColor="#007AFF"
+                                TextColor="White"
+                                FontSize="18"
+                                Padding="8,4"
+                                HorizontalOptions="Start" />
 
-                                <!-- Current Sheriff status label -->
-                                <Label x:Name="CurrentSheriffLabel"
-                                       Grid.Column="1"
-                                       Text=""
-                                       FontSize="14"
-                                       TextColor="#888888"
-                                       FontAttributes="Italic"
-                                       VerticalOptions="Center"
-                                       HorizontalOptions="End" />
-                            </Grid>
-                        </Grid>
-                    </Border>
-                </VerticalStackLayout>
-            </ScrollView>
+                        <!-- Current Sheriff status label -->
+                        <Label x:Name="CurrentSheriffLabel"
+                               Grid.Column="1"
+                               Text=""
+                               FontSize="14"
+                               TextColor="#888888"
+                               FontAttributes="Italic"
+                               VerticalOptions="Center"
+                               HorizontalOptions="End" />
+                    </Grid>
+                </Grid>
+            </Border>
 
             <!-- Bottom 1/4: Status bar (6 parts) and Counter (1 part) -->
             <Grid Grid.Row="1" ColumnDefinitions="6*,1*" Padding="5,0">

@@ -24,49 +24,54 @@ namespace ProcedureCore.LangRenSha
         Thief_ShowAttackStatus = 17,
         Thief_CloseEyes = 18,
 
-        // === YingZi (20-23) ===
-        YingZi_OpenEyes = 20,
-        YingZi_Act = 21,
-        YingZi_Info = 22,
-        YingZi_CloseEyes = 23,
+        // === HunZi (20-22) ===
+        HunZi_OpenEyes = 20,
+        HunZi_Act = 21,
+        HunZi_CloseEyes = 22,
 
-        // === DaMao (25-27) ===
-        DaMao_OpenEyes = 25,
-        DaMao_Act = 26,
-        DaMao_CloseEyes = 27,
+        // === YingZi (27-30) ===
+        YingZi_OpenEyes = 27,
+        YingZi_Act = 28,
+        YingZi_Info = 29,
+        YingZi_CloseEyes = 30,
 
-        // === LaoShu (30-38) ===
-        LaoShu_OpenEyes = 30,
-        LaoShu_Tag = 31,
-        LaoShu_CloseEyes = 32,
-        LaoShu_LuckyOneOpenEyes = 33,
-        LaoShu_CheckMice = 34,
-        LaoShu_LuckyOneCloseEyes = 35,
-        LaoShu_GiftOpenEyes = 36,
-        LaoShu_GiftAct = 37,
+        // === DaMao (35-37) ===
+        DaMao_OpenEyes = 35,
+        DaMao_Act = 36,
+        DaMao_CloseEyes = 37,
+
+        // === LaoShu (40-48) ===
+        LaoShu_OpenEyes = 40,
+        LaoShu_Tag = 41,
+        LaoShu_CloseEyes = 42,
+        LaoShu_LuckyOneOpenEyes = 43,
+        LaoShu_CheckMice = 44,
+        LaoShu_LuckyOneCloseEyes = 45,
+        LaoShu_GiftOpenEyes = 46,
+        LaoShu_GiftAct = 47,
         LaoShu_GiftCloseEyes = 38,
 
-        // === SheMengRen (40-42) ===
-        SheMengRen_OpenEyes = 40,
-        SheMengRen_Act = 41,
-        SheMengRen_CloseEyes = 42,
+        // === SheMengRen (50-52) ===
+        SheMengRen_OpenEyes = 50,
+        SheMengRen_Act = 51,
+        SheMengRen_CloseEyes = 52,
 
-        // === ShouWei (45-47) ===
-        ShouWei_OpenEyes = 45,
-        ShouWei_Act = 46,
-        ShouWei_CloseEyes = 47,
+        // === ShouWei (55-57) ===
+        ShouWei_OpenEyes = 55,
+        ShouWei_Act = 56,
+        ShouWei_CloseEyes = 57,
 
-        // === WuZhe (59-61, 130) ===
-        WuZhe_OpenEyes = 59,
-        WuZhe_Act = 60,
-        WuZhe_CloseEyes = 61,
+        // === WuZhe (69-71, 130) ===
+        WuZhe_OpenEyes = 69,
+        WuZhe_Act = 70,
+        WuZhe_CloseEyes = 71,
         WuZhe_Dance = 130,
 
-        // === JiaMian (69-72) ===
-        JiaMian_OpenEyes = 69,
-        JiaMian_ChaYan = 70,
-        JiaMian_Reverse = 71,
-        JiaMian_CloseEyes = 72,
+        // === JiaMian (79-82) ===
+        JiaMian_OpenEyes = 79,
+        JiaMian_ChaYan = 80,
+        JiaMian_Reverse = 81,
+        JiaMian_CloseEyes = 82,
 
         // === LangRen (99-102, 200) ===
         LangRen_OpenEyes = 99,
@@ -128,15 +133,16 @@ namespace ProcedureCore.LangRenSha
     /// </summary>
     public enum SpeakConstant
     {
-        // === Sheriff Election (0-7) ===
+        // === Sheriff Election (0-8) ===
         SheriffVolunteer = 0,
         SheriffSpeech = 1,
-        SheriffVoteTally = 2,
-        SheriffVoteResult = 3,
-        SheriffPKSpeech = 4,
-        SheriffPKVote = 5,
-        SheriffPKResult = 6,
-        OwnerSheriffSelect = 7,
+        WithdrawOrReveal = 2,  // 退水自爆 - Players can withdraw from sheriff or LangRen can reveal
+        SheriffVoteTally = 3,
+        SheriffVoteResult = 4,
+        SheriffPKSpeech = 5,
+        SheriffPKVote = 6,
+        SheriffPKResult = 7,
+        OwnerSheriffSelect = 8,
 
         // === Death Announcement (9-10) ===
         DeathAnnouncement = 9,
@@ -219,6 +225,9 @@ namespace ProcedureCore.LangRenSha
         // === Thief (10) ===
         Thief_PickRole = 10,
 
+        // === HunZi (15) ===
+        HunZi_Act = 15,
+
         // === Open/Close Eyes Announcements (50-55) ===
         OpenEyes = 50,
         CloseEyes = 51,
@@ -238,7 +247,7 @@ namespace ProcedureCore.LangRenSha
         // === MengMianRen (77) ===
         MengMianRen_Death = 77,
 
-        // === Sheriff Election (100-105) ===
+        // === Sheriff Election (100-107) ===
         SheriffVolunteer = 100,
         SheriffVote = 101,
         RoundTable = 102,
@@ -246,6 +255,7 @@ namespace ProcedureCore.LangRenSha
         SheriffSpeech = 104,
         SheriffPK = 105,
         OwnerSheriffSelect = 106,
+        WithdrawOrReveal = 107,  // 退水自爆
 
         // === Day Voting (110-112) ===
         SheriffRecommendVote = 110,

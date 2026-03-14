@@ -26,6 +26,7 @@ namespace PotatoVillage.Services
         // Audio files should be placed in Resources/Raw folder
         private readonly Dictionary<string, string> _voiceClips = new()
         {
+            { ">", "tougei" },
             // Role names
             { "狼人", "langren" },
             { "女巫", "nvwu" },
@@ -47,6 +48,7 @@ namespace PotatoVillage.Services
             { "影子", "yingzi" },
             { "复仇者", "fuchouzhe" },
             { "盗宝大师", "daobaodashi" },
+            { "混子", "hunzi" },
             { "警长", "jingzhang" },
             
             // Common phrases

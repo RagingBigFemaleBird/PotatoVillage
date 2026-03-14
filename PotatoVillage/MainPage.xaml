@@ -40,7 +40,7 @@
 
             <!-- Owner Control Setting -->
             <HorizontalStackLayout Spacing="8" HeightRequest="40">
-                <Switch x:Name="OwnerControlSwitch" IsToggled="False" VerticalOptions="Center" MinimumWidthRequest="60" />
+                <Switch x:Name="OwnerControlSwitch" IsToggled="True" VerticalOptions="Center" MinimumWidthRequest="60" />
                 <Label Text="{m:Translate owner_control_mode}" VerticalOptions="Center" />
             </HorizontalStackLayout>
 
@@ -100,11 +100,16 @@
             <HorizontalStackLayout Spacing="4">
                 <Button x:Name="MengMianRenBtn" Text="{m:Translate MengMianRen}" Clicked="OnMengMianRenClicked" BackgroundColor="LightGray" />
                 <Button x:Name="ShouWeiBtn" Text="{m:Translate ShouWei}" Clicked="OnShouWeiClicked" BackgroundColor="LightGray" />
-                <Button x:Name="YingZiBtn" Text="{m:Translate YingZi}" Clicked="OnYingZiClicked" BackgroundColor="LightGray" />
-                <Button x:Name="FuChouZheBtn" Text="{m:Translate FuChouZhe}" Clicked="OnFuChouZheClicked" BackgroundColor="LightGray" />
             </HorizontalStackLayout>
 
-            <!-- Row 7: PingMin (5 buttons) -->
+            <!-- Row 7: Third party-->
+            <HorizontalStackLayout Spacing="4">
+                <Button x:Name="YingZiBtn" Text="{m:Translate YingZi}" Clicked="OnYingZiClicked" BackgroundColor="LightGray" />
+                <Button x:Name="FuChouZheBtn" Text="{m:Translate FuChouZhe}" Clicked="OnFuChouZheClicked" BackgroundColor="LightGray" />
+                <Button x:Name="HunZiBtn" Text="{m:Translate HunZi}" Clicked="OnHunZiClicked" BackgroundColor="LightGray" />
+            </HorizontalStackLayout>
+
+            <!-- Row 8: PingMin (5 buttons) -->
             <HorizontalStackLayout Spacing="4">
                 <Button x:Name="PingMin1Btn" StyleId="PingMin1" Text="{m:Translate PingMin}" Clicked="OnPingMinClicked" BackgroundColor="LightGray" />
                 <Button x:Name="PingMin2Btn" StyleId="PingMin2" Text="{m:Translate PingMin}" Clicked="OnPingMinClicked" BackgroundColor="LightGray" />

@@ -15,7 +15,7 @@ namespace ProcedureCore.LangRenSha
         private static Dictionary<string, object> roleDict = new()
         {
             { YuYanJia.dictYuYanJiaResult, 1 },  // Appears as good to seer
-            { LangRenSha.dictPlayerAlliance, 1 },  // Good alliance
+            { LangRenSha.dictPlayerAlliance, 0 },
             { LangRenSha.dictPlayerFaction, LangRenSha.PlayerFaction.Civilian },
         };
 

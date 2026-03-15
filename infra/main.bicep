@@ -17,7 +17,7 @@ param location string = resourceGroup().location
 param appServicePlanSku string = 'B1'
 
 @description('The .NET version to use')
-param dotnetVersion string = 'v8.0'
+param dotnetVersion string = 'v10.0'
 
 // App Service Plan
 resource appServicePlan 'Microsoft.Web/serverfarms@2023-12-01' = {

@@ -244,9 +244,11 @@ namespace PotatoVillage
             }
 
             // Translate allegiance (1 = good, 2 = evil)
-            var allegianceText = allegiance == "2" 
-                ? localization.GetString("evil") 
-                : localization.GetString("good");
+            string allegianceText = localization.GetString("unknown");
+            if (allegiance == "2")
+                allegianceText = localization.GetString("evil");
+            if (allegiance == "1")
+                allegianceText = localization.GetString("good");
 
             var txt = localization.GetString("check_role_info", "Your role is {0}.");
             return txt.Replace("{0}", $"{role} ({allegianceText})");
@@ -345,6 +347,12 @@ namespace PotatoVillage
 
             // Lock to landscape when entering game view
             OrientationService.LockLandscape();
+
+            // Subscribe to app lifecycle events for iOS background/foreground handling
+            if (Application.Current != null)
+            {
+                Application.Current.MainPage!.Window!.Resumed += OnAppResumed;
+            }
         }
 
         protected override void OnDisappearing()
@@ -353,6 +361,12 @@ namespace PotatoVillage
 
             // Return to portrait when leaving game view
             OrientationService.LockPortrait();
+
+            // Unsubscribe from app lifecycle events
+            if (Application.Current?.MainPage?.Window != null)
+            {
+                Application.Current.MainPage.Window.Resumed -= OnAppResumed;
+            }
 
             // Clean up event subscriptions
             if (connectionManager != null)
@@ -367,6 +381,51 @@ namespace PotatoVillage
             // Cancel any running countdown
             countdownCts?.Cancel();
             countdownCts = null;
+        }
+
+        /// <summary>
+        /// Handles app resume from background (especially important for iOS).
+        /// Checks connection state and reconnects if needed.
+        /// </summary>
+        private async void OnAppResumed(object? sender, EventArgs e)
+        {
+            System.Diagnostics.Debug.WriteLine("GameView: App resumed from background");
+
+            if (connectionManager == null)
+                return;
+
+            try
+            {
+                // Give the system a moment to restore network
+                await Task.Delay(500);
+
+                // Check and ensure connection is active
+                bool isConnected = await connectionManager.EnsureConnectionAsync();
+
+                if (isConnected)
+                {
+                    System.Diagnostics.Debug.WriteLine("GameView: Connection restored successfully");
+                    // Force a UI update
+                    MainThread.BeginInvokeOnMainThread(() => UpdateGameStatus());
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine("GameView: Failed to restore connection");
+                    // Show error and navigate back
+                    await MainThread.InvokeOnMainThreadAsync(async () =>
+                    {
+                        await DisplayAlert(
+                            LocalizationManager.Instance.GetString("error"),
+                            "Connection lost. Please rejoin the game.",
+                            LocalizationManager.Instance.GetString("yes"));
+                        await Navigation.PopToRootAsync();
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"GameView: Error handling app resume: {ex.Message}");
+            }
         }
 
         private void OnPageSizeChanged(object? sender, EventArgs e)

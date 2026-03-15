@@ -423,6 +423,67 @@ namespace PotatoVillage
             }
         }
 
+        /// <summary>
+        /// Checks if the connection is active. Returns true if connected.
+        /// </summary>
+        public bool IsConnected => connection?.State == HubConnectionState.Connected;
+
+        /// <summary>
+        /// Ensures the connection is active. If disconnected, attempts to reconnect and rejoin the game.
+        /// This is useful for handling iOS background/foreground transitions.
+        /// </summary>
+        public async Task<bool> EnsureConnectionAsync()
+        {
+            if (connection == null)
+            {
+                System.Diagnostics.Debug.WriteLine("EnsureConnectionAsync: No connection object");
+                return false;
+            }
+
+            var state = connection.State;
+            System.Diagnostics.Debug.WriteLine($"EnsureConnectionAsync: Current state = {state}");
+
+            if (state == HubConnectionState.Connected)
+            {
+                return true;
+            }
+
+            if (state == HubConnectionState.Connecting || state == HubConnectionState.Reconnecting)
+            {
+                // Wait for connection to complete
+                int waitCount = 0;
+                while ((connection.State == HubConnectionState.Connecting || 
+                        connection.State == HubConnectionState.Reconnecting) && 
+                       waitCount < 10)
+                {
+                    await Task.Delay(500);
+                    waitCount++;
+                }
+                return connection.State == HubConnectionState.Connected;
+            }
+
+            // Connection is disconnected, try to reconnect
+            try
+            {
+                System.Diagnostics.Debug.WriteLine("EnsureConnectionAsync: Attempting to reconnect...");
+                await connection.StartAsync();
+
+                // Re-join the game after reconnection
+                if (registeredGameId > 0 && connection.State == HubConnectionState.Connected)
+                {
+                    System.Diagnostics.Debug.WriteLine($"EnsureConnectionAsync: Rejoining game {registeredGameId} as player {registeredPlayerId}");
+                    await connection.InvokeAsync("JoinGame", clientId, nickname, registeredGameId, registeredPlayerId);
+                }
+
+                return connection.State == HubConnectionState.Connected;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"EnsureConnectionAsync: Reconnection failed: {ex.Message}");
+                return false;
+            }
+        }
+
         public Dictionary<string, object> GetGameDictionary()
         {
             return gameDict;

@@ -18,7 +18,7 @@ namespace ProcedureCore.LangRenSha
         private static Dictionary<string, object> roleDict = new()
         {
             { YuYanJia.dictYuYanJiaResult, 1 },
-            { LangRenSha.dictPlayerAlliance, 2 },
+            { LangRenSha.dictPlayerAlliance, 0 },
             { LangRenSha.dictPlayerFaction, LangRenSha.PlayerFaction.Evil },
         };
 

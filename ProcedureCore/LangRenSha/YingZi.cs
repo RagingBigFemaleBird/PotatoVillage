@@ -18,7 +18,7 @@ namespace ProcedureCore.LangRenSha
         private static Dictionary<string, object> roleDict = new()
         {
             { YuYanJia.dictYuYanJiaResult, 1 },
-            { LangRenSha.dictPlayerAlliance, 1 },
+            { LangRenSha.dictPlayerAlliance, 0 },
             { LangRenSha.dictPlayerFaction, LangRenSha.PlayerFaction.God | LangRenSha.PlayerFaction.Civilian },
         };
 
@@ -140,6 +140,11 @@ namespace ProcedureCore.LangRenSha
             {
                 if (UserAction.EndUserAction(game, update))
                 {
+                    var shadowedTarget = Game.GetGameDictionaryProperty(game, dictYingZiTarget, 0);
+                    if (shadowedTarget == 0)
+                    {
+                        return GameActionResult.GameOver; // Can't continue if no shadow target selected.
+                    }
                     LangRenSha.AdvanceAction(game, update);
                     return GameActionResult.Restart;
                 }
@@ -197,16 +202,14 @@ namespace ProcedureCore.LangRenSha
                                 else
                                 {
                                     var targetAlliance = LangRenSha.GetPlayerProperty<int>(game, selectedTarget, LangRenSha.dictPlayerAlliance, 1);
-                                    if (targetAlliance == 2)
+                                    var targetIsEvil = (targetAlliance == 2);
+                                    var fuChouZhePlayer = fuChouZhe.Count > 0 ? fuChouZhe[0] : 0;
+                                    LangRenSha.SetPlayerProperty(game, yingZiPlayer, LangRenSha.dictPlayerFaction, targetIsEvil ? (int)LangRenSha.PlayerFaction.Evil : (int)(LangRenSha.PlayerFaction.God | LangRenSha.PlayerFaction.Civilian), update);
+                                    LangRenSha.SetPlayerProperty(game, yingZiPlayer, LangRenSha.dictPlayerAlliance, targetIsEvil ? 2 : 1, update);
+                                    if (fuChouZhePlayer > 0)
                                     {
-                                        var fuChouZhePlayer = fuChouZhe.Count > 0 ? fuChouZhe[0] : 0;
-                                        LangRenSha.SetPlayerProperty(game, yingZiPlayer, LangRenSha.dictPlayerFaction, (int)LangRenSha.PlayerFaction.Evil, update);
-                                        LangRenSha.SetPlayerProperty(game, yingZiPlayer, LangRenSha.dictPlayerAlliance, 2, update);
-                                        if (fuChouZhePlayer > 0)
-                                        {
-                                            LangRenSha.SetPlayerProperty(game, fuChouZhePlayer, LangRenSha.dictPlayerFaction, (int)LangRenSha.PlayerFaction.God, update);
-                                            LangRenSha.SetPlayerProperty(game, fuChouZhePlayer, LangRenSha.dictPlayerAlliance, 1, update);
-                                        }
+                                        LangRenSha.SetPlayerProperty(game, fuChouZhePlayer, LangRenSha.dictPlayerFaction, targetIsEvil ? (int)LangRenSha.PlayerFaction.God : (int)LangRenSha.PlayerFaction.Evil, update);
+                                        LangRenSha.SetPlayerProperty(game, fuChouZhePlayer, LangRenSha.dictPlayerAlliance, targetIsEvil ? 1 : 2, update);
                                     }
                                 }
 

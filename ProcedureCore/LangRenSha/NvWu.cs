@@ -191,6 +191,27 @@ namespace ProcedureCore.LangRenSha
 
                 if ((day0 && thiefPresent) || UserAction.EndUserAction(game, update))
                 {
+                    (var inputValid, var input, var input_others) = UserAction.GetUserResponse(game, true, nvWuAlive, update);
+                    if (inputValid)
+                    {
+                        var targets = UserAction.TallyUserInput(input, 0, UserAction.UserInputMode.VoteMost, -1);
+                        if (targets.Count == 0)
+                        {
+                            return GameActionResult.NotExecuted;
+                        }
+                        if (targets[0] > 0)
+                        {
+                            Poison(game, targets[0], update);
+                        }
+                        else if (targets[0] == 0)
+                        {
+                            Save(game, update);
+                        }
+                        UserAction.EndUserAction(game, update, true);
+                        LangRenSha.AdvanceAction(game, update);
+                        return GameActionResult.Restart;
+                    }
+
                     LangRenSha.AdvanceAction(game, update);
                     return GameActionResult.Restart;
                 }
@@ -237,25 +258,28 @@ namespace ProcedureCore.LangRenSha
                     }
                     else
                     {
-                        (var inputValid, var input, var input_others) = UserAction.GetUserResponse(game, true, nvWuAlive, update);
-                        if (inputValid)
+                        if (!day0)
                         {
-                            var targets = UserAction.TallyUserInput(input, 0, UserAction.UserInputMode.VoteMost, -1);
-                            if (targets.Count == 0)
+                            (var inputValid, var input, var input_others) = UserAction.GetUserResponse(game, true, nvWuAlive, update);
+                            if (inputValid)
                             {
-                                return GameActionResult.NotExecuted;
+                                var targets = UserAction.TallyUserInput(input, 0, UserAction.UserInputMode.VoteMost, -1);
+                                if (targets.Count == 0)
+                                {
+                                    return GameActionResult.NotExecuted;
+                                }
+                                if (targets[0] > 0)
+                                {
+                                    Poison(game, targets[0], update);
+                                }
+                                else if (targets[0] == 0)
+                                {
+                                    Save(game, update);
+                                }
+                                UserAction.EndUserAction(game, update, true);
+                                LangRenSha.AdvanceAction(game, update);
+                                return GameActionResult.Restart;
                             }
-                            if (targets[0] > 0)
-                            {
-                                Poison(game, targets[0], update);
-                            }
-                            else if (targets[0] == 0)
-                            {
-                                Save(game, update);
-                            }
-                            UserAction.EndUserAction(game, update, true);
-                            LangRenSha.AdvanceAction(game, update);
-                            return GameActionResult.Restart;
                         }
                     }
                 }

@@ -29,11 +29,21 @@ namespace ProcedureCore.LangRenSha
         HunZi_Act = 21,
         HunZi_CloseEyes = 22,
 
-        // === YingZi (27-30) ===
-        YingZi_OpenEyes = 27,
-        YingZi_Act = 28,
-        YingZi_Info = 29,
-        YingZi_CloseEyes = 30,
+        // === JiXieLang (24-27, 105-108) ===
+        JiXieLang_OpenEyes = 24,
+        JiXieLang_Act = 25,
+        JiXieLang_Info = 26,
+        JiXieLang_CloseEyes = 27,
+        JiXieLang_ActAgain_OpenEyes = 105,
+        JiXieLang_ActAgain = 106,
+        JiXieLang_ActAgain_Info = 107,
+        JiXieLang_ActAgain_CloseEyes = 108,
+
+        // === YingZi (30-33) ===
+        YingZi_OpenEyes = 30,
+        YingZi_Act = 31,
+        YingZi_Info = 32,
+        YingZi_CloseEyes = 33,
 
         // === DaMao (35-37) ===
         DaMao_OpenEyes = 35,
@@ -227,6 +237,12 @@ namespace ProcedureCore.LangRenSha
 
         // === HunZi (15) ===
         HunZi_Act = 15,
+
+        // === JiXieLang (16-19) ===
+        JiXieLang_Act = 16,
+        JiXieLang_Info = 17,
+        JiXieLang_ActAgain = 18,
+        JiXieLang_ActAgain_Info = 19,
 
         // === Open/Close Eyes Announcements (50-55) ===
         OpenEyes = 50,

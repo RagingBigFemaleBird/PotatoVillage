@@ -133,6 +133,7 @@ namespace Server
                 { "YingZi", new YingZi() },
                 { "FuChouZhe",  new FuChouZhe() },
                 { "HunZi", new HunZi() },
+                { "JiXieLang", new JiXieLang() },
             };
 
             if (!roleDict.ContainsKey("LangRen"))

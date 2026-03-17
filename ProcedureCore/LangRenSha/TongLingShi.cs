@@ -14,6 +14,8 @@ namespace ProcedureCore.LangRenSha
     public class TongLingShi : Role
     {
         public static string dictTongLingResult = "tongling_result";
+        public static string dictTongLingShiResult = "tongling";
+
 
         private static Dictionary<string, object> roleDict = new()
         {
@@ -62,8 +64,12 @@ namespace ProcedureCore.LangRenSha
         /// </summary>
         public void TongLing(Game game, int target, Dictionary<string, object> update)
         {
-            var result = LangRenSha.GetPlayerProperty(game, target, LangRenSha.dictRole, "");
-            update[dictTongLingResult] = result;
+            var tongling_result = LangRenSha.GetPlayerProperty(game, target, TongLingShi.dictTongLingShiResult, "");
+            if (string.IsNullOrEmpty(tongling_result))
+            {
+                tongling_result = LangRenSha.GetPlayerProperty(game, target, LangRenSha.dictRole, "");
+            }
+            update[dictTongLingResult] = tongling_result;
         }
 
         public GameActionResult GenerateStateDiff(Game game, Dictionary<string, object> update)

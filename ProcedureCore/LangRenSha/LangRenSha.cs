@@ -72,6 +72,7 @@ namespace ProcedureCore.LangRenSha
             RegisterDeadPlayerHandler(LangQiang.HandleLangQiangDeathSkill);
             RegisterDeadPlayerHandler(Xiong.HandleXiongDeathSkill);
             RegisterDeadPlayerHandler(FuChouZhe.HandleRevengerDeathSkill);
+            RegisterDeadPlayerHandler(JiXieLang.HandleJiXieLangDeathSkill);
             RegisterDeadPlayerHandler(MengMianRen.HandleDeathSkill);
             RegisterAfterSpeakHandler(MengMianRen.HandleAfterSpeak);
             // Players will be initialized dynamically in GenerateStateDiff based on roleDict
@@ -101,6 +102,7 @@ namespace ProcedureCore.LangRenSha
                 "YingZi" => new YingZi(),
                 "FuChouZhe" => new FuChouZhe(),
                 "HunZi" => new HunZi(),
+                "JiXieLang" => new JiXieLang(),
                 _ => throw new ArgumentException($"Not a role: {roleName}")
             };
         }

@@ -49,6 +49,7 @@ namespace PotatoVillage.Services
             { "复仇者", "fuchouzhe" },
             { "盗宝大师", "daobaodashi" },
             { "混子", "hunzi" },
+            { "机械狼", "jixielang" },
             { "警长", "jingzhang" },
             
             // Common phrases

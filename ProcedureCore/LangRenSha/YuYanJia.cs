@@ -72,8 +72,12 @@ namespace ProcedureCore.LangRenSha
 
         public void TongLing(Game game, int target, Dictionary<string, object> update)
         {
-            var result = LangRenSha.GetPlayerProperty(game, target, LangRenSha.dictRole, "");
-            update[dictYuYanJiaResult] = result;
+            var tongling_result = LangRenSha.GetPlayerProperty(game, target, TongLingShi.dictTongLingShiResult, "");
+            if (string.IsNullOrEmpty(tongling_result))
+            {
+                tongling_result = LangRenSha.GetPlayerProperty(game, target, LangRenSha.dictRole, "");
+            }
+            update[dictYuYanJiaResult] = tongling_result;
         }
 
         public GameActionResult GenerateStateDiff(Game game, Dictionary<string, object> update)

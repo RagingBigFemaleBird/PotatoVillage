@@ -74,10 +74,12 @@ namespace ProcedureCore.LangRenSha
                 {
                     if (targets.Contains(-10))
                     {
-                        LangRenSha.MarkPlayerAboutToDie(game, player, update);
+                        var aboutToDie = Game.GetGameDictionaryProperty(game, LangRenSha.dictAboutToDie, new List<int>());
+                        update[LangRenSha.dictAboutToDie] = new List<int>() { player };
                         update[LangRenSha.dictSkipDaySpeech] = 1;
                         var interrupted = new Dictionary<string, object>();
                         var currentSpeak = Game.GetGameDictionaryProperty(game, LangRenSha.dictSpeak, 0);
+                        interrupted[LangRenSha.dictAboutToDie] = aboutToDie;
                         interrupted[LangRenSha.dictSpeak] = (int)SpeakConstant.DeathAnnouncement;
                         update[LangRenSha.dictSpeak] = (int)SpeakConstant.DeathHandlingInterrupt;
                         update[LangRenSha.dictInterrupt] = interrupted;
@@ -95,6 +97,7 @@ namespace ProcedureCore.LangRenSha
             foreach (var target in targets)
             {
                 var guardTarget = Game.GetGameDictionaryProperty(game, ShouWei.dictGuardTarget, 0);
+                var superGuardTarget = Game.GetGameDictionaryProperty(game, JiXieLang.dictSuperGuardTarget, 0);
                 var wuZhe = Game.GetGameDictionaryProperty(game, WuZhe.dictDanced, new List<int>());
                 var miceTag = Game.GetGameDictionaryProperty(game, LaoShu.dictMiceTag, 0);
                 var laoShu = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == "LaoShu");
@@ -105,7 +108,7 @@ namespace ProcedureCore.LangRenSha
                 var xiongPlayer = xiongAlive.Count > 0 ? xiongAlive[0] : 0;
                 var xiongLinkPlayer = xiongPlayer > 0 ? LangRenSha.GetPlayerProperty(game, xiongPlayer, Xiong.dictXiongLink, 0) : 0;
 
-                if (sheMengRenTarget != target && guardTarget != target && !wuZhe.Contains(target) && (target != laoShuPlayer || miceTag == laoShuPlayer) && !aboutToDie.Contains(target))
+                if (sheMengRenTarget != target && guardTarget != target && superGuardTarget != target && !wuZhe.Contains(target) && (target != laoShuPlayer || miceTag == laoShuPlayer) && !aboutToDie.Contains(target))
                 {
                     aboutToDie.Add(target);
                     if (sheMengRenAlive.Count > 0 && target == sheMengRenAlive[0])
@@ -118,7 +121,7 @@ namespace ProcedureCore.LangRenSha
                         }
                     }
                 }
-                if (sheMengRenTarget != target && guardTarget != target && !wuZhe.Contains(target) && (target == miceTag) && !aboutToDie.Contains(laoShuPlayer))
+                if (sheMengRenTarget != target && guardTarget != target && superGuardTarget != target && !wuZhe.Contains(target) && (target == miceTag) && !aboutToDie.Contains(laoShuPlayer))
                 {
                     aboutToDie.Add(laoShuPlayer);
                 }

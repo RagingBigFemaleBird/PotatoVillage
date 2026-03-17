@@ -79,6 +79,22 @@ namespace ProcedureCore.LangRenSha
             var xiongPlayer = xiongAlive.Count > 0 ? xiongAlive[0] : 0;
             var xiongLinkPlayer = xiongPlayer > 0 ? LangRenSha.GetPlayerProperty(game, xiongPlayer, Xiong.dictXiongLink, 0) : 0;
 
+            // SuperGuard: blocks poison and reflects it back to NvWu
+            var superGuardTarget = Game.GetGameDictionaryProperty(game, JiXieLang.dictSuperGuardTarget, 0);
+            if (target == superGuardTarget && superGuardTarget > 0)
+            {
+                if (nvWu.Count > 0 && !aboutToDie.Contains(nvWu[0]))
+                {
+                    aboutToDie.Add(nvWu[0]);
+                    LangRenSha.SetPlayerProperty(game, nvWu[0], LieRen.dictHuntingDisabled, 1, update);
+                }
+                update[LangRenSha.dictAboutToDie] = aboutToDie;
+                if (!miceTagged)
+                {
+                    LangRenSha.SetPlayerProperty(game, nvWu[0], dictPoisonUsed, 1, update);
+                }
+                return;
+            }
 
             if (sheMengRenTarget != target && LangRenSha.GetPlayerProperty(game, target, dictCannotBePoisoned, 0) == 0 && (target != laoShuPlayer || laoShuPlayer == miceTag))
             {

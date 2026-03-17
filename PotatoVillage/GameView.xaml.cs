@@ -48,6 +48,7 @@ namespace PotatoVillage
         {
             { 1, new Dictionary<int, string> { { -100, "DoNotAttack"} } },
             { 3, new Dictionary<int, string> { { 0, "JiuRen" }, { -100, "DoNotUse"} } },
+            { 18, new Dictionary<int, string> { { -100, "DoNotUse"} } },
             { 70, new Dictionary<int, string> { { -100, "DoNotUse"} } },
             { 80, new Dictionary<int, string> { { -100, "DoNotUse"} } },
             { 81, new Dictionary<int, string> { { -100, "DoNotUse"} } },
@@ -78,6 +79,9 @@ namespace PotatoVillage
             { 76, GiftedPoisonHandler },
             { 79, YingZiInfoHandler },
             { 82, FuChouZheAllianceInfoHandler },
+            { 17, JiXieLangInfoHandler },
+            { 18, JiXieLangActAgainHandler },
+            { 19, JiXieLangActAgainInfoHandler },
             { 104, SheriffSpeechHandler },
             { 105, SheriffPKHandler },
             { 151, LieRenInfoHandler },
@@ -172,6 +176,57 @@ namespace PotatoVillage
             if (string.IsNullOrEmpty(userInfo))
                 return LocalizationManager.Instance.GetString("langren_succession_no", "Cannot yet attack");
             return LocalizationManager.Instance.GetString("langren_succession_yes", "Can attack");
+        }
+
+        private static string JiXieLangInfoHandler(string userInfo)
+        {
+            // Day 0: userInfo is the mimicked role name. Day 1+: "1" = can attack, "0" = cannot
+            var localization = LocalizationManager.Instance;
+            if (string.IsNullOrEmpty(userInfo))
+                return localization.GetString("jixielang_no_skill", "No skill learned");
+            if (userInfo == "1")
+                return localization.GetString("langren_succession_yes", "Can attack");
+            if (userInfo == "0")
+                return localization.GetString("langren_succession_no", "Cannot attack");
+            // Role name (day 0)
+            var roleName = localization.GetString(userInfo, userInfo);
+            var txt = localization.GetString("jixielang_learned", "Learned: {0}");
+            return txt.Replace("{0}", roleName);
+        }
+
+        private static string JiXieLangActAgainHandler(string userInfo)
+        {
+            // userInfo is the mimicked role name
+            if (string.IsNullOrEmpty(userInfo))
+                return "";
+            var localization = LocalizationManager.Instance;
+            var roleName = localization.GetString(userInfo, userInfo);
+            var txt = localization.GetString("jixielang_using", "Using: {0}");
+            return txt.Replace("{0}", roleName);
+        }
+
+        private static string JiXieLangActAgainInfoHandler(string userInfo)
+        {
+            // Formats:
+            //   TongLingShi: role name string (e.g. "NvWu")
+            //   LieRen: "LieRen,1" (can shoot) or "LieRen,0" (cannot shoot)
+            //   Empty: no info to display
+            if (string.IsNullOrEmpty(userInfo))
+                return "";
+            var localization = LocalizationManager.Instance;
+
+            if (userInfo.StartsWith("LieRen,"))
+            {
+                var canShoot = userInfo.EndsWith(",1");
+                return canShoot
+                    ? localization.GetString("jixielang_lieren_can_shoot", "Can shoot on death")
+                    : localization.GetString("jixielang_lieren_cannot_shoot", "Cannot shoot on death");
+            }
+
+            // TongLing result
+            var roleName = localization.GetString(userInfo, userInfo);
+            var txt = localization.GetString("jixielang_tongling_result", "TongLing: {0}");
+            return txt.Replace("{0}", roleName);
         }
 
         private static string SheriffSpeechHandler(string userInfo)
@@ -291,8 +346,7 @@ namespace PotatoVillage
             this.gameId = gameId;
             this.playerId = playerId;
             this.isOwner = isOwner;
-            PlayerIdTopLabel.Text = playerId.ToString();
-            PlayerIdBottomLabel.Text = playerId.ToString();
+            PlayerIdLabel.Text = playerId.ToString();
             RevealBtn.Text = LocalizationManager.Instance.GetString("reveal");
             ConfirmButton.Text = LocalizationManager.Instance.GetString("confirm");
 
@@ -306,7 +360,6 @@ namespace PotatoVillage
             }
 
             // Set dynamic font sizes based on screen size
-            UpdatePlayerIdFontSizes();
             UpdateGameStatusFontSize();
             this.SizeChanged += OnPageSizeChanged;
 
@@ -345,8 +398,8 @@ namespace PotatoVillage
         {
             base.OnAppearing();
 
-            // Lock to landscape when entering game view
-            OrientationService.LockLandscape();
+            // Lock to portrait when entering game view
+            OrientationService.LockPortrait();
 
             // Subscribe to app lifecycle events for iOS background/foreground handling
             if (Application.Current != null)
@@ -359,7 +412,7 @@ namespace PotatoVillage
         {
             base.OnDisappearing();
 
-            // Return to portrait when leaving game view
+            // Unlock orientation when leaving game view
             OrientationService.LockPortrait();
 
             // Unsubscribe from app lifecycle events
@@ -430,101 +483,79 @@ namespace PotatoVillage
 
         private void OnPageSizeChanged(object? sender, EventArgs e)
         {
-            UpdatePlayerIdFontSizes();
             UpdateGameStatusFontSize();
-        }
-
-        private void UpdatePlayerIdFontSizes()
-        {
-            // Calculate font size based on available width (2/3 of screen for player IDs)
-            double availableWidth = this.Width * 2 / 3;
-            double availableHeight = this.Height / 2; // Each ID takes half the height
-            
-            // Use the smaller dimension to determine font size
-            double fontSize = Math.Min(availableWidth, availableHeight) * 0.4;
-            fontSize = Math.Max(80, Math.Min(fontSize, 300)); // Clamp
-
-            MainThread.BeginInvokeOnMainThread(() =>
-            {
-                PlayerIdTopLabel.FontSize = fontSize;
-                PlayerIdBottomLabel.FontSize = fontSize;
-            });
         }
 
         private void UpdateGameStatusFontSize()
         {
             // Calculate font size based on text content to prevent wrapping
-            MainThread.BeginInvokeOnMainThread(() =>
+            var text = GameStatusLabel.Text ?? "";
+
+            // Get the container's width (Frame) minus padding (10 on each side)
+            double availableWidth = GameStatusFrame.Width - 20;
+            double availableHeight = GameStatusFrame.Height - 20;
+
+            if (availableWidth <= 0)
             {
-                var text = GameStatusLabel.Text ?? "";
+                // Fallback: calculate from screen dimensions
+                // Game status column is 18/23 of screen width
+                var displayInfo = DeviceDisplay.MainDisplayInfo;
+                double screenWidth = displayInfo.Width / displayInfo.Density;
+                availableWidth = screenWidth * 18.0 / 23.0 - 20;
+            }
 
-                // Get the container's width (Frame) minus padding (10 on each side)
-                double availableWidth = GameStatusFrame.Width - 20;
-                double availableHeight = GameStatusFrame.Height - 20;
+            if (availableHeight <= 0)
+            {
+                // Fallback: calculate from screen height
+                var displayInfo = DeviceDisplay.MainDisplayInfo;
+                double screenHeight = displayInfo.Height / displayInfo.Density;
+                availableHeight = (screenHeight * 3.0 / 45.0) - 20;
+            }
 
-                if (availableWidth <= 0)
-                {
-                    // Fallback: calculate from screen dimensions
-                    // Right column is 5/6 of 2/3 of screen width
-                    var displayInfo = DeviceDisplay.MainDisplayInfo;
-                    double screenWidth = displayInfo.Width / displayInfo.Density;
-                    availableWidth = (screenWidth * 2 / 3) * 5 / 6 - 20;
-                }
+            if (availableWidth <= 0)
+            {
+                // Final fallback default
+                availableWidth = 200;
+            }
 
-                if (availableHeight <= 0)
-                {
-                    // Fallback: calculate from screen height
-                    var displayInfo = DeviceDisplay.MainDisplayInfo;
-                    double screenHeight = displayInfo.Height / displayInfo.Density;
-                    availableHeight = (screenHeight * 1 / 5) - 20;
-                }
+            if (availableHeight <= 0)
+            {
+                availableHeight = 100;
+            }
 
-                if (availableWidth <= 0)
-                {
-                    // Final fallback default
-                    availableWidth = 200;
-                }
+            // Start with a base font size
+            double maxFontSize = 25;
 
-                if (availableHeight <= 0)
-                {
-                    availableHeight = 100;
-                }
+            if (string.IsNullOrEmpty(text))
+            {
+                return;
+            }
 
-                // Start with a base font size
-                double maxFontSize = 40;
+            // Estimate characters that fit at current font size
+            double avgCharWidth = 2.2 * maxFontSize;
+            int maxCharsPerLine = (int)(availableWidth / avgCharWidth);
 
-                if (string.IsNullOrEmpty(text))
-                {
-                    GameStatusLabel.FontSize = maxFontSize;
-                    return;
-                }
+            // Get the longest line in the text
+            var lines = text.Split('\n');
+            int maxLineLength = lines.Length > 0 ? lines.Max(l => l.Length) : 0;
 
-                // Estimate characters that fit at current font size
-                double avgCharWidth = 2.2 * maxFontSize;
-                int maxCharsPerLine = (int)(availableWidth / avgCharWidth);
+            // If text is too long, reduce font size proportionally
+            if (maxLineLength > maxCharsPerLine && maxCharsPerLine > 0)
+            {
+                double ratio = (double)maxCharsPerLine / maxLineLength;
+                maxFontSize = Math.Max(10, maxFontSize * ratio);
+            }
 
-                // Get the longest line in the text
-                var lines = text.Split('\n');
-                int maxLineLength = lines.Length > 0 ? lines.Max(l => l.Length) : 0;
+            double avgCharHeight = 0.6 * maxFontSize;
+            int maxLines = (int)(availableHeight / avgCharHeight);
 
-                // If text is too long, reduce font size proportionally
-                if (maxLineLength > maxCharsPerLine && maxCharsPerLine > 0)
-                {
-                    double ratio = (double)maxCharsPerLine / maxLineLength;
-                    maxFontSize = Math.Max(10, maxFontSize * ratio);
-                }
+            if (lines.Count() > maxLines && maxLines > 0)
+            {
+                double ratio = (double)maxLines / lines.Count();
+                maxFontSize = Math.Max(10, maxFontSize * ratio);
+            }
 
-                double avgCharHeight = 0.6 * maxFontSize;
-                int maxLines = (int)(availableHeight / avgCharHeight);
-
-                if (lines.Count() > maxLines && maxLines > 0)
-                {
-                    double ratio = (double)maxLines / lines.Count();
-                    maxFontSize = Math.Max(10, maxFontSize * ratio);
-                }
-
-                GameStatusLabel.FontSize = maxFontSize;
-            });
+            GameStatusLabel.FontSize = maxFontSize;
         }
 
         private int? GetInt32Value(object? obj)
@@ -589,6 +620,10 @@ namespace PotatoVillage
                 13 => "tonglingshi_chayan",
                 14 => "tonglingshi_result",
                 15 => "hunzi_act",
+                16 => "jixielang_act",
+                17 => "jixielang_info",
+                18 => "jixielang_actagain",
+                19 => "jixielang_actagain_info",
                 50 => "open_eyes",
                 51 => "close_eyes",
                 52 => "lucky_one_open_eyes",
@@ -762,8 +797,7 @@ namespace PotatoVillage
                 // Check if current player is dead and update player ID color
                 var isPlayerDead = IsPlayerDead(playerId);
                 var playerIdColor = isPlayerDead ? Colors.Red : Colors.Blue;
-                PlayerIdTopLabel.TextColor = playerIdColor;
-                PlayerIdBottomLabel.TextColor = playerIdColor;
+                PlayerIdLabel.TextColor = playerIdColor;
 
                 var userAction = GetInt32Value(gameDict.TryGetValue(DictUserAction, out var uaObj) ? uaObj : null) ?? 0;
                 var userUsers = GetInt32List(gameDict.TryGetValue(DictUserActionUsers, out var uuObj) ? uuObj : null);
@@ -986,6 +1020,7 @@ namespace PotatoVillage
             var localization = LocalizationManager.Instance;
             selectedTargets.Clear();
             TargetButtonsContainer.Clear();
+            SpecialTargetButtonsContainer.Clear();
 
             // Update hint label
             string hintText = GetTargetHint(hintIndex);
@@ -1093,7 +1128,7 @@ namespace PotatoVillage
                     int capturedTargetId = specialTarget;
                     button.Clicked += (s, e) => OnTargetSelected(button, capturedTargetId, maxTargetCount);
 
-                    TargetButtonsContainer.Add(button);
+                    SpecialTargetButtonsContainer.Add(button);
                 }
             }
 
@@ -1127,17 +1162,18 @@ namespace PotatoVillage
                 var button = new Button
                 {
                     Text = buttonText,
-                    CornerRadius = 5,
-                    Padding = new Thickness(10, 5),
+                    CornerRadius = 34,
+                    Padding = new Thickness(0),
                     Margin = new Thickness(5),
                     BackgroundColor = ownChoices.Contains(targetId) ? Colors.Orange : Colors.LightGray,
                     TextColor = Colors.Black,
                     IsEnabled = true,
                     Opacity = 1.0,
-                    MinimumWidthRequest = 50,
-                    MinimumHeightRequest = 40,
-                    HeightRequest = 45,
-                    FontSize = 18
+                    WidthRequest = 68,
+                    HeightRequest = 68,
+                    MinimumWidthRequest = 68,
+                    MinimumHeightRequest = 68,
+                    FontSize = 22
                 };
 
                 int capturedTargetId = targetId;
@@ -1146,8 +1182,12 @@ namespace PotatoVillage
                 TargetButtonsContainer.Add(button);
             }
 
-            // Show target selection container and confirm button
-            TargetSelectionContainer.IsVisible = true;
+            // Show target selection containers based on content
+            TargetInstructionLabel.IsVisible = true;
+            bool hasSpecialTargets = SpecialTargetButtonsContainer.Children.Count > 0;
+            bool hasRegularTargets = TargetButtonsContainer.Children.Count > 0;
+            SpecialTargetSelectionContainer.IsVisible = hasSpecialTargets;
+            TargetSelectionContainer.IsVisible = hasRegularTargets;
             ConfirmButton.IsVisible = true;
             ConfirmButton.IsEnabled = true;
             ConfirmButton.Text = LocalizationManager.Instance.GetString("confirm");
@@ -1183,6 +1223,14 @@ namespace PotatoVillage
                 // Special case: when maxCount is 1, auto-deselect the previous target
                 // Reset all buttons to deselected state
                 foreach (var child in TargetButtonsContainer.Children)
+                {
+                    if (child is Button btn)
+                    {
+                        btn.BackgroundColor = Colors.LightGray;
+                        btn.TextColor = Colors.Black;
+                    }
+                }
+                foreach (var child in SpecialTargetButtonsContainer.Children)
                 {
                     if (child is Button btn)
                     {
@@ -1275,9 +1323,12 @@ namespace PotatoVillage
 
             MainThread.BeginInvokeOnMainThread(() =>
             {
+                TargetInstructionLabel.IsVisible = false;
+                SpecialTargetSelectionContainer.IsVisible = false;
                 TargetSelectionContainer.IsVisible = false;
                 ConfirmButton.IsVisible = false;
                 CountdownLabel.Text = "";
+                SpecialTargetButtonsContainer.Clear();
                 TargetButtonsContainer.Clear();
                 CurrentSheriffLabel.Text = "";
                 CurrentSheriffLabel.IsVisible = false;

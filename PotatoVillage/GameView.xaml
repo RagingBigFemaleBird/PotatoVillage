@@ -11,175 +11,56 @@
             Padding="0"
             Margin="2">
 
-        <!-- Custom compact toolbar -->
-        <Grid RowDefinitions="24,*">
-        <HorizontalStackLayout Grid.Row="0" 
-                               BackgroundColor="#6200EE"
-                               HorizontalOptions="End"
-                               Spacing="8"
-                               Padding="8,0">
-            <Button x:Name="RevealBtn"
-                    Text="Reveal"
-                    Clicked="OnRevealClicked"
-                    HeightRequest="22"
-                    FontSize="11"
-                    Padding="8,0"
-                    BackgroundColor="Transparent"
-                    TextColor="White" />
-            <Button Text="?"
-                    Clicked="OnDisconnectClicked"
-                    HeightRequest="22"
-                    FontSize="11"
-                    Padding="8,0"
-                    BackgroundColor="Transparent"
-                    TextColor="White" />
-        </HorizontalStackLayout>
+        <Grid RowDefinitions="3*,6*,8*,25*,3*">
+            <!-- Top 3/46: Toolbar row (Player ID, Game Status, Countdown) -->
+            <Grid Grid.Row="0" 
+                  ColumnDefinitions="2*,18*,3*"
+                  BackgroundColor="#FFFFFF"
+                  Padding="4,0">
 
-        <Grid Grid.Row="1" ColumnDefinitions="1*,2*" RowDefinitions="*">
-            <!-- Left side: Player ID display (1/3 of screen) -->
-            <Grid Grid.Column="0" RowDefinitions="1*,Auto,1*">
-                <!-- Top: Upside down player ID -->
-                <Label x:Name="PlayerIdTopLabel"
-                   Grid.Row="0"
-                   FontSize="200"
-                   HorizontalTextAlignment="Center"
-                   VerticalTextAlignment="Center"
-                   Rotation="180"
-                   TextColor="Blue"
-                   Opacity="1">
-                <Label.FontSize>
-                    <OnPlatform x:TypeArguments="x:Double">
-                        <On Platform="Android,iOS">200</On>
-                    </OnPlatform>
-                </Label.FontSize>
-            </Label>
+                <!-- Player ID -->
+                <Label x:Name="PlayerIdLabel"
+                       Grid.Column="0"
+                       FontSize="16"
+                       TextColor="#FFFFFF00"
+                       HorizontalTextAlignment="Center"
+                       VerticalTextAlignment="Center"
+                       VerticalOptions="Center"
+                       HorizontalOptions="Fill"
+                       Margin="2" />
 
-            <!-- Thick separator line -->
-            <BoxView Grid.Row="1"
-                     HeightRequest="4"
-                     BackgroundColor="Black"
-                     HorizontalOptions="Fill"
-                     Margin="20,0" />
-
-            <!-- Bottom: Normal player ID -->
-            <Label x:Name="PlayerIdBottomLabel"
-                   Grid.Row="2"
-                   FontSize="200"
-                   HorizontalTextAlignment="Center"
-                   VerticalTextAlignment="Center"
-                   TextColor="Blue"
-                   Opacity="1">
-                <Label.FontSize>
-                    <OnPlatform x:TypeArguments="x:Double">
-                        <On Platform="Android,iOS">200</On>
-                    </OnPlatform>
-                </Label.FontSize>
-            </Label>
-        </Grid>
-
-        <!-- Right side: Target selection (top 3/4), Status bar and Counter (bottom 1/4) -->
-        <Grid Grid.Column="1" RowDefinitions="3*,1*">
-            <!-- Top 3/4: Target selection area -->
-            <Border x:Name="TargetSelectionContainer" 
-                   Grid.Row="0"
-                   IsVisible="False"
-                   Padding="10"
-                   Margin="5"
-                   StrokeShape="RoundRectangle 8"
-                   BackgroundColor="#FFFDD0"
-                   Stroke="Transparent"
-                   VerticalOptions="Fill"
-                   HorizontalOptions="Fill">
-                <Grid RowDefinitions="Auto,*,Auto">
-                    <Label x:Name="TargetInstructionLabel" 
-                           Grid.Row="0"
-                           Text="" 
-                           FontSize="18"
-                           TextColor="Brown" />
-
-                    <!-- Target buttons container with scroll -->
-                    <ScrollView Grid.Row="1" Margin="0,8,0,0">
-                        <FlexLayout x:Name="TargetButtonsContainer"
-                                    Wrap="Wrap"
-                                    JustifyContent="Start"
-                                    AlignItems="Center"
-                                    AlignContent="Start"
-                                    Direction="Row"
-                                    MinimumHeightRequest="50" />
-                    </ScrollView>
-
-                    <!-- Bottom row: Confirm button and Sheriff status -->
-                    <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="0,8,0,0">
-                        <!-- Confirm button -->
-                        <Button x:Name="ConfirmButton"
-                                Grid.Column="0"
-                                Text="Confirmed"
-                                IsVisible="False"
-                                Clicked="OnConfirmClicked"
-                                BackgroundColor="#007AFF"
-                                TextColor="White"
-                                FontSize="18"
-                                Padding="8,4"
-                                HorizontalOptions="Start" />
-
-                        <!-- Current Sheriff status label -->
-                        <Label x:Name="CurrentSheriffLabel"
-                               Grid.Column="1"
-                               Text=""
-                               FontSize="14"
-                               TextColor="#888888"
-                               FontAttributes="Italic"
-                               VerticalOptions="Center"
-                               HorizontalOptions="End" />
-                    </Grid>
-                </Grid>
-            </Border>
-
-            <!-- Bottom 1/4: Status bar (6 parts) and Counter (1 part) -->
-            <Grid Grid.Row="1" ColumnDefinitions="6*,1*" Padding="5,0">
-                <!-- Left 6/7: Game Status -->
+                <!-- Game Status -->
                 <Border x:Name="GameStatusFrame"
-                       Grid.Column="0" 
-                       Padding="10"
-                       StrokeShape="RoundRectangle 8"
-                       BackgroundColor="#F8F8F8"
-                       Stroke="#E0E0E0">
-                    <Grid>
-                        <Label x:Name="GameStatusLabel" 
-                               Text="" 
-                               LineBreakMode="TailTruncation"
-                               FontSize="20"
-                               MaxLines="3"
-                               TextColor="Teal"
-                               VerticalOptions="Center"
-                               HorizontalOptions="Start"
-                               VerticalTextAlignment="Center"
-                               HorizontalTextAlignment="Start" />
-
-                        <!-- Announcer Toggle Button - Bottom Right of status bar -->
-                        <Button x:Name="AnnouncerBtn"
-                                Text="🔇"
-                                FontSize="10"
-                                WidthRequest="25"
-                                HeightRequest="25"
-                                CornerRadius="12"
-                                BackgroundColor="LightGray"
-                                HorizontalOptions="End"
-                                VerticalOptions="End"
-                                Clicked="OnAnnouncerToggleClicked" />
-                    </Grid>
+                        Grid.Column="1"
+                        Padding="4,0"
+                        StrokeShape="RoundRectangle 4"
+                        BackgroundColor="#F8F8F8"
+                        Stroke="#E0E0E0"
+                        Margin="2"
+                        VerticalOptions="Fill">
+                    <Label x:Name="GameStatusLabel" 
+                           Text="" 
+                           LineBreakMode="TailTruncation"
+                           FontSize="12"
+                           MaxLines="2"
+                           TextColor="Teal"
+                           VerticalOptions="Center"
+                           HorizontalOptions="Start"
+                           VerticalTextAlignment="Center"
+                           HorizontalTextAlignment="Start" />
                 </Border>
 
-                <!-- Right 1/7: Countdown timer -->
-                <Border Grid.Column="1" 
-                       Padding="5"
-                       StrokeShape="RoundRectangle 8"
-                       BackgroundColor="#FFE0E0"
-                       Stroke="#FF8080"
-                       Margin="5,0,0,0">
+                <!-- Countdown timer -->
+                <Border Grid.Column="2"
+                        Padding="2,0"
+                        StrokeShape="RoundRectangle 4"
+                        BackgroundColor="#FFE0E0"
+                        Stroke="#FF8080"
+                        Margin="2"
+                        VerticalOptions="Fill">
                     <Label x:Name="CountdownLabel" 
                            Text=""
-                           FontSize="26"
+                           FontSize="16"
                            FontAttributes="Bold"
                            TextColor="Red"
                            HorizontalTextAlignment="Center"
@@ -188,9 +69,131 @@
                            VerticalOptions="Center" />
                 </Border>
             </Grid>
+
+            <!-- Row 1: Target instruction label -->
+            <Label x:Name="TargetInstructionLabel"
+                   Grid.Row="1"
+                   Text="" 
+                   FontSize="14"
+                   TextColor="Brown"
+                   IsVisible="False"
+                   VerticalTextAlignment="Center"
+                   Padding="10,0"
+                   BackgroundColor="#FFFDD0" />
+
+            <!-- Row 2: Special target buttons (e.g. Do not attack, Save, Abstain) -->
+            <Border x:Name="SpecialTargetSelectionContainer"
+                    Grid.Row="2"
+                    IsVisible="False"
+                    Padding="5"
+                    Margin="5,0"
+                    StrokeShape="RoundRectangle 8"
+                    BackgroundColor="#FFF0E0"
+                    Stroke="Transparent"
+                    VerticalOptions="Fill"
+                    HorizontalOptions="Fill">
+                <ScrollView Orientation="Horizontal">
+                    <FlexLayout x:Name="SpecialTargetButtonsContainer"
+                                Wrap="Wrap"
+                                JustifyContent="Start"
+                                AlignItems="Center"
+                                AlignContent="Start"
+                                Direction="Row"
+                                MinimumHeightRequest="30" />
+                </ScrollView>
+            </Border>
+
+            <!-- Row 3: Regular target selection area (player buttons) -->
+            <Border x:Name="TargetSelectionContainer" 
+                    Grid.Row="3"
+                    IsVisible="False"
+                    Padding="10"
+                    Margin="5"
+                    StrokeShape="RoundRectangle 8"
+                    BackgroundColor="#FFFDD0"
+                    Stroke="Transparent"
+                    VerticalOptions="Fill"
+                    HorizontalOptions="Fill">
+                <ScrollView>
+                    <FlexLayout x:Name="TargetButtonsContainer"
+                                Wrap="Wrap"
+                                JustifyContent="Start"
+                                AlignItems="Center"
+                                AlignContent="Start"
+                                Direction="Row"
+                                MinimumHeightRequest="50" />
+                </ScrollView>
+            </Border>
+
+            <!-- Bottom bar: Confirm, Sheriff, Reveal, Mute, Leave -->
+            <Grid Grid.Row="4"
+                  ColumnDefinitions="Auto,*,Auto,Auto,Auto"
+                  BackgroundColor="#F0F0F0"
+                  Padding="6,0">
+
+                <!-- Confirm button -->
+                <Button x:Name="ConfirmButton"
+                        Grid.Column="0"
+                        Text="Confirmed"
+                        IsVisible="False"
+                        Clicked="OnConfirmClicked"
+                        BackgroundColor="#007AFF"
+                        TextColor="White"
+                        FontSize="11"
+                        Padding="8,0"
+                        Margin="0,0,4,0"
+                        HeightRequest="20"
+                        VerticalOptions="Center" />
+
+                <!-- Sheriff status label -->
+                <Label x:Name="CurrentSheriffLabel"
+                       Grid.Column="1"
+                       Text=""
+                       FontSize="12"
+                       TextColor="#888888"
+                       FontAttributes="Italic"
+                       VerticalOptions="Center"
+                       HorizontalOptions="Start" />
+
+                <!-- Reveal button -->
+                <Button x:Name="RevealBtn"
+                        Grid.Column="2"
+                        Text="Reveal"
+                        Clicked="OnRevealClicked"
+                        FontSize="11"
+                        Padding="8,0"
+                        Margin="4,0"
+                        HeightRequest="20"
+                        TextColor="White"
+                        VerticalOptions="Center" />
+
+                <!-- Announcer Toggle Button -->
+                <Button x:Name="AnnouncerBtn"
+                        Grid.Column="3"
+                        Text="🔇"
+                        FontSize="10"
+                        WidthRequest="15"
+                        HeightRequest="15"
+                        CornerRadius="10"
+                        Padding="0"
+                        Margin="4,0"
+                        BackgroundColor="LightGray"
+                        VerticalOptions="Center"
+                        Clicked="OnAnnouncerToggleClicked" />
+
+                <!-- Disconnect button -->
+                <Button Text="X"
+                        Grid.Column="4"
+                        Clicked="OnDisconnectClicked"
+                        FontSize="11"
+                        Padding="8,0"
+                        Margin="4,0"
+                        HeightRequest="15"
+                        BackgroundColor="#FF4444"
+                        TextColor="White"
+                        VerticalOptions="Center" />
+            </Grid>
         </Grid>
-        </Grid>
-    </Grid>
     </Border>
 
 </ContentPage>

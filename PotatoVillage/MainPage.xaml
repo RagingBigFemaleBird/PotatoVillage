@@ -76,6 +76,7 @@
                 <Button x:Name="LangQiangBtn" Text="{m:Translate LangQiang}" Clicked="OnLangQiangClicked" BackgroundColor="LightGray" />
                 <Button x:Name="JiaMianBtn" Text="{m:Translate JiaMian}" Clicked="OnJiaMianClicked" BackgroundColor="LightGray" />
                 <Button x:Name="DaMaoBtn" Text="{m:Translate DaMao}" Clicked="OnDaMaoClicked" BackgroundColor="LightGray" />
+                <Button x:Name="JiXieLangBtn" Text="{m:Translate JiXieLang}" Clicked="OnJiXieLangClicked" BackgroundColor="LightGray" />
             </HorizontalStackLayout>
 
             <!-- Row 4: God -->

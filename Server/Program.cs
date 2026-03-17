@@ -75,7 +75,12 @@ builder.Services.AddCors(options =>
 });
 
 // Add services to the container.
-builder.Services.AddSignalR();
+builder.Services.AddSignalR(options =>
+{
+    // Increase timeouts to 10 minutes to prevent disconnects during inactivity
+    options.ClientTimeoutInterval = TimeSpan.FromMinutes(10);
+    options.KeepAliveInterval = TimeSpan.FromMinutes(5);
+});
 builder.Services.AddControllersWithViews();
 
 // Add UDP discovery service for local network discovery (only in development)

@@ -105,6 +105,10 @@ namespace PotatoVillage
                             .WithAutomaticReconnect(new[] { TimeSpan.Zero, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(10) })
                             .Build();
 
+                        // Increase timeouts to 10 minutes to prevent disconnects during inactivity
+                        connection.ServerTimeout = TimeSpan.FromMinutes(10);
+                        connection.KeepAliveInterval = TimeSpan.FromMinutes(5);
+
                         SetupConnectionHandlers();
                         await connection.StartAsync();
                         return true;

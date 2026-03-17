@@ -59,7 +59,7 @@ namespace ProcedureCore.LangRenSha
         LaoShu_LuckyOneCloseEyes = 45,
         LaoShu_GiftOpenEyes = 46,
         LaoShu_GiftAct = 47,
-        LaoShu_GiftCloseEyes = 38,
+        LaoShu_GiftCloseEyes = 48,
 
         // === SheMengRen (50-52) ===
         SheMengRen_OpenEyes = 50,

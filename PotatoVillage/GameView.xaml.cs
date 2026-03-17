@@ -1133,53 +1133,90 @@ namespace PotatoVillage
             }
 
             // Create target buttons for all players
-            foreach (var targetId in availableTargets)
+            var selectablePlayerSet = new HashSet<int>(availableTargets.Where(t => t > 0));
+
+            if (hintIndex == 10)
             {
-                if (targetId <= 0) 
-                    continue; // Skip special targets, already handled
-
-                var buttonText = targetId.ToString();
-
-                // Special handling for Thief role picking - show role names instead of indices
-                if (hintIndex == 10 && !string.IsNullOrEmpty(userInfo))
+                // Thief pick role: targets are role indices, not player IDs - only show selectable
+                foreach (var targetId in availableTargets)
                 {
-                    var roleNames = userInfo.Split(',');
-                    if (targetId > 0 && targetId <= roleNames.Length)
+                    if (targetId <= 0)
+                        continue;
+
+                    var buttonText = targetId.ToString();
+                    if (!string.IsNullOrEmpty(userInfo))
                     {
-                        var roleName = roleNames[targetId - 1].Trim();
-                        buttonText = localization.GetString(roleName, roleName);
+                        var roleNames = userInfo.Split(',');
+                        if (targetId > 0 && targetId <= roleNames.Length)
+                        {
+                            var roleName = roleNames[targetId - 1].Trim();
+                            buttonText = localization.GetString(roleName, roleName);
+                        }
                     }
+
+                    var button = new Button
+                    {
+                        Text = buttonText,
+                        CornerRadius = 34,
+                        Padding = new Thickness(0),
+                        Margin = new Thickness(5),
+                        BackgroundColor = ownChoices.Contains(targetId) ? Colors.Orange : Colors.LightGray,
+                        TextColor = Colors.Black,
+                        IsEnabled = true,
+                        Opacity = 1.0,
+                        WidthRequest = 68,
+                        HeightRequest = 68,
+                        MinimumWidthRequest = 68,
+                        MinimumHeightRequest = 68,
+                        FontSize = 22
+                    };
+
+                    int capturedTargetId = targetId;
+                    button.Clicked += (s, e) => OnTargetSelected(button, capturedTargetId, maxTargetCount);
+
+                    TargetButtonsContainer.Add(button);
                 }
-                else
+            }
+            else if (selectablePlayerSet.Count > 0)
+            {
+                // Show all players in the game; gray out those not in available targets
+                foreach (var pid in allPlayerIds)
                 {
-                    // Add response count and indicator if available
-                    if (responsesByTarget.TryGetValue(targetId, out var respondents))
+                    bool isSelectable = selectablePlayerSet.Contains(pid);
+                    var buttonText = pid.ToString();
+
+                    if (isSelectable && responsesByTarget.TryGetValue(pid, out var respondents))
                     {
                         buttonText += $" ({respondents.Count})";
                     }
+
+                    var button = new Button
+                    {
+                        Text = buttonText,
+                        CornerRadius = 34,
+                        Padding = new Thickness(0),
+                        Margin = new Thickness(5),
+                        BackgroundColor = isSelectable
+                            ? (ownChoices.Contains(pid) ? Colors.Orange : Colors.LightGray)
+                            : Colors.DarkGray,
+                        TextColor = isSelectable ? Colors.Black : Colors.Gray,
+                        IsEnabled = isSelectable,
+                        Opacity = isSelectable ? 1.0 : 0.4,
+                        WidthRequest = 68,
+                        HeightRequest = 68,
+                        MinimumWidthRequest = 68,
+                        MinimumHeightRequest = 68,
+                        FontSize = 22
+                    };
+
+                    if (isSelectable)
+                    {
+                        int capturedTargetId = pid;
+                        button.Clicked += (s, e) => OnTargetSelected(button, capturedTargetId, maxTargetCount);
+                    }
+
+                    TargetButtonsContainer.Add(button);
                 }
-
-                var button = new Button
-                {
-                    Text = buttonText,
-                    CornerRadius = 34,
-                    Padding = new Thickness(0),
-                    Margin = new Thickness(5),
-                    BackgroundColor = ownChoices.Contains(targetId) ? Colors.Orange : Colors.LightGray,
-                    TextColor = Colors.Black,
-                    IsEnabled = true,
-                    Opacity = 1.0,
-                    WidthRequest = 68,
-                    HeightRequest = 68,
-                    MinimumWidthRequest = 68,
-                    MinimumHeightRequest = 68,
-                    FontSize = 22
-                };
-
-                int capturedTargetId = targetId;
-                button.Clicked += (s, e) => OnTargetSelected(button, capturedTargetId, maxTargetCount);
-
-                TargetButtonsContainer.Add(button);
             }
 
             // Show target selection containers based on content
@@ -1221,10 +1258,10 @@ namespace PotatoVillage
             else if (maxCount == 1 && selectedTargets.Count == 1)
             {
                 // Special case: when maxCount is 1, auto-deselect the previous target
-                // Reset all buttons to deselected state
+                // Reset only enabled (selectable) buttons; skip disabled grayed-out ones
                 foreach (var child in TargetButtonsContainer.Children)
                 {
-                    if (child is Button btn)
+                    if (child is Button btn && btn.IsEnabled)
                     {
                         btn.BackgroundColor = Colors.LightGray;
                         btn.TextColor = Colors.Black;
@@ -1232,7 +1269,7 @@ namespace PotatoVillage
                 }
                 foreach (var child in SpecialTargetButtonsContainer.Children)
                 {
-                    if (child is Button btn)
+                    if (child is Button btn && btn.IsEnabled)
                     {
                         btn.BackgroundColor = Colors.LightGray;
                         btn.TextColor = Colors.Black;

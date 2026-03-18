@@ -48,7 +48,6 @@ namespace ProcedureCore.LangRenSha
         // Player property keys
         public static string dictMimickedRole = "jixielang_mimic";       // Which role was mimicked (string)
         public static string dictSuperGuardTarget = "jixielang_superguard"; // SuperGuard target this night
-        public static string dictPoisonUsed = "jixielang_poison_used";     // Whether poison has been used
         public static string dictLangRenKillUsed = "jixielang_kill_used";  // Whether LangRen kill has been used
 
         public GameActionResult GenerateStateDiff(Game game, Dictionary<string, object> update)
@@ -277,7 +276,7 @@ namespace ProcedureCore.LangRenSha
             switch (mimicked)
             {
                 case "NvWu":
-                    return LangRenSha.GetPlayerProperty(game, jxlPlayer, dictPoisonUsed, 0) == 0;
+                    return LangRenSha.GetPlayerProperty(game, jxlPlayer, NvWu.dictPoisonUsed, 0) == 0;
                 case "LangRen":
                 {
                     if (LangRenSha.GetPlayerProperty(game, jxlPlayer, dictLangRenKillUsed, 0) != 0)
@@ -422,8 +421,7 @@ namespace ProcedureCore.LangRenSha
                 case "NvWu":
                     // Poison only (no save)
                     var nvWu = new NvWu();
-                    nvWu.Poison(game, target, update);
-                    LangRenSha.SetPlayerProperty(game, jxlPlayer, dictPoisonUsed, 1, update);
+                    nvWu.Poison(game, jxlPlayer, target, update);
                     break;
 
                 case "TongLingShi":
@@ -439,7 +437,6 @@ namespace ProcedureCore.LangRenSha
                     if (langRenAlive.Count == 0)
                     {
                         LangRenSha.MarkPlayerAboutToDie(game, target, update);
-                        LangRenSha.SetPlayerProperty(game, target, LieRen.dictHuntingDisabled, 1, update);
                         LangRenSha.SetPlayerProperty(game, jxlPlayer, dictLangRenKillUsed, 1, update);
                     }
                     break;

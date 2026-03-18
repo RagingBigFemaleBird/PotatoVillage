@@ -83,11 +83,12 @@ namespace ProcedureCore.LangRenSha
         JiaMian_Reverse = 81,
         JiaMian_CloseEyes = 82,
 
-        // === LangRen (99-102, 200) ===
+        // === LangRen (99-101, 103, 200) ===
         LangRen_OpenEyes = 99,
         LangRen_SelectTarget = 100,
         LangRen_ConfirmKill = 101,
-        LangRen_CloseEyes = 102,
+        LangMeiRen_Act = 102,
+        LangRen_CloseEyes = 103,
         LangRen_Kill = 200,
 
         // === NvWu (119-121) ===
@@ -254,6 +255,9 @@ namespace ProcedureCore.LangRenSha
 
         // === DaMao (62) ===
         DaMao_Act = 62,
+
+        // === LangMeiRen (63) ===
+        LangMeiRen_Act = 63,
 
         // === LaoShu (72, 75-76) ===
         LaoShu_Tag = 72,

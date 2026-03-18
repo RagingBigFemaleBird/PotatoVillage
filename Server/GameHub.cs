@@ -134,6 +134,7 @@ namespace Server
                 { "FuChouZhe",  new FuChouZhe() },
                 { "HunZi", new HunZi() },
                 { "JiXieLang", new JiXieLang() },
+                { "LangMeiRen", new LangMeiRen() },
             };
 
             if (!roleDict.ContainsKey("LangRen"))

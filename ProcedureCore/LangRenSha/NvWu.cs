@@ -66,77 +66,35 @@ namespace ProcedureCore.LangRenSha
         public static string dictPoisonUsed = "poison_used";
         public static string dictSaveUsed = "save_used";
 
-        public void Poison(Game game, int target, Dictionary<string, object> update)
+        public void Poison(Game game, int source, int target, Dictionary<string, object> update)
         {
             var aboutToDie = Game.GetGameDictionaryProperty(game, LangRenSha.dictAboutToDie, new List<int>()); ;
-            var nvWu = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == Name);
             var miceTag = Game.GetGameDictionaryProperty(game, LaoShu.dictMiceTag, 0);
-            var miceTagged = miceTag == nvWu[0];
-            var laoShu = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == "LaoShu");
-            var laoShuPlayer = laoShu.Count > 0 ? laoShu[0] : -1;
-            var sheMengRenTarget = Game.GetGameDictionaryProperty(game, SheMengRen.dictSheMengTarget, 0);
-            var xiongAlive = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == "Xiong" && (int)x[LangRenSha.dictAlive] == 1);
-            var xiongPlayer = xiongAlive.Count > 0 ? xiongAlive[0] : 0;
-            var xiongLinkPlayer = xiongPlayer > 0 ? LangRenSha.GetPlayerProperty(game, xiongPlayer, Xiong.dictXiongLink, 0) : 0;
+            var miceTagged = miceTag == source;
 
             // SuperGuard: blocks poison and reflects it back to NvWu
             var superGuardTarget = Game.GetGameDictionaryProperty(game, JiXieLang.dictSuperGuardTarget, 0);
             if (target == superGuardTarget && superGuardTarget > 0)
             {
-                if (nvWu.Count > 0 && !aboutToDie.Contains(nvWu[0]))
-                {
-                    aboutToDie.Add(nvWu[0]);
-                    LangRenSha.SetPlayerProperty(game, nvWu[0], LieRen.dictHuntingDisabled, 1, update);
-                }
+                LangRenSha.ChainKill(game, source, source, aboutToDie, update);
                 update[LangRenSha.dictAboutToDie] = aboutToDie;
                 if (!miceTagged)
                 {
-                    LangRenSha.SetPlayerProperty(game, nvWu[0], dictPoisonUsed, 1, update);
+                    LangRenSha.SetPlayerProperty(game, source, dictPoisonUsed, 1, update);
                 }
                 return;
             }
 
-            if (sheMengRenTarget != target && LangRenSha.GetPlayerProperty(game, target, dictCannotBePoisoned, 0) == 0 && (target != laoShuPlayer || laoShuPlayer == miceTag))
+            if (LangRenSha.GetPlayerProperty(game, target, dictCannotBePoisoned, 0) == 0)
             {
-                if (!aboutToDie.Contains(target))
-                {
-                    var sheMengRenAlive = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == "SheMengRen" && (int)x[LangRenSha.dictAlive] == 1);
+                LangRenSha.ChainKill(game, source, target, aboutToDie, update);
+                update[LangRenSha.dictAboutToDie] = aboutToDie;
+            }
 
-                    aboutToDie.Add(target);
-                    if (sheMengRenAlive.Count > 0 && target == sheMengRenAlive[0])
-                    {
-                        var shemengTarget = Game.GetGameDictionaryProperty(game, SheMengRen.dictSheMengTarget, 0);
-                        if (shemengTarget > 0 && !aboutToDie.Contains(shemengTarget))
-                        {
-                            aboutToDie.Add(shemengTarget);
-                            LangRenSha.SetPlayerProperty(game, shemengTarget, LieRen.dictHuntingDisabled, 1, update);
-                        }
-                    }
-                }
-
-                LangRenSha.SetPlayerProperty(game, target, LieRen.dictHuntingDisabled, 1, update);
-            }
-            if (sheMengRenTarget != target && LangRenSha.GetPlayerProperty(game, target, dictReflectPoison, 0) != 0 && (target == miceTag))
-            {
-                if (!aboutToDie.Contains(laoShuPlayer))
-                {
-                    aboutToDie.Add(laoShuPlayer);
-                }
-            }
-            foreach (var pl in aboutToDie)
-            {
-                if (pl == xiongPlayer && xiongLinkPlayer > 0 && !aboutToDie.Contains(xiongLinkPlayer))
-                {
-                    aboutToDie.Add(xiongLinkPlayer);
-                    LangRenSha.SetPlayerProperty(game, xiongLinkPlayer, LieRen.dictHuntingDisabled, 1, update);
-                    break;
-                }
-            }
-            update[LangRenSha.dictAboutToDie] = aboutToDie;
 
             if (!miceTagged)
             {
-                LangRenSha.SetPlayerProperty(game, nvWu[0], dictPoisonUsed, 1, update);
+                LangRenSha.SetPlayerProperty(game, source, dictPoisonUsed, 1, update);
             }
         }
 
@@ -217,7 +175,7 @@ namespace ProcedureCore.LangRenSha
                         }
                         if (targets[0] > 0)
                         {
-                            Poison(game, targets[0], update);
+                            Poison(game, nvWuAlive[0], targets[0], update);
                         }
                         else if (targets[0] == 0)
                         {
@@ -286,7 +244,7 @@ namespace ProcedureCore.LangRenSha
                                 }
                                 if (targets[0] > 0)
                                 {
-                                    Poison(game, targets[0], update);
+                                    Poison(game, nvWuAlive[0], targets[0], update);
                                 }
                                 else if (targets[0] == 0)
                                 {

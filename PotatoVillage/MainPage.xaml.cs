@@ -40,6 +40,7 @@ namespace PotatoVillage
         private bool selectedFuChouZhe = false;
         private bool selectedHunZi = false;
         private bool selectedJiXieLang = false;
+        private bool selectedLangMeiRen = false;
         private HashSet<string> selectedPingMin = new();
 
         public MainPage()
@@ -149,6 +150,7 @@ namespace PotatoVillage
                                    selectedFuChouZhe ||
                                    selectedHunZi ||
                                    selectedJiXieLang ||
+                                   selectedLangMeiRen ||
                                    selectedPingMin.Count > 0;
             ConnectBtn.IsEnabled = hasRolesSelected;
         }
@@ -254,6 +256,9 @@ namespace PotatoVillage
 
             if (selectedJiXieLang)
                 roleDict["JiXieLang"] = 1;
+
+            if (selectedLangMeiRen)
+                roleDict["LangMeiRen"] = 1;
 
             if (selectedPingMin.Count > 0)
                 roleDict["PingMin"] = selectedPingMin.Count;
@@ -606,6 +611,16 @@ namespace PotatoVillage
             if (sender is Button button)
             {
                 button.BackgroundColor = selectedJiXieLang ? Colors.Green : Colors.LightGray;
+            }
+            UpdateConnectButtonState();
+        }
+
+        private void OnLangMeiRenClicked(object? sender, EventArgs e)
+        {
+            selectedLangMeiRen = !selectedLangMeiRen;
+            if (sender is Button button)
+            {
+                button.BackgroundColor = selectedLangMeiRen ? Colors.Green : Colors.LightGray;
             }
             UpdateConnectButtonState();
         }

@@ -71,6 +71,7 @@ namespace ProcedureCore.LangRenSha
             RegisterDeadPlayerHandler(LieRen.HandleHunterDeathSkill);
             RegisterDeadPlayerHandler(LangQiang.HandleLangQiangDeathSkill);
             RegisterDeadPlayerHandler(Xiong.HandleXiongDeathSkill);
+            RegisterDeadPlayerHandler(LangMeiRen.HandleLangMeiRenDeathSkill);
             RegisterDeadPlayerHandler(FuChouZhe.HandleRevengerDeathSkill);
             RegisterDeadPlayerHandler(JiXieLang.HandleJiXieLangDeathSkill);
             RegisterDeadPlayerHandler(MengMianRen.HandleDeathSkill);
@@ -103,6 +104,7 @@ namespace ProcedureCore.LangRenSha
                 "FuChouZhe" => new FuChouZhe(),
                 "HunZi" => new HunZi(),
                 "JiXieLang" => new JiXieLang(),
+                "LangMeiRen" => new LangMeiRen(),
                 _ => throw new ArgumentException($"Not a role: {roleName}")
             };
         }
@@ -1948,6 +1950,63 @@ namespace ProcedureCore.LangRenSha
             return true;
         }
 
+        public static void ChainKill(Game game, int source, int target, List<int> currentAboutToDie, Dictionary<string, object> update)
+        {
+            var miceTag = Game.GetGameDictionaryProperty(game, LaoShu.dictMiceTag, 0);
+            var laoShu = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == "LaoShu");
+            var laoShuPlayer = laoShu.Count > 0 ? laoShu[0] : -1;
+            var sheMengRenTarget = Game.GetGameDictionaryProperty(game, SheMengRen.dictSheMengTarget, 0);
+            var xiongAlive = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == "Xiong" && (int)x[LangRenSha.dictAlive] == 1);
+            var xiongPlayer = xiongAlive.Count > 0 ? xiongAlive[0] : 0;
+            var xiongLinkPlayer = xiongPlayer > 0 ? LangRenSha.GetPlayerProperty(game, xiongPlayer, Xiong.dictXiongLink, 0) : 0;
+            var lmrAlive = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == "LangMeiRen" && (int)x[LangRenSha.dictAlive] == 1);
+            var lmrPlayer = lmrAlive.Count > 0 ? lmrAlive[0] : 0;
+            var lmrLinkPlayer = lmrPlayer > 0 ? LangRenSha.GetPlayerProperty(game, lmrPlayer, LangMeiRen.dictLangMeiRenLink, 0) : 0;
+            var sheMengRenAlive = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == "SheMengRen" && (int)x[LangRenSha.dictAlive] == 1);
+            var sheMengRenPlayer = sheMengRenAlive.Count > 0 ? sheMengRenAlive[0] : 0;
+
+            if (currentAboutToDie.Contains(target))
+            {
+                return;
+            }
+
+            if (sheMengRenTarget == target && source != sheMengRenPlayer)
+            {
+                return;
+            }
+
+            if (target == laoShuPlayer && laoShuPlayer != miceTag)
+            {
+                return;
+            }
+
+            currentAboutToDie.Add(target);
+
+            if (target == sheMengRenPlayer)
+            {
+                LangRenSha.SetPlayerProperty(game, sheMengRenTarget, LieRen.dictHuntingDisabled, 1, update);
+                ChainKill(game, target, sheMengRenTarget, currentAboutToDie, update);
+            }
+
+            if (target == miceTag)
+            {
+                ChainKill(game, target, laoShuPlayer, currentAboutToDie, update);
+            }
+
+            if (target == xiongPlayer && xiongLinkPlayer > 0)
+            {
+                LangRenSha.SetPlayerProperty(game, xiongLinkPlayer, LieRen.dictHuntingDisabled, 1, update);
+                ChainKill(game, target, xiongLinkPlayer, currentAboutToDie, update);
+            }
+
+            if (target == lmrPlayer && lmrLinkPlayer > 0)
+            {
+                LangRenSha.SetPlayerProperty(game, lmrLinkPlayer, LieRen.dictHuntingDisabled, 1, update);
+                ChainKill(game, target, lmrLinkPlayer, currentAboutToDie, update);
+            }
+
+        }
+
         public static T GetPlayerProperty<T>(Game game, int player, string key, T defaultValue)
         {
             var players = Game.GetGameDictionaryProperty(game, dictPlayers, new Dictionary<string, object>());
@@ -2039,24 +2098,7 @@ namespace ProcedureCore.LangRenSha
                 // Ask current sheriff (who is dead) to select handover target
                 if (UserAction.EndUserAction(game, update))
                 {
-                    (var inputValid, var input, var input_others) = UserAction.GetUserResponse(game, true, new List<int> { currentSheriff }, update);
-                    if (inputValid && input.ContainsKey(currentSheriff.ToString()))
-                    {
-                        var targets = (List<int>)input[currentSheriff.ToString()];
-                        if (targets.Count > 0)
-                        {
-                            update[dictCurrentSheriff] = targets[0];
-                        }
-                        else
-                        {
-                            update[dictCurrentSheriff] = 0;
-                        }
-                    }
-                    else
-                    {
-                        update[dictCurrentSheriff] = 0;
-                    }
-
+                    update[dictCurrentSheriff] = 0;
                     update[dictSpeak] = 100;
                     return GameActionResult.Restart;
                 }
@@ -2075,8 +2117,23 @@ namespace ProcedureCore.LangRenSha
                         update[UserAction.dictUserActionTargetsHint] = (int)HintConstant.SheriffHandover;
                         return GameActionResult.Restart;
                     }
+                    else
+                    {
+                        (var inputValid, var input, var input_others) = UserAction.GetUserResponse(game, true, new List<int> { currentSheriff }, update);
+                        if (inputValid && input.ContainsKey(currentSheriff.ToString()))
+                        {
+                            var targets = (List<int>)input[currentSheriff.ToString()];
+                            if (targets.Count > 0)
+                            {
+                                update[dictCurrentSheriff] = targets[0];
+                                update[dictSpeak] = 100;
+                                UserAction.EndUserAction(game, update, true);
+                                return GameActionResult.Restart;
+                            }
+                        }
+                    }
+                    return GameActionResult.NotExecuted;
                 }
-                return GameActionResult.NotExecuted;
             }
             else
             {

@@ -99,42 +99,12 @@ namespace ProcedureCore.LangRenSha
                 var guardTarget = Game.GetGameDictionaryProperty(game, ShouWei.dictGuardTarget, 0);
                 var superGuardTarget = Game.GetGameDictionaryProperty(game, JiXieLang.dictSuperGuardTarget, 0);
                 var wuZhe = Game.GetGameDictionaryProperty(game, WuZhe.dictDanced, new List<int>());
-                var miceTag = Game.GetGameDictionaryProperty(game, LaoShu.dictMiceTag, 0);
-                var laoShu = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == "LaoShu");
-                var laoShuPlayer = laoShu.Count > 0 ? laoShu[0] : -1;
-                var sheMengRenTarget = Game.GetGameDictionaryProperty(game, SheMengRen.dictSheMengTarget, 0);
-                var sheMengRenAlive = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == "SheMengRen" && (int)x[LangRenSha.dictAlive] == 1);
-                var xiongAlive = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == "Xiong" && (int)x[LangRenSha.dictAlive] == 1);
-                var xiongPlayer = xiongAlive.Count > 0 ? xiongAlive[0] : 0;
-                var xiongLinkPlayer = xiongPlayer > 0 ? LangRenSha.GetPlayerProperty(game, xiongPlayer, Xiong.dictXiongLink, 0) : 0;
 
-                if (sheMengRenTarget != target && guardTarget != target && superGuardTarget != target && !wuZhe.Contains(target) && (target != laoShuPlayer || miceTag == laoShuPlayer) && !aboutToDie.Contains(target))
+                if (guardTarget == target || superGuardTarget == target || wuZhe.Contains(target))
                 {
-                    aboutToDie.Add(target);
-                    if (sheMengRenAlive.Count > 0 && target == sheMengRenAlive[0])
-                    {
-                        var shemengTarget = Game.GetGameDictionaryProperty(game, SheMengRen.dictSheMengTarget, 0);
-                        if (shemengTarget > 0 && !aboutToDie.Contains(shemengTarget))
-                        {
-                            aboutToDie.Add(shemengTarget);
-                            LangRenSha.SetPlayerProperty(game, shemengTarget, LieRen.dictHuntingDisabled, 1, update);
-                        }
-                    }
+                    continue;
                 }
-                if (sheMengRenTarget != target && guardTarget != target && superGuardTarget != target && !wuZhe.Contains(target) && (target == miceTag) && !aboutToDie.Contains(laoShuPlayer))
-                {
-                    aboutToDie.Add(laoShuPlayer);
-                }
-                foreach (var pl in aboutToDie)
-                {
-                    if (pl == xiongPlayer && xiongLinkPlayer > 0 && !aboutToDie.Contains(xiongLinkPlayer))
-                    {
-                        aboutToDie.Add(xiongLinkPlayer);
-                        LangRenSha.SetPlayerProperty(game, xiongLinkPlayer, LieRen.dictHuntingDisabled, 1, update);
-                        break;
-                    }
-                }
-
+                LangRenSha.ChainKill(game, 0, target, aboutToDie, update);
             }
             update[LangRenSha.dictAboutToDie] = aboutToDie;
         }
@@ -184,7 +154,7 @@ namespace ProcedureCore.LangRenSha
                     return GameActionResult.Restart;
                 }
 
-                var alivePlayers = LangRenSha.GetPlayers(game, x => (int)x[LangRenSha.dictAlive] == 1);
+                var alivePlayers = LangRenSha.GetPlayers(game, x => (int)x[LangRenSha.dictAlive] == 1 && (string)x[LangRenSha.dictRole] != "LangMeiRen");
                 var thiefPresent = Game.GetGameDictionaryProperty(game, Thief.dictThiefPlayer, 0) > 0;
                 if (thiefPresent && day0)
                 {

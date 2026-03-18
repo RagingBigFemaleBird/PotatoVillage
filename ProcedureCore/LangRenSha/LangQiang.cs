@@ -76,11 +76,12 @@ namespace ProcedureCore.LangRenSha
                 {
                     if (targets.Contains(-10))
                     {
-                        LangRenSha.MarkPlayerAboutToDie(game, player, update);
-                        LangRenSha.SetPlayerProperty(game, player, LieRen.dictHuntingDisabled, 1, update);
+                        var aboutToDie = Game.GetGameDictionaryProperty(game, LangRenSha.dictAboutToDie, new List<int>());
+                        update[LangRenSha.dictAboutToDie] = new List<int>() { player };
                         update[LangRenSha.dictSkipDaySpeech] = 1;
                         var interrupted = new Dictionary<string, object>();
                         var currentSpeak = Game.GetGameDictionaryProperty(game, LangRenSha.dictSpeak, 0);
+                        interrupted[LangRenSha.dictAboutToDie] = aboutToDie;
                         interrupted[LangRenSha.dictSpeak] = (int)SpeakConstant.DeathAnnouncement;
                         update[LangRenSha.dictSpeak] = (int)SpeakConstant.DeathHandlingInterrupt;
                         update[LangRenSha.dictInterrupt] = interrupted;

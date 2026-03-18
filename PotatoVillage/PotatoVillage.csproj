@@ -1,8 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks>net9.0-android;net10.0-ios;net9.0-maccatalyst</TargetFrameworks>
-		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net9.0-windows10.0.19041.0</TargetFrameworks>
+		<TargetFrameworks>net10.0-android;net10.0-ios;net10.0-maccatalyst</TargetFrameworks>
+		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net10.0-windows10.0.19041.0</TargetFrameworks>
 		<!-- Uncomment to also build the tizen app. You will need to install tizen by following this: https://github.com/Samsung/Tizen.NET -->
 		<!-- <TargetFrameworks>$(TargetFrameworks);net9.0-tizen</TargetFrameworks> -->
 
@@ -42,28 +42,42 @@
 		<AndroidSigningKeyStore>potatovillage.keystore</AndroidSigningKeyStore>
 	</PropertyGroup>
 
-	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net9.0-android|AnyCPU'">
+	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net10.0-android|AnyCPU'">
 	  <ApplicationTitle>土豆天天村</ApplicationTitle>
 	  <ApplicationId>com.biwuenterprise.potatovillage</ApplicationId>
 	</PropertyGroup>
 
-	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net9.0-ios|AnyCPU'">
+	<!-- iOS common settings for all configurations -->
+	<PropertyGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">
 	  <ApplicationTitle>土豆天天村</ApplicationTitle>
 	  <ApplicationId>com.biwuenterprise.potatovillage</ApplicationId>
+	  <ProvisioningType>manual</ProvisioningType>
+	  <EnableCodeSigning>true</EnableCodeSigning>
+	  <CodesignKey>iPhone Distribution: Bi Wu (24G79NU8G9)</CodesignKey>
+	  <CodesignProvision>PotatoVillage</CodesignProvision>
+	</PropertyGroup>
+
+	<!-- Debug-only iOS overrides -->
+	<PropertyGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios' AND '$(Configuration)' == 'Debug'">
 	  <MtouchLink>None</MtouchLink>
 	</PropertyGroup>
 
-	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net9.0-maccatalyst|AnyCPU'">
+	<!-- Suppress signing detection during VS design-time builds (project loading/IntelliSense) -->
+	<PropertyGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios' AND '$(DesignTimeBuild)' == 'true'">
+	  <EnableCodeSigning>false</EnableCodeSigning>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net10.0-maccatalyst|AnyCPU'">
 	  <ApplicationTitle>土豆天天村</ApplicationTitle>
 	  <ApplicationId>com.biwuenterprise.potatovillage</ApplicationId>
 	</PropertyGroup>
 
-	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net9.0-windows10.0.19041.0|AnyCPU'">
+	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net10.0-windows10.0.19041.0|AnyCPU'">
 	  <ApplicationTitle>土豆天天村</ApplicationTitle>
 	  <ApplicationId>com.biwuenterprise.potatovillage</ApplicationId>
 	</PropertyGroup>
 
-	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net9.0-android|AnyCPU'">
+	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net10.0-android|AnyCPU'">
 	  <ApplicationTitle>土豆天天村</ApplicationTitle>
 	  <ApplicationId>com.biwuenterprise.potatovillage</ApplicationId>
 	  <!-- Android Signing Configuration -->
@@ -79,28 +93,27 @@
 	</PropertyGroup>
 
 
-	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net9.0-maccatalyst|AnyCPU'">
+	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net10.0-maccatalyst|AnyCPU'">
 	  <ApplicationTitle>土豆天天村</ApplicationTitle>
 	  <ApplicationId>com.biwuenterprise.potatovillage</ApplicationId>
 	</PropertyGroup>
 
-	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net9.0-windows10.0.19041.0|AnyCPU'">
+	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net10.0-windows10.0.19041.0|AnyCPU'">
 	  <ApplicationTitle>土豆天天村</ApplicationTitle>
 	  <ApplicationId>com.biwuenterprise.potatovillage</ApplicationId>
 	</PropertyGroup>
 
-	<PropertyGroup Condition="'$(TargetFramework)'=='net9.0-ios'">
-	  <ProvisioningType>manual</ProvisioningType>
-		<CodesignKey>iPhone Distribution: Bi Wu (24G79NU8G9)</CodesignKey>
-		<CodeSignProvision>PotatoVillage</CodeSignProvision>
-		<ArchiveOnBuild>true</ArchiveOnBuild>
-		<BuildIpa>true</BuildIpa>
-	</PropertyGroup>
-
-	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net9.0-ios|AnyCPU'">
+	<!-- Release-only iOS build settings -->
+	<PropertyGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios' AND '$(Configuration)' == 'Release'">
 	  <MtouchUseLlvm>True</MtouchUseLlvm>
-	  <ApplicationTitle>土豆天天村</ApplicationTitle>
+	  <BuildIpa>true</BuildIpa>
 	</PropertyGroup>
+
+	<!-- ArchiveOnBuild only works on macOS where codesigning can actually happen -->
+	<PropertyGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios' AND '$(Configuration)' == 'Release' AND $([MSBuild]::IsOSPlatform('osx'))">
+	  <ArchiveOnBuild>true</ArchiveOnBuild>
+	</PropertyGroup>
+
 
 	<ItemGroup>
 		<!-- App Icon -->
@@ -130,8 +143,8 @@
 
 	<ItemGroup>
 		<PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
-		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.8" />
-		<PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.8" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.5" />
+		<PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.5" />
 	</ItemGroup>
 
 	<ItemGroup>

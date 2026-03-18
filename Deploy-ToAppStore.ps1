@@ -72,7 +72,7 @@ Write-Host "`n[3/5] Building iOS App (.ipa)..." -ForegroundColor Yellow
 $buildArgs = @(
     "publish",
     $ProjectPath,
-    "-f", "net9.0-ios",
+    "-f", "net10.0-ios",
     "-c", $Configuration
 )
 
@@ -108,7 +108,7 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host "Build successful!" -ForegroundColor Green
 
 # Find the output IPA
-$outputDir = "PotatoVillage/bin/$Configuration/net9.0-ios/ios-arm64/publish"
+$outputDir = "PotatoVillage/bin/$Configuration/net10.0-ios/ios-arm64/publish"
 $ipaFile = Get-ChildItem -Path $outputDir -Filter "*.ipa" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
 
 if ($ipaFile) {

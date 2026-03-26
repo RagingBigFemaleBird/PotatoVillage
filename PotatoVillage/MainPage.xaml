@@ -4,132 +4,65 @@
              xmlns:m="clr-namespace:PotatoVillage.Markup"
              x:Class="PotatoVillage.MainPage">
 
-    <ScrollView>
-        <VerticalStackLayout Padding="20" Spacing="12">
-            <Entry x:Name="NicknameEntry" Placeholder="{m:Translate nickname_optional}" />
-            <Entry x:Name="HubUrlEntry" Placeholder="{m:Translate hub_url}" />
+    <Grid>
+        <!-- Background Image -->
+        <Image Source="bg.png"
+               Aspect="AspectFill"
+               HorizontalOptions="Fill"
+               VerticalOptions="Fill" />
 
-            <!-- Join Existing Game Section -->
-            <Label Text="{m:Translate join_existing_game}" FontAttributes="Bold" FontSize="14" Margin="0,12,0,0" />
-            <HorizontalStackLayout Spacing="8">
-                <Entry x:Name="RoomNumberEntry" Placeholder="{m:Translate room_number}" WidthRequest="100" Keyboard="Numeric" />
-                <Entry x:Name="SeatNumberEntry" Placeholder="{m:Translate seat_number}" WidthRequest="100" Keyboard="Numeric" />
-                <Button x:Name="JoinBtn" Text="{m:Translate join}" Clicked="OnJoinClicked" />
-            </HorizontalStackLayout>
+        <Grid RowDefinitions="Auto,*" Padding="20">
+        <!-- Top: Nickname Entry -->
+        <Entry x:Name="NicknameEntry" 
+               Grid.Row="0"
+               Placeholder="{m:Translate nickname_optional}" 
+               FontSize="18"
+               TextColor="#FFF8DC"
+               Margin="0,10,0,20" />
 
-            <!-- Game Duration Settings -->
-            <Label Text="{m:Translate duration_settings}" FontAttributes="Bold" FontSize="14" Margin="0,12,0,0" />
-            <HorizontalStackLayout Spacing="8">
-                <Entry x:Name="SpeechDurationEntry" Text="95" Placeholder="{m:Translate speech_duration}" WidthRequest="80" Keyboard="Numeric" />
-                <Label Text="{m:Translate speech_duration}" VerticalOptions="Center" />
-            </HorizontalStackLayout>
-            <HorizontalStackLayout Spacing="8">
-                <Entry x:Name="WerewolfDurationEntry" Text="125" Placeholder="{m:Translate werewolf_duration}" WidthRequest="80" Keyboard="Numeric" />
-                <Label Text="{m:Translate werewolf_duration}" VerticalOptions="Center" />
-            </HorizontalStackLayout>
-            <HorizontalStackLayout Spacing="8">
-                <Entry x:Name="GodDurationEntry" Text="18" Placeholder="{m:Translate god_duration}" WidthRequest="80" Keyboard="Numeric" />
-                <Label Text="{m:Translate god_duration}" VerticalOptions="Center" />
-            </HorizontalStackLayout>
-
-            <!-- Round Table Mode Setting -->
-            <HorizontalStackLayout Spacing="8" HeightRequest="40">
-                <Switch x:Name="RoundTableModeSwitch" IsToggled="False" VerticalOptions="Center" MinimumWidthRequest="60" />
-                <Label Text="{m:Translate round_table_mode}" VerticalOptions="Center" />
-            </HorizontalStackLayout>
-
-            <!-- Owner Control Setting -->
-            <HorizontalStackLayout Spacing="8" HeightRequest="40">
-                <Switch x:Name="OwnerControlSwitch" IsToggled="True" VerticalOptions="Center" MinimumWidthRequest="60" />
-                <Label Text="{m:Translate owner_control_mode}" VerticalOptions="Center" />
-            </HorizontalStackLayout>
-
-            <!-- Seat Counter-Clockwise Setting -->
-            <HorizontalStackLayout Spacing="8" HeightRequest="40">
-                <Switch x:Name="SeatCounterClockwiseSwitch" IsToggled="False" VerticalOptions="Center" MinimumWidthRequest="60" />
-                <Label Text="{m:Translate seat_counter_clockwise}" VerticalOptions="Center" />
-            </HorizontalStackLayout>
-
-            <HorizontalStackLayout Spacing="8">
-                <Button x:Name="ConnectBtn" Text="{m:Translate connect}" Clicked="OnConnectClicked" IsEnabled="False" />
-            </HorizontalStackLayout>
-
-            <!-- Role Selection Section -->
-            <Label Text="{m:Translate select_roles_new_game}" FontAttributes="Bold" FontSize="14" Margin="0,12,0,0" />
-
-            <!-- Row 1: GameMode (5 buttons) -->
-            <HorizontalStackLayout Spacing="4">
-                <Button x:Name="ShenLangGongWu1Btn" Text="{m:Translate ShenLangGongWu1}" Clicked="OnShenLangGongWu1Clicked" BackgroundColor="LightGray" />
-            </HorizontalStackLayout>
-
-            <!-- Row 2: LangRen (5 buttons) -->
-            <HorizontalStackLayout Spacing="4">
-                <Button x:Name="LangRen1Btn" StyleId="LangRen1" Text="{m:Translate LangRen}" Clicked="OnLangRenClicked" BackgroundColor="LightGray" />
-                <Button x:Name="LangRen2Btn" StyleId="LangRen2" Text="{m:Translate LangRen}" Clicked="OnLangRenClicked" BackgroundColor="LightGray" />
-                <Button x:Name="LangRen3Btn" StyleId="LangRen3" Text="{m:Translate LangRen}" Clicked="OnLangRenClicked" BackgroundColor="LightGray" />
-                <Button x:Name="LangRen4Btn" StyleId="LangRen4" Text="{m:Translate LangRen}" Clicked="OnLangRenClicked" BackgroundColor="LightGray" />
-                <Button x:Name="LangRen5Btn" StyleId="LangRen5" Text="{m:Translate LangRen}" Clicked="OnLangRenClicked" BackgroundColor="LightGray" />
-            </HorizontalStackLayout>
-
-            <!-- Row 3: Special LangRen -->
-            <HorizontalStackLayout Spacing="4">
-                <Button x:Name="LangQiangBtn" Text="{m:Translate LangQiang}" Clicked="OnLangQiangClicked" BackgroundColor="LightGray" />
-                <Button x:Name="JiaMianBtn" Text="{m:Translate JiaMian}" Clicked="OnJiaMianClicked" BackgroundColor="LightGray" />
-                <Button x:Name="DaMaoBtn" Text="{m:Translate DaMao}" Clicked="OnDaMaoClicked" BackgroundColor="LightGray" />
-                <Button x:Name="JiXieLangBtn" Text="{m:Translate JiXieLang}" Clicked="OnJiXieLangClicked" BackgroundColor="LightGray" />
-                <Button x:Name="LangMeiRenBtn" Text="{m:Translate LangMeiRen}" Clicked="OnLangMeiRenClicked" BackgroundColor="LightGray" />
-            </HorizontalStackLayout>
-
-            <!-- Row 4: God -->
-            <HorizontalStackLayout Spacing="4">
-                <Button x:Name="NvWuBtn" Text="{m:Translate NvWu}" Clicked="OnNvWuClicked" BackgroundColor="LightGray" />
-                <Button x:Name="YuYanJiaBtn" Text="{m:Translate YuYanJia}" Clicked="OnYuYanJiaClicked" BackgroundColor="LightGray" />
-                <Button x:Name="TongLingShiBtn" Text="{m:Translate TongLingShi}" Clicked="OnTongLingShiClicked" BackgroundColor="LightGray" />
-                <Button x:Name="WuZheBtn" Text="{m:Translate WuZhe}" Clicked="OnWuZheClicked" BackgroundColor="LightGray" />
-                <Button x:Name="LieRenBtn" Text="{m:Translate LieRen}" Clicked="OnLieRenClicked" BackgroundColor="LightGray" />
-            </HorizontalStackLayout>
-
-            <!-- Row 5: God continued-->
-            <HorizontalStackLayout Spacing="4">
-                <Button x:Name="LaoShuBtn" Text="{m:Translate LaoShu}" Clicked="OnLaoShuClicked" BackgroundColor="LightGray" />
-                <Button x:Name="BaiChiBtn" Text="{m:Translate BaiChi}" Clicked="OnBaiChiClicked" BackgroundColor="LightGray" />
-                <Button x:Name="SheMengRenBtn" Text="{m:Translate SheMengRen}" Clicked="OnSheMengRenClicked" BackgroundColor="LightGray" />
-                <Button x:Name="XiongBtn" Text="{m:Translate Xiong}" Clicked="OnXiongClicked" BackgroundColor="LightGray" />
-                <Button x:Name="ThiefBtn" Text="{m:Translate Thief}" Clicked="OnThiefClicked" BackgroundColor="LightGray" />
-            </HorizontalStackLayout>
-
-            <!-- Row 6: God continued-->
-            <HorizontalStackLayout Spacing="4">
-                <Button x:Name="MengMianRenBtn" Text="{m:Translate MengMianRen}" Clicked="OnMengMianRenClicked" BackgroundColor="LightGray" />
-                <Button x:Name="ShouWeiBtn" Text="{m:Translate ShouWei}" Clicked="OnShouWeiClicked" BackgroundColor="LightGray" />
-            </HorizontalStackLayout>
-
-            <!-- Row 7: Third party-->
-            <HorizontalStackLayout Spacing="4">
-                <Button x:Name="YingZiBtn" Text="{m:Translate YingZi}" Clicked="OnYingZiClicked" BackgroundColor="LightGray" />
-                <Button x:Name="FuChouZheBtn" Text="{m:Translate FuChouZhe}" Clicked="OnFuChouZheClicked" BackgroundColor="LightGray" />
-                <Button x:Name="HunZiBtn" Text="{m:Translate HunZi}" Clicked="OnHunZiClicked" BackgroundColor="LightGray" />
-            </HorizontalStackLayout>
-
-            <!-- Row 8: PingMin (5 buttons) -->
-            <HorizontalStackLayout Spacing="4">
-                <Button x:Name="PingMin1Btn" StyleId="PingMin1" Text="{m:Translate PingMin}" Clicked="OnPingMinClicked" BackgroundColor="LightGray" />
-                <Button x:Name="PingMin2Btn" StyleId="PingMin2" Text="{m:Translate PingMin}" Clicked="OnPingMinClicked" BackgroundColor="LightGray" />
-                <Button x:Name="PingMin3Btn" StyleId="PingMin3" Text="{m:Translate PingMin}" Clicked="OnPingMinClicked" BackgroundColor="LightGray" />
-                <Button x:Name="PingMin4Btn" StyleId="PingMin4" Text="{m:Translate PingMin}" Clicked="OnPingMinClicked" BackgroundColor="LightGray" />
-                <Button x:Name="PingMin5Btn" StyleId="PingMin5" Text="{m:Translate PingMin}" Clicked="OnPingMinClicked" BackgroundColor="LightGray" />
-            </HorizontalStackLayout>
-
-            <!-- About Button -->
-            <Button x:Name="AboutBtn" 
-                    Text="{m:Translate about}" 
-                    Clicked="OnAboutClicked" 
-                    Margin="0,20,0,0"
+        <!-- Main buttons filling the rest of the view -->
+        <Grid Grid.Row="1" RowDefinitions="*,*,*,*" RowSpacing="15" Margin="30">
+            <Button x:Name="JoinGameBtn" 
+                    Grid.Row="0"
+                    Text="{m:Translate join_existing_game}" 
+                    Clicked="OnJoinGameClicked"
                     BackgroundColor="Transparent"
-                    TextColor="Gray"
-                    FontSize="12" />
+                    TextColor="White"
+                    FontSize="24"
+                    FontAttributes="Bold"
+                    CornerRadius="20" />
 
-        </VerticalStackLayout>
-    </ScrollView>
+            <Button x:Name="CreateGameBtn" 
+                    Grid.Row="1"
+                    Text="{m:Translate create_game}" 
+                    Clicked="OnCreateGameClicked"
+                    BackgroundColor="Transparent"
+                    TextColor="White"
+                    FontSize="24"
+                    FontAttributes="Bold"
+                    CornerRadius="20" />
 
-</ContentPage>
+            <Button x:Name="ChangeServerBtn" 
+                    Grid.Row="2"
+                    Text="{m:Translate change_server}" 
+                    Clicked="OnChangeServerClicked"
+                    BackgroundColor="Transparent"
+                    TextColor="White"
+                    FontSize="24"
+                    FontAttributes="Bold"
+                    CornerRadius="20" />
+
+            <Button x:Name="AboutBtn" 
+                    Grid.Row="3"
+                    Text="{m:Translate about}" 
+                    Clicked="OnAboutClicked"
+                    BackgroundColor="Transparent"
+                    TextColor="White"
+                    FontSize="24"
+                    FontAttributes="Bold"
+                    CornerRadius="20" />
+        </Grid>
+            </Grid>
+        </Grid>
+
+    </ContentPage>

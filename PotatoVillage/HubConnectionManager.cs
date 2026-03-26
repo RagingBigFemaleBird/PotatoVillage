@@ -58,6 +58,25 @@ namespace PotatoVillage
             return $"{deviceId}_{nickname}";
         }
 
+        /// <summary>
+        /// Translates known server error messages to localized strings.
+        /// </summary>
+        private static string TranslateServerError(string serverMessage)
+        {
+            var localization = Services.LocalizationManager.Instance;
+
+            // Map known server error messages to localization keys
+            return serverMessage switch
+            {
+                "Game does not exist" => localization.GetString("error_game_not_exist"),
+                "Game has already started" => localization.GetString("error_game_already_started"),
+                "Seat already taken" => localization.GetString("error_seat_taken"),
+                "Invalid seat number" => localization.GetString("error_invalid_seat"),
+                "Game has ended" => localization.GetString("error_game_has_ended"),
+                _ => serverMessage // Return original message if no translation found
+            };
+        }
+
         public async Task<bool> ConnectAsync(string hubUrl)
         {
             try
@@ -204,8 +223,10 @@ namespace PotatoVillage
 
             connection.On<string>("JoinFailed", (errorMessage) =>
             {
+                // Translate known server error messages
+                var translatedMessage = TranslateServerError(errorMessage);
                 // Complete join operation with failure
-                joinCompletionSource?.TrySetResult((false, errorMessage));
+                joinCompletionSource?.TrySetResult((false, translatedMessage));
             });
 
             connection.On<string>("GameStateUpdate", async (stateDiffJson) =>
@@ -248,7 +269,9 @@ namespace PotatoVillage
 
             connection.On<string>("GameEnded", (message) =>
             {
-                GameEnded?.Invoke(message);
+                // Translate known server messages
+                var translatedMessage = TranslateServerError(message);
+                GameEnded?.Invoke(translatedMessage);
             });
 
             connection.On<int>("SeatSwitched", (newPlayerId) =>

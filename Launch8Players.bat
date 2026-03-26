@@ -10,7 +10,7 @@ echo.
 REM Check if we should build first
 if "%1"=="build" (
     echo Building PotatoVillage...
-    dotnet build PotatoVillage\PotatoVillage.csproj -c Debug -f net9.0-windows10.0.19041.0
+    dotnet build PotatoVillage\PotatoVillage.csproj -c Debug -f net10.0-windows10.0.19041.0
     if errorlevel 1 (
         echo Build failed!
         pause
@@ -27,34 +27,60 @@ if not "%2"=="" set PLAYER_COUNT=%2
 echo Launching %PLAYER_COUNT% instances of PotatoVillage...
 echo.
 
-REM Try to find the executable
-set EXE_PATH=PotatoVillage\bin\Debug\net9.0-windows10.0.19041.0\PotatoVillage.exe
+REM Try to find the executable - check multiple possible paths
+set EXE_PATH=
 
-if not exist "%EXE_PATH%" (
-    set EXE_PATH=PotatoVillage\bin\Debug\net8.0-windows10.0.19041.0\PotatoVillage.exe
+REM Check net10.0 paths first
+if exist "PotatoVillage\bin\Debug\net10.0-windows10.0.19041.0\PotatoVillage.exe" (
+    set EXE_PATH=PotatoVillage\bin\Debug\net10.0-windows10.0.19041.0\PotatoVillage.exe
+    goto :found
 )
 
-if not exist "%EXE_PATH%" (
-    echo Could not find PotatoVillage.exe
-    echo Using dotnet run instead...
-    echo.
-    
-    for /L %%i in (1,1,%PLAYER_COUNT%) do (
-        echo Starting Player %%i...
-        start "Player %%i" dotnet run --project PotatoVillage\PotatoVillage.csproj -c Debug -f net9.0-windows10.0.19041.0
-        timeout /t 1 /nobreak >nul
-    )
-) else (
-    echo Found executable: %EXE_PATH%
-    echo.
-    
-    for /L %%i in (1,1,%PLAYER_COUNT%) do (
-        echo Starting Player %%i...
-        start "Player %%i" "%EXE_PATH%"
-        timeout /t 1 /nobreak >nul
-    )
+if exist "PotatoVillage\bin\Debug\net10.0-windows10.0.19041.0\win10-x64\PotatoVillage.exe" (
+    set EXE_PATH=PotatoVillage\bin\Debug\net10.0-windows10.0.19041.0\win10-x64\PotatoVillage.exe
+    goto :found
 )
 
+if exist "PotatoVillage\bin\Debug\net10.0-windows10.0.19041.0\win-x64\PotatoVillage.exe" (
+    set EXE_PATH=PotatoVillage\bin\Debug\net10.0-windows10.0.19041.0\win-x64\PotatoVillage.exe
+    goto :found
+)
+
+REM Check net9.0 paths
+if exist "PotatoVillage\bin\Debug\net9.0-windows10.0.19041.0\PotatoVillage.exe" (
+    set EXE_PATH=PotatoVillage\bin\Debug\net9.0-windows10.0.19041.0\PotatoVillage.exe
+    goto :found
+)
+
+if exist "PotatoVillage\bin\Debug\net9.0-windows10.0.19041.0\win10-x64\PotatoVillage.exe" (
+    set EXE_PATH=PotatoVillage\bin\Debug\net9.0-windows10.0.19041.0\win10-x64\PotatoVillage.exe
+    goto :found
+)
+
+:notfound
+echo Could not find PotatoVillage.exe
+echo Using dotnet run instead (this is slower)...
+echo Note: Consider building first with: Launch8Players.bat build
+echo.
+
+for /L %%i in (1,1,%PLAYER_COUNT%) do (
+    echo Starting Player %%i...
+    start "Player %%i" dotnet run --project PotatoVillage\PotatoVillage.csproj -c Debug -f net10.0-windows10.0.19041.0
+    timeout /t 2 /nobreak >nul
+)
+goto :done
+
+:found
+echo Found executable: %EXE_PATH%
+echo.
+
+for /L %%i in (1,1,%PLAYER_COUNT%) do (
+    echo Starting Player %%i...
+    start "Player %%i" "%EXE_PATH%"
+    timeout /t 1 /nobreak >nul
+)
+
+:done
 echo.
 echo ========================================
 echo All %PLAYER_COUNT% instances launched!

@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.Text.Json;
 using System.Linq;
 using Microsoft.Maui.Controls;
@@ -15,8 +15,11 @@ namespace PotatoVillage
         private bool isGameOwner;
         private bool isDiscovering = false;
 
-        // Preferences key for storing nickname
+        // Preferences keys
         private const string NicknamePreferenceKey = "user_nickname";
+
+        // UI colors for popups
+        private static readonly Color PopupTextColor = Color.FromArgb("#FFF8DC");
 
         // Track selected roles
         private HashSet<string> selectedLangRen = new();
@@ -43,15 +46,34 @@ namespace PotatoVillage
         private bool selectedLangMeiRen = false;
         private HashSet<string> selectedPingMin = new();
 
+        // Server URL (discovered at startup, not persisted)
+        private string currentServerUrl = "";
+
+        // Session-level settings for join game popup
+        private string sessionRoomNumber = "";
+        private string sessionSeatNumber = "";
+
+        // Duration settings (stored for create game popup)
+        private int speechDuration = 95;
+        private int werewolfDuration = 125;
+        private int godDuration = 18;
+        private bool roundTableMode = false;
+        private bool ownerControlEnabled = true;
+        private bool seatCounterClockwise = false;
+
+        // Track if server discovery has been done this session
+        private static bool serverDiscoveryDone = false;
+
         public MainPage()
         {
             InitializeComponent();
-            UpdateConnectButtonState();
 
-            // Auto-discover server on startup
-            _ = DiscoverServerAsync();
+            // Auto-discover server only once on first startup
+            if (!serverDiscoveryDone)
+            {
+                _ = DiscoverServerAsync();
+            }
         }
-
 
         protected override void OnAppearing()
         {
@@ -65,12 +87,6 @@ namespace PotatoVillage
             {
                 NicknameEntry.Text = Preferences.Get(NicknamePreferenceKey, "");
             }
-
-            // Re-discover server if URL is empty
-            if (string.IsNullOrEmpty(HubUrlEntry.Text))
-            {
-                _ = DiscoverServerAsync();
-            }
         }
 
         private async Task DiscoverServerAsync()
@@ -80,31 +96,16 @@ namespace PotatoVillage
 
             try
             {
-                // Show discovering status
-                await MainThread.InvokeOnMainThreadAsync(() =>
-                {
-                    HubUrlEntry.Placeholder = "Discovering server...";
-                });
-
                 // Try to discover server
                 var serverUrl = await ServerDiscoveryService.DiscoverServerAsync(2000);
-
-                await MainThread.InvokeOnMainThreadAsync(() =>
-                {
-                    HubUrlEntry.Text = serverUrl;
-                    HubUrlEntry.Placeholder = "Hub URL";
-                });
+                currentServerUrl = serverUrl;
+                serverDiscoveryDone = true;
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Server discovery failed: {ex.Message}");
-
                 // Fall back to default URL
-                await MainThread.InvokeOnMainThreadAsync(() =>
-                {
-                    HubUrlEntry.Text = ServerDiscoveryService.DefaultServerUrl;
-                    HubUrlEntry.Placeholder = "Hub URL";
-                });
+                currentServerUrl = ServerDiscoveryService.DefaultServerUrl;
             }
             finally
             {
@@ -115,62 +116,177 @@ namespace PotatoVillage
         private void ResetUIState()
         {
             NicknameEntry.IsEnabled = true;
-            HubUrlEntry.IsEnabled = true;
-            RoomNumberEntry.IsEnabled = true;
-            SeatNumberEntry.IsEnabled = true;
-            JoinBtn.IsEnabled = true;
+            JoinGameBtn.IsEnabled = true;
+            CreateGameBtn.IsEnabled = true;
+            ChangeServerBtn.IsEnabled = true;
+            AboutBtn.IsEnabled = true;
+
+            // Restore original button colors
+            var originalColor = Colors.Transparent;
+            JoinGameBtn.BackgroundColor = originalColor;
+            CreateGameBtn.BackgroundColor = originalColor;
+            ChangeServerBtn.BackgroundColor = originalColor;
+            AboutBtn.BackgroundColor = originalColor;
 
             // Reset connection manager
             connectionManager = null;
-
-            // Update connect button based on role selection
-            UpdateConnectButtonState();
         }
 
-        private void UpdateConnectButtonState()
+        private bool HasRolesSelected()
         {
-            bool hasRolesSelected = selectedLangRen.Count > 0 || 
-                                   selectedJiaMian || 
-                                   selectedNvWu || 
-                                   selectedYuYanJia || 
-                                   selectedTongLingShi ||
-                                   selectedWuZhe || 
-                                   selectedLieRen ||
-                                   selectedLangQiang ||
-                                   selectedDaMao ||
-                                   selectedLaoShu ||
-                                   selectedBaiChi ||
-                                   selectedSheMengRen ||
-                                   selectedXiong ||
-                                   selectedShenLangGongWu1 ||
-                                   selectedThief ||
-                                   selectedMengMianRen ||
-                                   selectedShouWei ||
-                                   selectedYingZi ||
-                                   selectedFuChouZhe ||
-                                   selectedHunZi ||
-                                   selectedJiXieLang ||
-                                   selectedLangMeiRen ||
-                                   selectedPingMin.Count > 0;
-            ConnectBtn.IsEnabled = hasRolesSelected;
+            return selectedLangRen.Count > 0 || 
+                   selectedJiaMian || 
+                   selectedNvWu || 
+                   selectedYuYanJia || 
+                   selectedTongLingShi ||
+                   selectedWuZhe || 
+                   selectedLieRen ||
+                   selectedLangQiang ||
+                   selectedDaMao ||
+                   selectedLaoShu ||
+                   selectedBaiChi ||
+                   selectedSheMengRen ||
+                   selectedXiong ||
+                   selectedShenLangGongWu1 ||
+                   selectedThief ||
+                   selectedMengMianRen ||
+                   selectedShouWei ||
+                   selectedYingZi ||
+                   selectedFuChouZhe ||
+                   selectedHunZi ||
+                   selectedJiXieLang ||
+                   selectedLangMeiRen ||
+                   selectedPingMin.Count > 0;
         }
 
-        private async void OnConnectClicked(object? sender, EventArgs e)
+        private async void OnJoinGameClicked(object? sender, EventArgs e)
         {
-            // Disable button immediately to prevent multiple clicks
-            ConnectBtn.IsEnabled = false;
+            var localization = Services.LocalizationManager.Instance;
 
-            var hubUrl = HubUrlEntry.Text?.Trim();
-            if (string.IsNullOrEmpty(hubUrl))
+            // Create popup content with session-remembered values
+            var roomEntry = new Entry 
+            { 
+                Placeholder = localization.GetString("room_number", "Room Number"),
+                Text = sessionRoomNumber,
+                Keyboard = Keyboard.Numeric,
+                TextColor = PopupTextColor,
+                HorizontalOptions = LayoutOptions.Fill
+            };
+
+            var seatEntry = new Entry 
+            { 
+                Placeholder = localization.GetString("seat_number", "Seat Number"),
+                Text = sessionSeatNumber,
+                Keyboard = Keyboard.Numeric,
+                TextColor = PopupTextColor,
+                HorizontalOptions = LayoutOptions.Fill
+            };
+
+            var confirmBtn = new Button
             {
-                await DisplayAlert("Error", "Hub URL is required", "OK");
-                ConnectBtn.IsEnabled = true;
+                Text = localization.GetString("join", "Join"),
+                BackgroundColor = Colors.Transparent,
+                TextColor = Colors.White,
+                Margin = new Thickness(0, 20, 0, 0)
+            };
+
+            var backBtn = new Button
+            {
+                Text = localization.GetString("back", "Back"),
+                BackgroundColor = Colors.Transparent,
+                TextColor = Colors.White,
+                Margin = new Thickness(0, 10, 0, 0)
+            };
+
+            var popup = new ContentPage
+            {
+                Title = localization.GetString("join_existing_game", "Join Game"),
+                Content = new Grid
+                {
+                    Children =
+                    {
+                        new Image
+                        {
+                            Source = "bg.png",
+                            Aspect = Aspect.AspectFill,
+                            HorizontalOptions = LayoutOptions.Fill,
+                            VerticalOptions = LayoutOptions.Fill
+                        },
+                        new VerticalStackLayout
+                        {
+                            Padding = 20,
+                            Spacing = 15,
+                            Children =
+                            {
+                                new Label { Text = localization.GetString("join_existing_game", "Join Existing Game"), FontSize = 20, FontAttributes = FontAttributes.Bold, TextColor = PopupTextColor },
+                                roomEntry,
+                                seatEntry,
+                                confirmBtn,
+                                backBtn
+                            }
+                        }
+                    }
+                }
+            };
+            NavigationPage.SetHasNavigationBar(popup, false);
+
+            backBtn.Clicked += async (s, args) =>
+            {
+                // Remember values for session
+                sessionRoomNumber = roomEntry.Text ?? "";
+                sessionSeatNumber = seatEntry.Text ?? "";
+                await Navigation.PopModalAsync();
+            };
+
+            confirmBtn.Clicked += async (s, args) =>
+            {
+                // Remember values for session
+                sessionRoomNumber = roomEntry.Text ?? "";
+                sessionSeatNumber = seatEntry.Text ?? "";
+
+                if (!int.TryParse(roomEntry.Text, out int roomNumber) || roomNumber <= 0)
+                {
+                    await DisplayAlertAsync(localization.GetString("error"), localization.GetString("invalid_room_number"), localization.GetString("yes"));
+                    return;
+                }
+
+                if (!int.TryParse(seatEntry.Text, out int seatNumber) || seatNumber <= 0)
+                {
+                    await DisplayAlertAsync(localization.GetString("error"), localization.GetString("invalid_seat_number"), localization.GetString("yes"));
+                    return;
+                }
+
+                await Navigation.PopModalAsync();
+                await JoinGameAsync(roomNumber, seatNumber);
+            };
+
+            await Navigation.PushModalAsync(new NavigationPage(popup));
+        }
+
+        private async Task JoinGameAsync(int roomNumber, int seatNumber)
+        {
+            var localization = Services.LocalizationManager.Instance;
+
+            // Disable all buttons while connecting and gray them out
+            NicknameEntry.IsEnabled = false;
+            JoinGameBtn.IsEnabled = false;
+            CreateGameBtn.IsEnabled = false;
+            ChangeServerBtn.IsEnabled = false;
+            AboutBtn.IsEnabled = false;
+
+            JoinGameBtn.BackgroundColor = Colors.Gray;
+            CreateGameBtn.BackgroundColor = Colors.Gray;
+            ChangeServerBtn.BackgroundColor = Colors.Gray;
+            AboutBtn.BackgroundColor = Colors.Gray;
+
+            if (string.IsNullOrEmpty(currentServerUrl))
+            {
+                await DisplayAlertAsync(localization.GetString("error"), localization.GetString("server_url_required"), localization.GetString("yes"));
+                ResetUIState();
                 return;
             }
 
             var nickname = NicknameEntry.Text?.Trim() ?? "";
-
-            // Save nickname to preferences
             Preferences.Set(NicknamePreferenceKey, nickname);
 
             connectionManager = new HubConnectionManager(nickname);
@@ -178,90 +294,341 @@ namespace PotatoVillage
             {
                 await MainThread.InvokeOnMainThreadAsync(async () =>
                 {
-                    await DisplayAlert("Error", msg, "OK");
-                    ConnectBtn.IsEnabled = true;
+                    await DisplayAlertAsync(localization.GetString("error"), msg, localization.GetString("yes"));
+                    ResetUIState();
                 });
             };
             connectionManager.Registered += OnRegistered;
 
-            // Connect to hub
-            if (!await connectionManager.ConnectAsync(hubUrl))
+            if (!await connectionManager.ConnectAsync(currentServerUrl))
             {
-                ConnectBtn.IsEnabled = true;
+                ResetUIState();
+                return;
+            }
+
+            isGameOwner = false;
+
+            var (success, errorMessage) = await connectionManager.JoinGameAsync(roomNumber, seatNumber);
+            if (!success)
+            {
+                await DisplayAlertAsync(localization.GetString("error"), errorMessage, localization.GetString("yes"));
+                await connectionManager.Disconnect();
+                connectionManager = null;
+                ResetUIState();
+            }
+        }
+
+        private async void OnCreateGameClicked(object? sender, EventArgs e)
+        {
+            var localization = Services.LocalizationManager.Instance;
+
+            // Reset role selections
+            ResetRoleSelections();
+
+            // Create popup with all role selection elements
+            var popup = CreateCreateGamePopup(localization);
+            await Navigation.PushModalAsync(new NavigationPage(popup));
+        }
+
+        private void ResetRoleSelections()
+        {
+            selectedLangRen.Clear();
+            selectedJiaMian = false;
+            selectedNvWu = false;
+            selectedYuYanJia = false;
+            selectedTongLingShi = false;
+            selectedWuZhe = false;
+            selectedLieRen = false;
+            selectedLangQiang = false;
+            selectedDaMao = false;
+            selectedLaoShu = false;
+            selectedBaiChi = false;
+            selectedSheMengRen = false;
+            selectedXiong = false;
+            selectedShenLangGongWu1 = false;
+            selectedThief = false;
+            selectedMengMianRen = false;
+            selectedShouWei = false;
+            selectedYingZi = false;
+            selectedFuChouZhe = false;
+            selectedHunZi = false;
+            selectedJiXieLang = false;
+            selectedLangMeiRen = false;
+            selectedPingMin.Clear();
+        }
+
+        private ContentPage CreateCreateGamePopup(LocalizationManager localization)
+        {
+            var scrollView = new ScrollView();
+            var mainStack = new VerticalStackLayout { Padding = 20, Spacing = 12 };
+
+            // Title
+            mainStack.Children.Add(new Label 
+            { 
+                Text = localization.GetString("create_game", "Create Game"), 
+                FontSize = 20, 
+                FontAttributes = FontAttributes.Bold,
+                TextColor = PopupTextColor
+            });
+
+            // Duration settings
+            mainStack.Children.Add(new Label { Text = localization.GetString("duration_settings", "Duration Settings"), FontAttributes = FontAttributes.Bold, FontSize = 14, TextColor = PopupTextColor, Margin = new Thickness(0, 12, 0, 0) });
+
+            var speechEntry = new Entry { Text = speechDuration.ToString(), Keyboard = Keyboard.Numeric, TextColor = PopupTextColor, WidthRequest = 80 };
+            var werewolfEntry = new Entry { Text = werewolfDuration.ToString(), Keyboard = Keyboard.Numeric, TextColor = PopupTextColor, WidthRequest = 80 };
+            var godEntry = new Entry { Text = godDuration.ToString(), Keyboard = Keyboard.Numeric, TextColor = PopupTextColor, WidthRequest = 80 };
+
+            mainStack.Children.Add(CreateHorizontalEntry(speechEntry, localization.GetString("speech_duration", "Speech Duration")));
+            mainStack.Children.Add(CreateHorizontalEntry(werewolfEntry, localization.GetString("werewolf_duration", "Werewolf Duration")));
+            mainStack.Children.Add(CreateHorizontalEntry(godEntry, localization.GetString("god_duration", "God Duration")));
+
+            // Switches
+            var roundTableSwitch = new Switch { IsToggled = roundTableMode };
+            var ownerControlSwitch = new Switch { IsToggled = ownerControlEnabled };
+            var counterClockwiseSwitch = new Switch { IsToggled = seatCounterClockwise };
+
+            mainStack.Children.Add(CreateHorizontalSwitch(roundTableSwitch, localization.GetString("round_table_mode", "Round Table Mode")));
+            mainStack.Children.Add(CreateHorizontalSwitch(ownerControlSwitch, localization.GetString("owner_control_mode", "Owner Control Mode")));
+            mainStack.Children.Add(CreateHorizontalSwitch(counterClockwiseSwitch, localization.GetString("seat_counter_clockwise", "Seat Counter-Clockwise")));
+
+            // Role Selection
+            mainStack.Children.Add(new Label { Text = localization.GetString("select_roles_new_game", "Select Roles"), FontAttributes = FontAttributes.Bold, FontSize = 14, TextColor = PopupTextColor, Margin = new Thickness(0, 12, 0, 0) });
+
+            // Game Mode
+            var shenLangGongWu1Btn = CreateRoleButton(localization.GetString("ShenLangGongWu1", "ShenLangGongWu1"), () => selectedShenLangGongWu1, v => selectedShenLangGongWu1 = v);
+            mainStack.Children.Add(new HorizontalStackLayout { Spacing = 4, Children = { shenLangGongWu1Btn } });
+
+            // LangRen row
+            var langRenBtns = new HorizontalStackLayout { Spacing = 4 };
+            for (int i = 1; i <= 5; i++)
+            {
+                var id = $"LangRen{i}";
+                langRenBtns.Children.Add(CreateMultiRoleButton(localization.GetString("LangRen", "LangRen"), id, selectedLangRen));
+            }
+            mainStack.Children.Add(langRenBtns);
+
+            // Special LangRen row
+            var specialLangRenBtns = new HorizontalStackLayout { Spacing = 4 };
+            specialLangRenBtns.Children.Add(CreateRoleButton(localization.GetString("LangQiang", "LangQiang"), () => selectedLangQiang, v => selectedLangQiang = v));
+            specialLangRenBtns.Children.Add(CreateRoleButton(localization.GetString("JiaMian", "JiaMian"), () => selectedJiaMian, v => selectedJiaMian = v));
+            specialLangRenBtns.Children.Add(CreateRoleButton(localization.GetString("DaMao", "DaMao"), () => selectedDaMao, v => selectedDaMao = v));
+            specialLangRenBtns.Children.Add(CreateRoleButton(localization.GetString("JiXieLang", "JiXieLang"), () => selectedJiXieLang, v => selectedJiXieLang = v));
+            specialLangRenBtns.Children.Add(CreateRoleButton(localization.GetString("LangMeiRen", "LangMeiRen"), () => selectedLangMeiRen, v => selectedLangMeiRen = v));
+            mainStack.Children.Add(specialLangRenBtns);
+
+            // God row 1
+            var godBtns1 = new HorizontalStackLayout { Spacing = 4 };
+            godBtns1.Children.Add(CreateRoleButton(localization.GetString("NvWu", "NvWu"), () => selectedNvWu, v => selectedNvWu = v));
+            godBtns1.Children.Add(CreateRoleButton(localization.GetString("YuYanJia", "YuYanJia"), () => selectedYuYanJia, v => selectedYuYanJia = v));
+            godBtns1.Children.Add(CreateRoleButton(localization.GetString("TongLingShi", "TongLingShi"), () => selectedTongLingShi, v => selectedTongLingShi = v));
+            godBtns1.Children.Add(CreateRoleButton(localization.GetString("WuZhe", "WuZhe"), () => selectedWuZhe, v => selectedWuZhe = v));
+            godBtns1.Children.Add(CreateRoleButton(localization.GetString("LieRen", "LieRen"), () => selectedLieRen, v => selectedLieRen = v));
+            mainStack.Children.Add(godBtns1);
+
+            // God row 2
+            var godBtns2 = new HorizontalStackLayout { Spacing = 4 };
+            godBtns2.Children.Add(CreateRoleButton(localization.GetString("LaoShu", "LaoShu"), () => selectedLaoShu, v => selectedLaoShu = v));
+            godBtns2.Children.Add(CreateRoleButton(localization.GetString("BaiChi", "BaiChi"), () => selectedBaiChi, v => selectedBaiChi = v));
+            godBtns2.Children.Add(CreateRoleButton(localization.GetString("SheMengRen", "SheMengRen"), () => selectedSheMengRen, v => selectedSheMengRen = v));
+            godBtns2.Children.Add(CreateRoleButton(localization.GetString("Xiong", "Xiong"), () => selectedXiong, v => selectedXiong = v));
+            godBtns2.Children.Add(CreateRoleButton(localization.GetString("Thief", "Thief"), () => selectedThief, v => selectedThief = v));
+            mainStack.Children.Add(godBtns2);
+
+            // God row 3
+            var godBtns3 = new HorizontalStackLayout { Spacing = 4 };
+            godBtns3.Children.Add(CreateRoleButton(localization.GetString("MengMianRen", "MengMianRen"), () => selectedMengMianRen, v => selectedMengMianRen = v));
+            godBtns3.Children.Add(CreateRoleButton(localization.GetString("ShouWei", "ShouWei"), () => selectedShouWei, v => selectedShouWei = v));
+            mainStack.Children.Add(godBtns3);
+
+            // Third party row
+            var thirdPartyBtns = new HorizontalStackLayout { Spacing = 4 };
+            thirdPartyBtns.Children.Add(CreateRoleButton(localization.GetString("YingZi", "YingZi"), () => selectedYingZi, v => selectedYingZi = v));
+            thirdPartyBtns.Children.Add(CreateRoleButton(localization.GetString("FuChouZhe", "FuChouZhe"), () => selectedFuChouZhe, v => selectedFuChouZhe = v));
+            thirdPartyBtns.Children.Add(CreateRoleButton(localization.GetString("HunZi", "HunZi"), () => selectedHunZi, v => selectedHunZi = v));
+            mainStack.Children.Add(thirdPartyBtns);
+
+            // PingMin row
+            var pingMinBtns = new HorizontalStackLayout { Spacing = 4 };
+            for (int i = 1; i <= 5; i++)
+            {
+                var id = $"PingMin{i}";
+                pingMinBtns.Children.Add(CreateMultiRoleButton(localization.GetString("PingMin", "PingMin"), id, selectedPingMin));
+            }
+            mainStack.Children.Add(pingMinBtns);
+
+            // Create Game button
+            var createBtn = new Button
+            {
+                Text = localization.GetString("connect", "Create"),
+                BackgroundColor = Colors.Transparent,
+                TextColor = Colors.White,
+                Margin = new Thickness(0, 20, 0, 0)
+            };
+
+            createBtn.Clicked += async (s, args) =>
+            {
+                // Update duration settings
+                speechDuration = int.TryParse(speechEntry.Text, out var sd) ? sd : 95;
+                werewolfDuration = int.TryParse(werewolfEntry.Text, out var wd) ? wd : 125;
+                godDuration = int.TryParse(godEntry.Text, out var gd) ? gd : 18;
+                roundTableMode = roundTableSwitch.IsToggled;
+                ownerControlEnabled = ownerControlSwitch.IsToggled;
+                seatCounterClockwise = counterClockwiseSwitch.IsToggled;
+
+                if (!HasRolesSelected())
+                {
+                    await DisplayAlertAsync(localization.GetString("error"), localization.GetString("select_at_least_one_role"), localization.GetString("yes"));
+                    return;
+                }
+
+                await Navigation.PopModalAsync();
+                await CreateGameAsync();
+            };
+
+            mainStack.Children.Add(createBtn);
+
+            // Back button
+            var backBtn = new Button
+            {
+                Text = localization.GetString("back", "Back"),
+                BackgroundColor = Colors.Transparent,
+                TextColor = Colors.White,
+                Margin = new Thickness(0, 10, 0, 0)
+            };
+
+            backBtn.Clicked += async (s, args) =>
+            {
+                await Navigation.PopModalAsync();
+            };
+
+            mainStack.Children.Add(backBtn);
+
+            scrollView.Content = mainStack;
+            var page = new ContentPage
+            {
+                Title = localization.GetString("create_game", "Create Game"),
+                Content = new Grid
+                {
+                    Children =
+                    {
+                        new Image
+                        {
+                            Source = "bg.png",
+                            Aspect = Aspect.AspectFill,
+                            HorizontalOptions = LayoutOptions.Fill,
+                            VerticalOptions = LayoutOptions.Fill
+                        },
+                        scrollView
+                    }
+                }
+            };
+            NavigationPage.SetHasNavigationBar(page, false);
+            return page;
+        }
+
+        private HorizontalStackLayout CreateHorizontalEntry(Entry entry, string label)
+        {
+            return new HorizontalStackLayout
+            {
+                Spacing = 8,
+                Children = { entry, new Label { Text = label, TextColor = PopupTextColor, VerticalOptions = LayoutOptions.Center } }
+            };
+        }
+
+        private HorizontalStackLayout CreateHorizontalSwitch(Switch sw, string label)
+        {
+            return new HorizontalStackLayout
+            {
+                Spacing = 8,
+                HeightRequest = 40,
+                Children = { sw, new Label { Text = label, TextColor = PopupTextColor, VerticalOptions = LayoutOptions.Center } }
+            };
+        }
+
+        private Button CreateRoleButton(string text, Func<bool> getSelected, Action<bool> setSelected)
+        {
+            var btn = new Button
+            {
+                Text = text,
+                BackgroundColor = Colors.LightGray
+            };
+            btn.Clicked += (s, e) =>
+            {
+                var newValue = !getSelected();
+                setSelected(newValue);
+                btn.BackgroundColor = newValue ? Colors.Green : Colors.LightGray;
+            };
+            return btn;
+        }
+
+        private Button CreateMultiRoleButton(string text, string id, HashSet<string> selectedSet)
+        {
+            var btn = new Button
+            {
+                Text = text,
+                BackgroundColor = Colors.LightGray
+            };
+            btn.Clicked += (s, e) =>
+            {
+                if (selectedSet.Contains(id))
+                {
+                    selectedSet.Remove(id);
+                    btn.BackgroundColor = Colors.LightGray;
+                }
+                else
+                {
+                    selectedSet.Add(id);
+                    btn.BackgroundColor = Colors.Green;
+                }
+            };
+            return btn;
+        }
+
+        private async Task CreateGameAsync()
+        {
+            var localization = Services.LocalizationManager.Instance;
+
+            // Disable all buttons while connecting and gray them out
+            NicknameEntry.IsEnabled = false;
+            JoinGameBtn.IsEnabled = false;
+            CreateGameBtn.IsEnabled = false;
+            ChangeServerBtn.IsEnabled = false;
+            AboutBtn.IsEnabled = false;
+
+            JoinGameBtn.BackgroundColor = Colors.Gray;
+            CreateGameBtn.BackgroundColor = Colors.Gray;
+            ChangeServerBtn.BackgroundColor = Colors.Gray;
+            AboutBtn.BackgroundColor = Colors.Gray;
+
+            if (string.IsNullOrEmpty(currentServerUrl))
+            {
+                await DisplayAlertAsync(localization.GetString("error"), localization.GetString("server_url_required"), localization.GetString("yes"));
+                ResetUIState();
+                return;
+            }
+
+            var nickname = NicknameEntry.Text?.Trim() ?? "";
+            Preferences.Set(NicknamePreferenceKey, nickname);
+
+            connectionManager = new HubConnectionManager(nickname);
+            connectionManager.ConnectionFailed += async (msg) =>
+            {
+                await MainThread.InvokeOnMainThreadAsync(async () =>
+                {
+                    await DisplayAlertAsync(localization.GetString("error"), msg, localization.GetString("yes"));
+                    ResetUIState();
+                });
+            };
+            connectionManager.Registered += OnRegistered;
+
+            if (!await connectionManager.ConnectAsync(currentServerUrl))
+            {
+                ResetUIState();
                 return;
             }
 
             // Build roleDict from selected roles
-            var roleDict = new Dictionary<string, int>();
-
-            if (selectedLangRen.Count > 0)
-                roleDict["LangRen"] = selectedLangRen.Count;
-
-            if (selectedJiaMian)
-                roleDict["JiaMian"] = 1;
-
-            if (selectedNvWu)
-                roleDict["NvWu"] = 1;
-
-            if (selectedYuYanJia)
-                roleDict["YuYanJia"] = 1;
-
-            if (selectedTongLingShi)
-                roleDict["TongLingShi"] = 1;
-
-            if (selectedWuZhe)
-                roleDict["WuZhe"] = 1;
-
-            if (selectedLieRen)
-                roleDict["LieRen"] = 1;
-
-            if (selectedLangQiang)
-                roleDict["LangQiang"] = 1;
-
-            if (selectedDaMao)
-                roleDict["DaMao"] = 1;
-
-            if (selectedLaoShu)
-                roleDict["LaoShu"] = 1;
-
-            if (selectedBaiChi)
-                roleDict["BaiChi"] = 1;
-
-            if (selectedSheMengRen)
-                roleDict["SheMengRen"] = 1;
-
-            if (selectedXiong)
-                roleDict["Xiong"] = 1;
-
-            if (selectedShenLangGongWu1)
-                roleDict["ShenLangGongWu1"] = 1;
-
-            if (selectedThief)
-                roleDict["Thief"] = 1;
-
-            if (selectedMengMianRen)
-                roleDict["MengMianRen"] = 1;
-
-            if (selectedShouWei)
-                roleDict["ShouWei"] = 1;
-
-            if (selectedYingZi)
-                roleDict["YingZi"] = 1;
-
-            if (selectedFuChouZhe)
-                roleDict["FuChouZhe"] = 1;
-
-            if (selectedHunZi)
-                roleDict["HunZi"] = 1;
-
-            if (selectedJiXieLang)
-                roleDict["JiXieLang"] = 1;
-
-            if (selectedLangMeiRen)
-                roleDict["LangMeiRen"] = 1;
-
-            if (selectedPingMin.Count > 0)
-                roleDict["PingMin"] = selectedPingMin.Count;
+            var roleDict = BuildRoleDict();
 
             // Always include LangRenSha
             roleDict["LangRenSha"] = 1;
@@ -270,30 +637,56 @@ namespace PotatoVillage
             int totalPlayers = roleDict.Values.Sum() - 1;
             if (roleDict.ContainsKey("ShenLangGongWu1"))
                 totalPlayers -= 1;
-            // Thief requires 3 extra roles, so actual player count is 3 less
             if (roleDict.ContainsKey("Thief"))
                 totalPlayers -= 3;
+
             if (totalPlayers <= 0)
             {
-                await DisplayAlert("Error", "Please select at least one role", "OK");
-                ConnectBtn.IsEnabled = true;
+                await DisplayAlertAsync(localization.GetString("error"), localization.GetString("select_at_least_one_role"), localization.GetString("yes"));
+                ResetUIState();
                 return;
             }
 
-            // Parse duration settings
-            int speechDuration = int.TryParse(SpeechDurationEntry.Text, out var sd) ? sd : 120;
-            int werewolfDuration = int.TryParse(WerewolfDurationEntry.Text, out var wd) ? wd : 60;
-            int godDuration = int.TryParse(GodDurationEntry.Text, out var gd) ? gd : 30;
-            int roundTableMode = RoundTableModeSwitch.IsToggled ? 1 : 0;
-            int ownerControlEnabled = OwnerControlSwitch.IsToggled ? 1 : 0;
-            int seatCounterClockwise = SeatCounterClockwiseSwitch.IsToggled ? 1 : 0;
+            isGameOwner = true;
+            int rtMode = roundTableMode ? 1 : 0;
+            int ownerCtrl = ownerControlEnabled ? 1 : 0;
+            int ccw = seatCounterClockwise ? 1 : 0;
 
-            isGameOwner = true;  // Creator is the owner
-            if (!await connectionManager.CreateRoomAsync2(totalPlayers, roleDict, speechDuration, werewolfDuration, godDuration, roundTableMode, ownerControlEnabled, seatCounterClockwise))
+            if (!await connectionManager.CreateRoomAsync2(totalPlayers, roleDict, speechDuration, werewolfDuration, godDuration, rtMode, ownerCtrl, ccw))
             {
-                ConnectBtn.IsEnabled = true;
-                return;
+                ResetUIState();
             }
+        }
+
+        private Dictionary<string, int> BuildRoleDict()
+        {
+            var roleDict = new Dictionary<string, int>();
+
+            if (selectedLangRen.Count > 0) roleDict["LangRen"] = selectedLangRen.Count;
+            if (selectedJiaMian) roleDict["JiaMian"] = 1;
+            if (selectedNvWu) roleDict["NvWu"] = 1;
+            if (selectedYuYanJia) roleDict["YuYanJia"] = 1;
+            if (selectedTongLingShi) roleDict["TongLingShi"] = 1;
+            if (selectedWuZhe) roleDict["WuZhe"] = 1;
+            if (selectedLieRen) roleDict["LieRen"] = 1;
+            if (selectedLangQiang) roleDict["LangQiang"] = 1;
+            if (selectedDaMao) roleDict["DaMao"] = 1;
+            if (selectedLaoShu) roleDict["LaoShu"] = 1;
+            if (selectedBaiChi) roleDict["BaiChi"] = 1;
+            if (selectedSheMengRen) roleDict["SheMengRen"] = 1;
+            if (selectedXiong) roleDict["Xiong"] = 1;
+            if (selectedShenLangGongWu1) roleDict["ShenLangGongWu1"] = 1;
+            if (selectedThief) roleDict["Thief"] = 1;
+            if (selectedMengMianRen) roleDict["MengMianRen"] = 1;
+            if (selectedShouWei) roleDict["ShouWei"] = 1;
+            if (selectedYingZi) roleDict["YingZi"] = 1;
+            if (selectedFuChouZhe) roleDict["FuChouZhe"] = 1;
+            if (selectedHunZi) roleDict["HunZi"] = 1;
+            if (selectedJiXieLang) roleDict["JiXieLang"] = 1;
+            if (selectedLangMeiRen) roleDict["LangMeiRen"] = 1;
+            if (selectedPingMin.Count > 0) roleDict["PingMin"] = selectedPingMin.Count;
+
+            return roleDict;
         }
 
         private async void OnRegistered(int registeredGameId, int registeredPlayerId, bool gameStarted)
@@ -303,346 +696,98 @@ namespace PotatoVillage
 
             MainThread.BeginInvokeOnMainThread(async () =>
             {
-                ConnectBtn.IsEnabled = false;
                 NicknameEntry.IsEnabled = false;
-                HubUrlEntry.IsEnabled = false;
-                RoomNumberEntry.IsEnabled = false;
-                SeatNumberEntry.IsEnabled = false;
-                JoinBtn.IsEnabled = false;
+                JoinGameBtn.IsEnabled = false;
+                CreateGameBtn.IsEnabled = false;
+                ChangeServerBtn.IsEnabled = false;
+                AboutBtn.IsEnabled = false;
 
                 if (gameStarted)
                 {
-                    // Game already started - go directly to game view (reconnection case)
                     await Navigation.PushAsync(new GameView(connectionManager!, gameId, playerId, isGameOwner));
                 }
                 else
                 {
-                    // Game not started - go to room view
                     await Navigation.PushAsync(new RoomView(connectionManager!, gameId, playerId, isGameOwner));
                 }
             });
         }
 
-        private async void OnJoinClicked(object? sender, EventArgs e)
+        private async void OnChangeServerClicked(object? sender, EventArgs e)
         {
-            // Disable button immediately to prevent multiple clicks
-            JoinBtn.IsEnabled = false;
+            var localization = Services.LocalizationManager.Instance;
 
-            if (string.IsNullOrEmpty(HubUrlEntry.Text?.Trim()))
+            var serverEntry = new Entry
             {
-                await DisplayAlert("Error", "Hub URL is required", "OK");
-                JoinBtn.IsEnabled = true;
-                return;
-            }
-
-            if (!int.TryParse(RoomNumberEntry.Text, out int roomNumber) || roomNumber <= 0)
-            {
-                await DisplayAlert("Error", "Invalid room number", "OK");
-                JoinBtn.IsEnabled = true;
-                return;
-            }
-
-            if (!int.TryParse(SeatNumberEntry.Text, out int seatNumber) || seatNumber <= 0)
-            {
-                await DisplayAlert("Error", "Invalid seat number (must be a positive number)", "OK");
-                JoinBtn.IsEnabled = true;
-                return;
-            }
-
-            var hubUrl = HubUrlEntry.Text?.Trim();
-            if (string.IsNullOrEmpty(hubUrl))
-            {
-                await DisplayAlert("Error", "Hub URL is required", "OK");
-                JoinBtn.IsEnabled = true;
-                return;
-            }
-
-            var nickname = NicknameEntry.Text?.Trim() ?? "";
-
-            // Save nickname to preferences
-            Preferences.Set(NicknamePreferenceKey, nickname);
-
-            connectionManager = new HubConnectionManager(nickname);
-            connectionManager.ConnectionFailed += async (msg) =>
-            {
-                await MainThread.InvokeOnMainThreadAsync(async () =>
-                {
-                    await DisplayAlert("Error", msg, "OK");
-                    JoinBtn.IsEnabled = true;
-                });
+                Placeholder = localization.GetString("hub_url", "Server URL"),
+                Text = currentServerUrl,
+                TextColor = PopupTextColor,
+                HorizontalOptions = LayoutOptions.Fill
             };
-            connectionManager.Registered += OnRegistered;
 
-            // Connect to hub
-            if (!await connectionManager.ConnectAsync(hubUrl))
+            var confirmBtn = new Button
             {
-                JoinBtn.IsEnabled = true;
-                return;
-            }
+                Text = localization.GetString("confirm", "Confirm"),
+                BackgroundColor = Colors.Transparent,
+                TextColor = Colors.White,
+                Margin = new Thickness(0, 20, 0, 0)
+            };
 
-            isGameOwner = false;  // Joiner is not the owner
-
-            // Join the existing game and check result
-            var (success, errorMessage) = await connectionManager.JoinGameAsync(roomNumber, seatNumber);
-            if (!success)
+            var backBtn = new Button
             {
-                await DisplayAlert("Error", errorMessage, "OK");
-                await connectionManager.Disconnect();
-                connectionManager = null;
-                JoinBtn.IsEnabled = true;
-                return;
-            }
-        }
+                Text = localization.GetString("back", "Back"),
+                BackgroundColor = Colors.Transparent,
+                TextColor = Colors.White,
+                Margin = new Thickness(0, 10, 0, 0)
+            };
 
-        // Role selection button handlers
-        private void OnLangRenClicked(object? sender, EventArgs e)
-        {
-            if (sender is Button button)
+            var popup = new ContentPage
             {
-                // Use button name as unique identifier instead of text
-                string role = button.StyleId ?? button.AutomationId ?? "LangRen";
-                if (selectedLangRen.Contains(role))
+                Title = localization.GetString("change_server", "Change Server"),
+                Content = new Grid
                 {
-                    selectedLangRen.Remove(role);
-                    button.BackgroundColor = Colors.LightGray;
+                    Children =
+                    {
+                        new Image
+                        {
+                            Source = "bg.png",
+                            Aspect = Aspect.AspectFill,
+                            HorizontalOptions = LayoutOptions.Fill,
+                            VerticalOptions = LayoutOptions.Fill
+                        },
+                        new VerticalStackLayout
+                        {
+                            Padding = 20,
+                            Spacing = 15,
+                            Children =
+                            {
+                                new Label { Text = localization.GetString("change_server", "Change Server"), FontSize = 20, FontAttributes = FontAttributes.Bold, TextColor = PopupTextColor },
+                                serverEntry,
+                                confirmBtn,
+                                backBtn
+                            }
+                        }
+                    }
                 }
-                else
+            };
+            NavigationPage.SetHasNavigationBar(popup, false);
+
+            backBtn.Clicked += async (s, args) =>
+            {
+                await Navigation.PopModalAsync();
+            };
+
+            confirmBtn.Clicked += async (s, args) =>
+            {
+                var url = serverEntry.Text?.Trim() ?? "";
+                if (!string.IsNullOrEmpty(url))
                 {
-                    selectedLangRen.Add(role);
-                    button.BackgroundColor = Colors.Green;
+                    currentServerUrl = url;
                 }
-                UpdateConnectButtonState();
-            }
-        }
+                await Navigation.PopModalAsync();
+            };
 
-        private void OnJiaMianClicked(object? sender, EventArgs e)
-        {
-            selectedJiaMian = !selectedJiaMian;
-            if (sender is Button button)
-            {
-                button.BackgroundColor = selectedJiaMian ? Colors.Green : Colors.LightGray;
-            }
-            UpdateConnectButtonState();
-        }
-
-        private void OnNvWuClicked(object? sender, EventArgs e)
-        {
-            selectedNvWu = !selectedNvWu;
-            if (sender is Button button)
-            {
-                button.BackgroundColor = selectedNvWu ? Colors.Green : Colors.LightGray;
-            }
-            UpdateConnectButtonState();
-        }
-
-        private void OnYuYanJiaClicked(object? sender, EventArgs e)
-        {
-            selectedYuYanJia = !selectedYuYanJia;
-            if (sender is Button button)
-            {
-                button.BackgroundColor = selectedYuYanJia ? Colors.Green : Colors.LightGray;
-            }
-            UpdateConnectButtonState();
-        }
-
-        private void OnTongLingShiClicked(object? sender, EventArgs e)
-        {
-            selectedTongLingShi = !selectedTongLingShi;
-            if (sender is Button button)
-            {
-                button.BackgroundColor = selectedTongLingShi ? Colors.Green : Colors.LightGray;
-            }
-            UpdateConnectButtonState();
-        }
-
-        private void OnWuZheClicked(object? sender, EventArgs e)
-        {
-            selectedWuZhe = !selectedWuZhe;
-            if (sender is Button button)
-            {
-                button.BackgroundColor = selectedWuZhe ? Colors.Green : Colors.LightGray;
-            }
-            UpdateConnectButtonState();
-        }
-
-        private void OnLieRenClicked(object? sender, EventArgs e)
-        {
-            selectedLieRen = !selectedLieRen;
-            if (sender is Button button)
-            {
-                button.BackgroundColor = selectedLieRen ? Colors.Green : Colors.LightGray;
-            }
-            UpdateConnectButtonState();
-        }
-
-        private void OnLangQiangClicked(object? sender, EventArgs e)
-        {
-            selectedLangQiang = !selectedLangQiang;
-            if (sender is Button button)
-            {
-                button.BackgroundColor = selectedLangQiang ? Colors.Green : Colors.LightGray;
-            }
-            UpdateConnectButtonState();
-        }
-
-        private void OnDaMaoClicked(object? sender, EventArgs e)
-        {
-            selectedDaMao = !selectedDaMao;
-            if (sender is Button button)
-            {
-                button.BackgroundColor = selectedDaMao ? Colors.Green : Colors.LightGray;
-            }
-            UpdateConnectButtonState();
-        }
-
-        private void OnLaoShuClicked(object? sender, EventArgs e)
-        {
-            selectedLaoShu = !selectedLaoShu;
-            if (sender is Button button)
-            {
-                button.BackgroundColor = selectedLaoShu ? Colors.Green : Colors.LightGray;
-            }
-            UpdateConnectButtonState();
-        }
-
-        private void OnBaiChiClicked(object? sender, EventArgs e)
-        {
-            selectedBaiChi = !selectedBaiChi;
-            if (sender is Button button)
-            {
-                button.BackgroundColor = selectedBaiChi ? Colors.Green : Colors.LightGray;
-            }
-            UpdateConnectButtonState();
-        }
-
-        private void OnSheMengRenClicked(object? sender, EventArgs e)
-        {
-            selectedSheMengRen = !selectedSheMengRen;
-            if (sender is Button button)
-            {
-                button.BackgroundColor = selectedSheMengRen ? Colors.Green : Colors.LightGray;
-            }
-            UpdateConnectButtonState();
-        }
-
-        private void OnXiongClicked(object? sender, EventArgs e)
-        {
-            selectedXiong = !selectedXiong;
-            if (sender is Button button)
-            {
-                button.BackgroundColor = selectedXiong ? Colors.Green : Colors.LightGray;
-            }
-            UpdateConnectButtonState();
-        }
-
-        private void OnShenLangGongWu1Clicked(object? sender, EventArgs e)
-        {
-            selectedShenLangGongWu1 = !selectedShenLangGongWu1;
-            if (sender is Button button)
-            {
-                button.BackgroundColor = selectedShenLangGongWu1 ? Colors.Green : Colors.LightGray;
-            }
-            UpdateConnectButtonState();
-        }
-
-        private void OnThiefClicked(object? sender, EventArgs e)
-        {
-            selectedThief = !selectedThief;
-            if (sender is Button button)
-            {
-                button.BackgroundColor = selectedThief ? Colors.Green : Colors.LightGray;
-            }
-            UpdateConnectButtonState();
-        }
-
-        private void OnMengMianRenClicked(object? sender, EventArgs e)
-        {
-            selectedMengMianRen = !selectedMengMianRen;
-            if (sender is Button button)
-            {
-                button.BackgroundColor = selectedMengMianRen ? Colors.Green : Colors.LightGray;
-            }
-            UpdateConnectButtonState();
-        }
-
-        private void OnShouWeiClicked(object? sender, EventArgs e)
-        {
-            selectedShouWei = !selectedShouWei;
-            if (sender is Button button)
-            {
-                button.BackgroundColor = selectedShouWei ? Colors.Green : Colors.LightGray;
-            }
-            UpdateConnectButtonState();
-        }
-
-        private void OnYingZiClicked(object? sender, EventArgs e)
-        {
-            selectedYingZi = !selectedYingZi;
-            if (sender is Button button)
-            {
-                button.BackgroundColor = selectedYingZi ? Colors.Green : Colors.LightGray;
-            }
-            UpdateConnectButtonState();
-        }
-
-        private void OnFuChouZheClicked(object? sender, EventArgs e)
-        {
-            selectedFuChouZhe = !selectedFuChouZhe;
-            if (sender is Button button)
-            {
-                button.BackgroundColor = selectedFuChouZhe ? Colors.Green : Colors.LightGray;
-            }
-            UpdateConnectButtonState();
-        }
-
-        private void OnHunZiClicked(object? sender, EventArgs e)
-        {
-            selectedHunZi = !selectedHunZi;
-            if (sender is Button button)
-            {
-                button.BackgroundColor = selectedHunZi ? Colors.Green : Colors.LightGray;
-            }
-            UpdateConnectButtonState();
-        }
-
-        private void OnJiXieLangClicked(object? sender, EventArgs e)
-        {
-            selectedJiXieLang = !selectedJiXieLang;
-            if (sender is Button button)
-            {
-                button.BackgroundColor = selectedJiXieLang ? Colors.Green : Colors.LightGray;
-            }
-            UpdateConnectButtonState();
-        }
-
-        private void OnLangMeiRenClicked(object? sender, EventArgs e)
-        {
-            selectedLangMeiRen = !selectedLangMeiRen;
-            if (sender is Button button)
-            {
-                button.BackgroundColor = selectedLangMeiRen ? Colors.Green : Colors.LightGray;
-            }
-            UpdateConnectButtonState();
-        }
-
-        private void OnPingMinClicked(object? sender, EventArgs e)
-        {
-            if (sender is Button button)
-            {
-                // Use StyleId as unique identifier instead of text
-                string role = button.StyleId ?? button.AutomationId ?? "PingMin";
-                if (selectedPingMin.Contains(role))
-                {
-                    selectedPingMin.Remove(role);
-                    button.BackgroundColor = Colors.LightGray;
-                }
-                else
-                {
-                    selectedPingMin.Add(role);
-                    button.BackgroundColor = Colors.Green;
-                }
-                UpdateConnectButtonState();
-            }
+            await Navigation.PushModalAsync(new NavigationPage(popup));
         }
 
         private async void OnAboutClicked(object? sender, EventArgs e)
@@ -652,7 +797,7 @@ namespace PotatoVillage
             var message = localization.GetString("about_message", "Author: Bi Wu.\nRole design: Ke Ji.\nVoiceover: Tu dou.");
             var ok = localization.GetString("yes", "OK");
 
-            await DisplayAlert(title, message, ok);
+            await DisplayAlertAsync(title, message, ok);
         }
     }
 }

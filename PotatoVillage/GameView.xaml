@@ -4,18 +4,19 @@
              x:Class="PotatoVillage.GameView"
              Shell.NavBarIsVisible="False">
 
-    <!-- Orange border around entire UI -->
-    <Border Stroke="Orange" 
-            StrokeThickness="3" 
-            StrokeShape="RoundRectangle 4"
-            Padding="0"
-            Margin="2">
+    <Grid>
+        <!-- Background Image -->
+        <Image Source="bg.png"
+               Aspect="AspectFill"
+               HorizontalOptions="Fill"
+               VerticalOptions="Fill" />
+
 
         <Grid RowDefinitions="3*,6*,8*,25*,3*">
             <!-- Top 3/46: Toolbar row (Player ID, Game Status, Countdown) -->
             <Grid Grid.Row="0" 
                   ColumnDefinitions="2*,18*,3*"
-                  BackgroundColor="#FFFFFF"
+                  BackgroundColor="#00000000"
                   Padding="4,0">
 
                 <!-- Player ID -->
@@ -88,7 +89,7 @@
                     Padding="5"
                     Margin="5,0"
                     StrokeShape="RoundRectangle 8"
-                    BackgroundColor="#FFF0E0"
+                    BackgroundColor="#00000000"
                     Stroke="Transparent"
                     VerticalOptions="Fill"
                     HorizontalOptions="Fill">
@@ -110,7 +111,7 @@
                     Padding="10"
                     Margin="5"
                     StrokeShape="RoundRectangle 8"
-                    BackgroundColor="#FFFDD0"
+                    BackgroundColor="#00000000"
                     Stroke="Transparent"
                     VerticalOptions="Fill"
                     HorizontalOptions="Fill">
@@ -170,7 +171,7 @@
                 <!-- Announcer Toggle Button -->
                 <Button x:Name="AnnouncerBtn"
                         Grid.Column="3"
-                        Text="🔇"
+                        Text="×"
                         FontSize="10"
                         WidthRequest="15"
                         HeightRequest="15"
@@ -194,6 +195,6 @@
                         VerticalOptions="Center" />
             </Grid>
         </Grid>
-    </Border>
+    </Grid>
 
 </ContentPage>

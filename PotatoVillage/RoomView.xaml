@@ -5,7 +5,14 @@
              x:Class="PotatoVillage.RoomView"
              Title="{m:Translate room_title}">
 
-    <Grid RowDefinitions="Auto,*,Auto" Padding="20">
+    <Grid>
+        <!-- Background Image -->
+        <Image Source="bg.png"
+               Aspect="AspectFill"
+               HorizontalOptions="Fill"
+               VerticalOptions="Fill" />
+
+        <Grid RowDefinitions="Auto,*,Auto" Padding="20">
         <!-- Room Info Header with Leave Button -->
         <Grid Grid.Row="0">
             <Grid.ColumnDefinitions>
@@ -15,16 +22,16 @@
 
             <VerticalStackLayout Grid.Column="0" Spacing="8">
                 <HorizontalStackLayout Spacing="12">
-                    <Label Text="{m:Translate room_number_label}" FontAttributes="Bold" FontSize="18" />
-                    <Label x:Name="RoomNumberLabel" FontSize="18" />
+                    <Label Text="{m:Translate room_number_label}" FontAttributes="Bold" FontSize="18" TextColor="#FFF8DC"/>
+                    <Label x:Name="RoomNumberLabel" FontSize="18" TextColor="#FFF8DC" />
                 </HorizontalStackLayout>
                 <HorizontalStackLayout Spacing="12">
-                    <Label Text="{m:Translate your_seat}" FontAttributes="Bold" FontSize="16" />
-                    <Label x:Name="YourSeatLabel" FontSize="16" />
+                    <Label Text="{m:Translate your_seat}" FontAttributes="Bold" FontSize="16" TextColor="#FFF8DC"/>
+                    <Label x:Name="YourSeatLabel" FontSize="16" TextColor="#FFF8DC"/>
                 </HorizontalStackLayout>
                 <HorizontalStackLayout Spacing="12">
-                    <Label Text="{m:Translate players_joined}" FontAttributes="Bold" FontSize="14" />
-                    <Label x:Name="PlayersCountLabel" FontSize="14" />
+                    <Label Text="{m:Translate players_joined}" FontAttributes="Bold" FontSize="14" TextColor="#FFF8DC"/>
+                    <Label x:Name="PlayersCountLabel" FontSize="14" TextColor="#FFF8DC"/>
                 </HorizontalStackLayout>
             </VerticalStackLayout>
 
@@ -34,7 +41,7 @@
                     Text="✕"
                     Clicked="OnLeaveRoomClicked"
                     BackgroundColor="#FF3B30"
-                    TextColor="White"
+                    TextColor="#FFF8DC"
                     FontSize="14"
                     WidthRequest="36"
                     HeightRequest="36"
@@ -70,11 +77,12 @@
                     Text="{m:Translate start_game}" 
                     Clicked="OnStartGameClicked"
                     IsVisible="False"
-                    BackgroundColor="#007AFF"
+                    BackgroundColor="Transparent"
                     TextColor="White"
                     FontSize="18"
                     HeightRequest="50" />
         </VerticalStackLayout>
+        </Grid>
     </Grid>
 
 </ContentPage>

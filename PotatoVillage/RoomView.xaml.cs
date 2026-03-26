@@ -219,7 +219,7 @@ namespace PotatoVillage
             
             if (!await connectionManager.StartGameAsync(gameId))
             {
-                await DisplayAlert(
+                await DisplayAlertAsync(
                     localization.GetString("error"),
                     localization.GetString("failed_start_game"),
                     localization.GetString("yes"));
@@ -236,7 +236,7 @@ namespace PotatoVillage
             var (success, errorMessage) = await connectionManager.SwitchSeatAsync(gameId, newSeat);
             if (!success)
             {
-                await DisplayAlert(
+                await DisplayAlertAsync(
                     localization.GetString("error"),
                     errorMessage,
                     localization.GetString("yes"));
@@ -247,7 +247,7 @@ namespace PotatoVillage
         {
             var localization = LocalizationManager.Instance;
 
-            bool confirm = await DisplayAlert(
+            bool confirm = await DisplayAlertAsync(
                 localization.GetString("leave_room"),
                 localization.GetString("leave_room_confirm"),
                 localization.GetString("yes"),

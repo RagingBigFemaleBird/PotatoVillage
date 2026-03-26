@@ -5,7 +5,7 @@ param(
     [int]$PlayerCount = 8,
     [switch]$Build,
     [string]$Configuration = "Debug",
-    [string]$Framework = "net9.0-windows10.0.19041.0"
+    [string]$Framework = "net10.0-windows10.0.19041.0"
 )
 
 $ErrorActionPreference = "Stop"
@@ -26,41 +26,42 @@ if ($Build) {
     Write-Host "Build successful!" -ForegroundColor Green
 }
 
-# Find the executable
-$ExePath = Join-Path $ProjectDir "bin\$Configuration\$Framework\win10-x64\PotatoVillage.exe"
-
-# Alternative paths to check
-$AltPaths = @(
+# Possible paths to check for the executable (MAUI Windows apps output structure varies)
+$PossiblePaths = @(
     (Join-Path $ProjectDir "bin\$Configuration\$Framework\PotatoVillage.exe"),
+    (Join-Path $ProjectDir "bin\$Configuration\$Framework\win10-x64\PotatoVillage.exe"),
+    (Join-Path $ProjectDir "bin\$Configuration\$Framework\win-x64\PotatoVillage.exe"),
+    (Join-Path $ProjectDir "bin\$Configuration\net9.0-windows10.0.19041.0\PotatoVillage.exe"),
     (Join-Path $ProjectDir "bin\$Configuration\net9.0-windows10.0.19041.0\win10-x64\PotatoVillage.exe"),
-    (Join-Path $ProjectDir "bin\$Configuration\net8.0-windows10.0.19041.0\win10-x64\PotatoVillage.exe"),
     (Join-Path $ProjectDir "bin\$Configuration\net8.0-windows10.0.19041.0\PotatoVillage.exe")
 )
 
-if (-not (Test-Path $ExePath)) {
-    foreach ($path in $AltPaths) {
-        if (Test-Path $path) {
-            $ExePath = $path
-            break
-        }
+$ExePath = $null
+foreach ($path in $PossiblePaths) {
+    Write-Host "Checking: $path" -ForegroundColor Gray
+    if (Test-Path $path) {
+        $ExePath = $path
+        break
     }
 }
 
-if (-not (Test-Path $ExePath)) {
+if (-not $ExePath) {
     Write-Host "Could not find PotatoVillage.exe. Attempting to run via dotnet..." -ForegroundColor Yellow
-    
-    # Use dotnet run instead
+    Write-Host ""
     Write-Host "Launching $PlayerCount instances of PotatoVillage using dotnet run..." -ForegroundColor Cyan
-    
+    Write-Host "Note: This method is slower. Consider building first with: .\Launch8Players.ps1 -Build" -ForegroundColor Yellow
+    Write-Host ""
+
     for ($i = 1; $i -le $PlayerCount; $i++) {
         Write-Host "Starting Player $i..." -ForegroundColor Green
-        Start-Process -FilePath "dotnet" -ArgumentList "run", "--project", $ProjectFile, "-c", $Configuration, "-f", $Framework -WindowStyle Normal
-        Start-Sleep -Milliseconds 500
+        Start-Process -FilePath "dotnet" -ArgumentList "run", "--project", "`"$ProjectFile`"", "-c", $Configuration, "-f", $Framework -WindowStyle Normal
+        Start-Sleep -Milliseconds 1500
     }
 }
 else {
     Write-Host "Found executable at: $ExePath" -ForegroundColor Cyan
     Write-Host "Launching $PlayerCount instances of PotatoVillage..." -ForegroundColor Cyan
+    Write-Host ""
 
     for ($i = 1; $i -le $PlayerCount; $i++) {
         Write-Host "Starting Player $i..." -ForegroundColor Green

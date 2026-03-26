@@ -1,4 +1,4 @@
-﻿using Microsoft.Maui.Controls;
+using Microsoft.Maui.Controls;
 using PotatoVillage.Services;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -340,6 +340,140 @@ namespace PotatoVillage
             return txt.Replace("{0}", LocalizationManager.Instance.GetString("jiamian_info" + userInfo));
         }
 
+        /// <summary>
+        /// Parses text containing color codes and returns a FormattedString.
+        /// Supported format: [c:ColorName]colored text[/c]
+        /// Example: "Normal text [c:Red]red text[/c] more normal"
+        /// Supported colors: Red, Green, Blue, Yellow, Orange, Purple, Gray, White, Black
+        /// </summary>
+        private static FormattedString ParseColoredText(string text)
+        {
+            var formattedString = new FormattedString();
+
+            if (string.IsNullOrEmpty(text))
+            {
+                return formattedString;
+            }
+
+            // Pattern: [c:ColorName]text[/c]
+            int currentIndex = 0;
+            while (currentIndex < text.Length)
+            {
+                // Find the next color tag
+                int tagStart = text.IndexOf("[c:", currentIndex);
+
+                if (tagStart == -1)
+                {
+                    // No more color tags, add remaining text
+                    if (currentIndex < text.Length)
+                    {
+                        formattedString.Spans.Add(new Span { Text = text.Substring(currentIndex), TextColor = Colors.Black });
+                    }
+                    break;
+                }
+
+                // Add text before the color tag
+                if (tagStart > currentIndex)
+                {
+                    formattedString.Spans.Add(new Span { Text = text.Substring(currentIndex, tagStart - currentIndex), TextColor = Colors.Black });
+                }
+
+                // Find the end of the color name
+                int colorEnd = text.IndexOf(']', tagStart);
+                if (colorEnd == -1)
+                {
+                    // Malformed tag, add rest as plain text
+                    formattedString.Spans.Add(new Span { Text = text.Substring(tagStart), TextColor = Colors.Black });
+                    break;
+                }
+
+                // Extract color name
+                string colorName = text.Substring(tagStart + 3, colorEnd - tagStart - 3);
+
+                // Find the closing tag
+                int closeTag = text.IndexOf("[/c]", colorEnd);
+                if (closeTag == -1)
+                {
+                    // No closing tag, add rest as plain text
+                    formattedString.Spans.Add(new Span { Text = text.Substring(tagStart), TextColor = Colors.Black });
+                    break;
+                }
+
+                // Extract colored text
+                string coloredText = text.Substring(colorEnd + 1, closeTag - colorEnd - 1);
+
+                // Parse the color
+                Color textColor = ParseColor(colorName);
+
+                // Add the colored span
+                formattedString.Spans.Add(new Span { Text = coloredText, TextColor = textColor });
+
+                // Move past the closing tag
+                currentIndex = closeTag + 4;
+            }
+
+            return formattedString;
+        }
+
+        /// <summary>
+        /// Parses a color name to a Color object.
+        /// </summary>
+        private static Color ParseColor(string colorName)
+        {
+            return colorName.ToLowerInvariant() switch
+            {
+                "red" => Colors.Red,
+                "green" => Colors.Green,
+                "blue" => Colors.Blue,
+                "yellow" => Colors.Yellow,
+                "orange" => Colors.Orange,
+                "purple" => Colors.Purple,
+                "gray" or "grey" => Colors.Gray,
+                "white" => Colors.White,
+                "black" => Colors.Black,
+                "cyan" => Colors.Cyan,
+                "magenta" => Colors.Magenta,
+                "pink" => Colors.Pink,
+                "brown" => Colors.Brown,
+                "lime" => Colors.Lime,
+                "darkred" => Colors.DarkRed,
+                "darkgreen" => Colors.DarkGreen,
+                "darkblue" => Colors.DarkBlue,
+                _ => Colors.Black // Default color
+            };
+        }
+
+        /// <summary>
+        /// Strips color codes from text, returning plain text for voiceover.
+        /// </summary>
+        private static string StripColorCodes(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+                return text;
+
+            // Remove all [c:ColorName] and [/c] tags
+            var result = System.Text.RegularExpressions.Regex.Replace(text, @"\[c:[^\]]+\]", "");
+            result = result.Replace("[/c]", "");
+            return result;
+        }
+
+        /// <summary>
+        /// Sets the GameStatusLabel text, supporting color codes.
+        /// </summary>
+        private void SetGameStatusText(string text)
+        {
+            GameStatusLabel.FormattedText = ParseColoredText(text);
+            UpdateGameStatusFontSize();
+        }
+
+        /// <summary>
+        /// Sets the TargetInstructionLabel text, supporting color codes.
+        /// </summary>
+        private void SetTargetInstructionText(string text)
+        {
+            TargetInstructionLabel.FormattedText = ParseColoredText(text);
+        }
+
         public GameView(HubConnectionManager connectionManager, int gameId, int playerId, bool isOwner = false)
         {
             InitializeComponent();
@@ -355,7 +489,7 @@ namespace PotatoVillage
             if (isOwner)
             {
                 announcerEnabled = true;
-                AnnouncerBtn.Text = "🔊";
+                AnnouncerBtn.Text = "♪";
                 AnnouncerBtn.BackgroundColor = Colors.Green;
                 VoiceoverService.Instance.IsEnabled = true;
             }
@@ -378,7 +512,7 @@ namespace PotatoVillage
         {
             await MainThread.InvokeOnMainThreadAsync(async () =>
             {
-                await DisplayAlert(
+                await DisplayAlertAsync(
                     LocalizationManager.Instance.GetString("error"),
                     message,
                     LocalizationManager.Instance.GetString("yes"));
@@ -390,7 +524,10 @@ namespace PotatoVillage
         {
             await MainThread.InvokeOnMainThreadAsync(async () =>
             {
-                await DisplayAlert("Game Ended", message, "OK");
+                await DisplayAlertAsync(
+                    LocalizationManager.Instance.GetString("game_ended"),
+                    message,
+                    LocalizationManager.Instance.GetString("yes"));
                 await Navigation.PopToRootAsync();
             });
         }
@@ -468,9 +605,9 @@ namespace PotatoVillage
                     // Show error and navigate back
                     await MainThread.InvokeOnMainThreadAsync(async () =>
                     {
-                        await DisplayAlert(
+                        await DisplayAlertAsync(
                             LocalizationManager.Instance.GetString("error"),
-                            "Connection lost. Please rejoin the game.",
+                            LocalizationManager.Instance.GetString("connection_lost"),
                             LocalizationManager.Instance.GetString("yes"));
                         await Navigation.PopToRootAsync();
                     });
@@ -489,8 +626,16 @@ namespace PotatoVillage
 
         private void UpdateGameStatusFontSize()
         {
-            // Calculate font size based on text content to prevent wrapping
-            var text = GameStatusLabel.Text ?? "";
+            // Get text content - either from FormattedText or Text
+            string text;
+            if (GameStatusLabel.FormattedText != null && GameStatusLabel.FormattedText.Spans.Count > 0)
+            {
+                text = string.Concat(GameStatusLabel.FormattedText.Spans.Select(s => s.Text ?? ""));
+            }
+            else
+            {
+                text = GameStatusLabel.Text ?? "";
+            }
 
             // Get the container's width (Frame) minus padding (10 on each side)
             double availableWidth = GameStatusFrame.Width - 20;
@@ -556,7 +701,15 @@ namespace PotatoVillage
                 maxFontSize = Math.Max(10, maxFontSize * ratio);
             }
 
+            // Apply font size to label and all spans
             GameStatusLabel.FontSize = maxFontSize;
+            if (GameStatusLabel.FormattedText != null)
+            {
+                foreach (var span in GameStatusLabel.FormattedText.Spans)
+                {
+                    span.FontSize = maxFontSize;
+                }
+            }
         }
 
         private int? GetInt32Value(object? obj)
@@ -790,15 +943,14 @@ namespace PotatoVillage
                               localization.GetString("phase_unknown");
                 var dayNum = gameDict.TryGetValue("day", out var dayNum2) ? GetInt32Value(dayNum2)?.ToString() ?? "?" : "?";
                 var dayString = localization.GetString("day").Replace("{0}", dayNum);
-                GameStatusLabel.Text = $"{dayString} {phaseStr}\n";
-                UpdateGameStatusFontSize();
+                SetGameStatusText($"{dayString} {phaseStr}\n");
 
                 // Show/hide Reveal button based on day time (phaseValue == 1)
                 RevealBtn.IsVisible = (phaseValue == 1);
 
                 // Check if current player is dead and update player ID color
                 var isPlayerDead = IsPlayerDead(playerId);
-                var playerIdColor = isPlayerDead ? Colors.Red : Colors.Blue;
+                var playerIdColor = isPlayerDead ? Colors.Red : Colors.White;
                 PlayerIdLabel.TextColor = playerIdColor;
 
                 var userAction = GetInt32Value(gameDict.TryGetValue(DictUserAction, out var uaObj) ? uaObj : null) ?? 0;
@@ -861,24 +1013,24 @@ namespace PotatoVillage
             {
                 // This is an announcement (user == -1)
                 // Check if there's a special handler for this hint
+                string statusText;
                 if (AnnouncementInfoHandlers.TryGetValue(userTargetsHint, out var handler))
                 {
-                    GameStatusLabel.Text = handler(userInfo);
+                    statusText = handler(userInfo);
                 }
                 else
                 {
                     // Default handling: get hint text and replace {0} with userInfo
                     var hintText = GetTargetHint(userTargetsHint);
                     userInfo = LocalizationManager.Instance.GetString(userInfo);
-                    hintText = hintText.Replace("{0}", userInfo);
-                    GameStatusLabel.Text = hintText;
+                    statusText = hintText.Replace("{0}", userInfo);
                 }
-                UpdateGameStatusFontSize();
+                SetGameStatusText(statusText);
 
-                // Play voiceover
+                // Play voiceover (strip color codes for speech)
                 if (IsAnnouncerEnabled)
                 {
-                    _ = PlayVoiceoverAsync(GameStatusLabel.Text);
+                    _ = PlayVoiceoverAsync(StripColorCodes(statusText));
                 }
             }
             else if (phaseValue == 1)
@@ -889,10 +1041,9 @@ namespace PotatoVillage
                 // Display speaking indicator with roles
                 var speakingText = localization.GetString("speaking", "Speaking: {0}");
                 if (speaker != 0)
-                    GameStatusLabel.Text = speakingText.Replace("{0}", speaker.ToString());
+                    SetGameStatusText(speakingText.Replace("{0}", speaker.ToString()));
                 else
-                    GameStatusLabel.Text = "";
-                UpdateGameStatusFontSize();
+                    SetGameStatusText("");
             }
             else
             {
@@ -908,8 +1059,7 @@ namespace PotatoVillage
                 string actingText = actingRoles.Count > 0
                     ? string.Join(", ", actingRoles) : "";
 
-                GameStatusLabel.Text = actingText;
-                UpdateGameStatusFontSize();
+                SetGameStatusText(actingText);
             }
 
             // Start countdown timer only if we're managing it
@@ -1024,19 +1174,19 @@ namespace PotatoVillage
             TargetButtonsContainer.Clear();
             SpecialTargetButtonsContainer.Clear();
 
-            // Update hint label
+            // Build the instruction text
+            string instructionText;
             string hintText = GetTargetHint(hintIndex);
             if (!string.IsNullOrEmpty(hintText))
             {
-                TargetInstructionLabel.Text = hintText;
+                instructionText = hintText;
             }
             else
             {
                 // Fallback to instruction if no hint available
-                string instructionText = maxTargetCount == -1 
+                instructionText = maxTargetCount == -1 
                     ? localization.GetString("select_any_targets")
                     : localization.GetString("select_up_to_targets").Replace("{0}", maxTargetCount.ToString());
-                TargetInstructionLabel.Text = instructionText;
             }
 
             if (hintIndex == 1000)
@@ -1066,13 +1216,15 @@ namespace PotatoVillage
                 }
             }
             var ui = UserInfoHints.TryGetValue(hintIndex, out var handler) ? handler(userInfo) : userInfo;
-            TargetInstructionLabel.Text += $"\n{ui}";
+
+            // Set the full instruction text with color support
+            SetTargetInstructionText($"{instructionText}\n{ui}");
 
             // Get all players from game dictionary
             var gameDict = connectionManager?.GetGameDictionary() ?? new();
             var playersDict = GetDictionaryValue(gameDict.TryGetValue("players", out var playersObj) ? playersObj : null);
             var allPlayerIds = new List<int>();
-            
+
             if (playersDict != null && playersDict.Count > 0)
             {
                 foreach (var key in playersDict.Keys)
@@ -1166,10 +1318,10 @@ namespace PotatoVillage
                         TextColor = Colors.Black,
                         IsEnabled = true,
                         Opacity = 1.0,
-                        WidthRequest = 68,
-                        HeightRequest = 68,
-                        MinimumWidthRequest = 68,
-                        MinimumHeightRequest = 68,
+                        WidthRequest = 58,
+                        HeightRequest = 58,
+                        MinimumWidthRequest = 58,
+                        MinimumHeightRequest = 58,
                         FontSize = 22
                     };
 
@@ -1204,10 +1356,10 @@ namespace PotatoVillage
                         TextColor = isSelectable ? Colors.Black : Colors.Gray,
                         IsEnabled = isSelectable,
                         Opacity = isSelectable ? 1.0 : 0.4,
-                        WidthRequest = 68,
-                        HeightRequest = 68,
-                        MinimumWidthRequest = 68,
-                        MinimumHeightRequest = 68,
+                        WidthRequest = 58,
+                        HeightRequest = 58,
+                        MinimumWidthRequest = 58,
+                        MinimumHeightRequest = 58,
                         FontSize = 22
                     };
 
@@ -1333,7 +1485,7 @@ namespace PotatoVillage
                     {
                         if (isPaused)
                         {
-                            CountdownLabel.Text = LocalizationManager.Instance.GetString("game_paused", "⏸ Paused");
+                            CountdownLabel.Text = LocalizationManager.Instance.GetString("game_paused", "? Paused");
                         }
                         else
                         {
@@ -1394,7 +1546,7 @@ namespace PotatoVillage
                 ConfirmButton.IsEnabled = true;
                 ConfirmButton.Text = localization.GetString("confirm");
 
-                await DisplayAlert(
+                await DisplayAlertAsync(
                     localization.GetString("error"),
                     localization.GetString("failed_send_selection") + ": " + ex.Message,
                     localization.GetString("yes"));
@@ -1404,7 +1556,7 @@ namespace PotatoVillage
         private async void OnDisconnectClicked(object? sender, EventArgs e)
         {
             var localization = LocalizationManager.Instance;
-            bool confirm = await DisplayAlert(
+            bool confirm = await DisplayAlertAsync(
                 localization.GetString("disconnect"),
                 localization.GetString("disconnect_confirm"),
                 localization.GetString("yes"),
@@ -1431,7 +1583,7 @@ namespace PotatoVillage
             var localization = LocalizationManager.Instance;
 
             // Show confirmation dialog
-            bool confirm = await DisplayAlert(
+            bool confirm = await DisplayAlertAsync(
                 localization.GetString("reveal"),
                 localization.GetString("reveal_confirm"),
                 localization.GetString("yes"),
@@ -1447,7 +1599,7 @@ namespace PotatoVillage
             }
             catch (Exception ex)
             {
-                await DisplayAlert(
+                await DisplayAlertAsync(
                     localization.GetString("error"),
                     localization.GetString("failed_send_selection") + ": " + ex.Message,
                     localization.GetString("yes"));
@@ -1461,13 +1613,13 @@ namespace PotatoVillage
             // Update button appearance based on state
             if (announcerEnabled)
             {
-                AnnouncerBtn.Text = "🔊";
+                AnnouncerBtn.Text = "♪";
                 AnnouncerBtn.BackgroundColor = Colors.Green;
                 VoiceoverService.Instance.IsEnabled = true;
             }
             else
             {
-                AnnouncerBtn.Text = "🔇";
+                AnnouncerBtn.Text = "×";
                 AnnouncerBtn.BackgroundColor = Colors.LightGray;
                 VoiceoverService.Instance.IsEnabled = false;
             }

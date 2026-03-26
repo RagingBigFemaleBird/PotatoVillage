@@ -232,7 +232,7 @@ namespace ProcedureCore.LangRenSha
                     }
                     else
                     {
-                        if (!day0)
+                        if (!day0 || actionDuration > 30)
                         {
                             (var inputValid, var input, var input_others) = UserAction.GetUserResponse(game, true, nvWuAlive, update);
                             if (inputValid)

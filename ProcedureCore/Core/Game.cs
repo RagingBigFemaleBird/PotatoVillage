@@ -48,6 +48,7 @@ namespace ProcedureCore.Core
         public ConcurrentDictionary<int, string> PlayerNicknames { get; private set; } = new();
         public Dictionary<string, int> RoleConfiguration { get; set; } = new();
         public bool GameStarted { get; set; } = false;
+        public int MinVersionRequired { get; set; } = 0;
 
         /// <summary>
         /// When true, UserWait returns immediately without blocking. Used for unit tests.

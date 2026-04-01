@@ -25,6 +25,10 @@ namespace PotatoVillage
         private int currentDisplayedDeadline = 0;
         private int currentDisplayedHint = -1;
 
+        // Action history tracking (client-side only)
+        private List<string> actionHistory = new();
+        private bool actionHistoryVisible = false;
+
         // User action dictionary keys
         private const string DictUserAction = "user_action";
         private const string DictUserActionUsers = "user_users";
@@ -33,6 +37,7 @@ namespace PotatoVillage
         private const string DictUserActionTargetsHint = "user_targets_hint";
         private const string DictUserActionRole = "user_role";
         private const string DictUserActionInfo = "user_info";
+        private const string DictUserActionInfo2 = "user_info2";
         private const string DictUserActionResponse = "user_response";
         private const string DictUserActionPauseStart = "user_pause_start";
         private const string DictServerTime = "server_time";
@@ -49,6 +54,10 @@ namespace PotatoVillage
             { 1, new Dictionary<int, string> { { -100, "DoNotAttack"} } },
             { 3, new Dictionary<int, string> { { 0, "JiuRen" }, { -100, "DoNotUse"} } },
             { 18, new Dictionary<int, string> { { -100, "DoNotUse"} } },
+            { 20, new Dictionary<int, string> { { -100, "DoNotUse"} } },
+            { 24, new Dictionary<int, string> { { -1, "yes" }, { 0, "no" } } },
+            { 26, new Dictionary<int, string> { { -1, "yes" }, { 0, "no" } } },
+            { 27, new Dictionary<int, string> { { -100, "DoNotUse"} } },
             { 63, new Dictionary<int, string> { { -100, "DoNotUse"} } },
             { 70, new Dictionary<int, string> { { -100, "DoNotUse"} } },
             { 80, new Dictionary<int, string> { { -100, "DoNotUse"} } },
@@ -67,8 +76,9 @@ namespace PotatoVillage
         };
 
         // Handlers for user actions (DisplayTargetSelection path)
-        private static readonly Dictionary<int, Func<string, string>> UserInfoHints = new()
+        private static readonly Dictionary<int, Func<string, string, string>> UserInfoHints = new()
         {
+            { 1, LangRenInfoHandler },
             { 3, NvWuInfoHandler },
             { 5, LangRenSuccessionHandler },
             { 10, ThiefPickRoleHandler },
@@ -80,9 +90,19 @@ namespace PotatoVillage
             { 76, GiftedPoisonHandler },
             { 79, YingZiInfoHandler },
             { 82, FuChouZheAllianceInfoHandler },
+            { 84, GhostBrideGroomCheckHandler },
+            { 85, GhostBrideCoupleAttackHandler },
+            { 86, GhostBrideWitnessCheckHandler },
+            { 87, GhostBrideWitnessInfoHandler },
+            { 92, GhostBrideCoupleAttackHandler },
             { 17, JiXieLangInfoHandler },
             { 18, JiXieLangActAgainHandler },
             { 19, JiXieLangActAgainInfoHandler },
+            { 21, MeiYangYangInfoHandler },
+            { 22, MeiYangYangCivilianInfoHandler },
+            { 24, MeiYangYangSacrificeSelfHandler },
+            { 25, MeiYangYangCivilianMayActHandler },
+            { 26, MeiYangYangCivilianSacrificeHandler },
             { 104, SheriffSpeechHandler },
             { 105, SheriffPKHandler },
             { 151, LieRenInfoHandler },
@@ -92,21 +112,31 @@ namespace PotatoVillage
         };
 
         // Handlers for announcements (DisplayCurrentlyActing path, user == -1)
-        private static readonly Dictionary<int, Func<string, string>> AnnouncementInfoHandlers = new()
+        private static readonly Dictionary<int, Func<string, string, string>> AnnouncementInfoHandlers = new()
         {
             { 77, MengMianRenDeathHandler },
             { 152, DeathAnnouncementHandler },
             { 1003, GameWinnerHandler },
         };
 
-        private static string MengMianRenDeathHandler(string userInfo)
+        private static string MengMianRenDeathHandler(string userInfo, string userInfo2)
         {
             // userInfo contains the player ID
             var txt = LocalizationManager.Instance.GetString("mengmianren_death", "Player {0} has died from wounds");
             return txt.Replace("{0}", userInfo);
         }
 
-        private static string LieRenInfoHandler(string userInfo)
+        private static string LangRenInfoHandler(string userInfo, string userInfo2)
+        {
+            if (!string.IsNullOrEmpty(userInfo))
+            {
+                var str = LocalizationManager.Instance.GetString("langren_info", "Teammates are: {0}");
+                return str.Replace("{0}", userInfo);
+            }
+            return userInfo;
+        }
+
+        private static string LieRenInfoHandler(string userInfo, string userInfo2)
         {
             if (userInfo == "1")
             {
@@ -118,14 +148,14 @@ namespace PotatoVillage
             }
         }
 
-        private static string ThiefPickRoleHandler(string userInfo)
+        private static string ThiefPickRoleHandler(string userInfo, string userInfo2)
         {
             // userInfo contains comma-separated role names, displayed as buttons
             // Just return the instruction text
             return LocalizationManager.Instance.GetString("thief_pick_role", "Pick a role to become:");
         }
 
-        private static string TongLingShiResultHandler(string userInfo)
+        private static string TongLingShiResultHandler(string userInfo, string userInfo2)
         {
             // userInfo contains the role name - translate it
             var roleName = LocalizationManager.Instance.GetString(userInfo, userInfo);
@@ -133,7 +163,7 @@ namespace PotatoVillage
             return txt.Replace("{0}", roleName);
         }
 
-        private static string GiftedPoisonHandler(string userInfo)
+        private static string GiftedPoisonHandler(string userInfo, string userInfo2)
         {
             if (userInfo != "gifted")
             {
@@ -142,7 +172,7 @@ namespace PotatoVillage
             return LocalizationManager.Instance.GetString("gifted_use_trap", "Gifted, use cat trap:");
         }
 
-        private static string YingZiInfoHandler(string userInfo)
+        private static string YingZiInfoHandler(string userInfo, string userInfo2)
         {
             // Check if YingZi became ThirdParty (shadowed FuChouZhe)
             if (userInfo == "thirdparty")
@@ -156,7 +186,7 @@ namespace PotatoVillage
             return txt.Replace("{0}", roleName);
         }
 
-        private static string FuChouZheAllianceInfoHandler(string userInfo)
+        private static string FuChouZheAllianceInfoHandler(string userInfo, string userInfo2)
         {
             // userInfo is "good" or "evil"
             var allianceName = LocalizationManager.Instance.GetString(userInfo, userInfo);
@@ -164,7 +194,89 @@ namespace PotatoVillage
             return txt.Replace("{0}", allianceName);
         }
 
-        private static string GameWinnerHandler(string userInfo)
+        private static string GhostBrideGroomCheckHandler(string userInfo, string userInfo2)
+        {
+            if (userInfo == "yes")
+                return LocalizationManager.Instance.GetString("ghostbride_groom_linked", "You are linked to the Ghost Bride.");
+            return LocalizationManager.Instance.GetString("ghostbride_groom_not_linked", "You are not linked.");
+        }
+
+        private static string GhostBrideWitnessCheckHandler(string userInfo, string userInfo2)
+        {
+            if (userInfo == "yes")
+                return LocalizationManager.Instance.GetString("ghostbride_is_witness", "You are the witness.");
+            return LocalizationManager.Instance.GetString("ghostbride_not_witness", "You are not witness.");
+        }
+
+        private static string GhostBrideWitnessInfoHandler(string userInfo, string userInfo2)
+        {
+            var localization = LocalizationManager.Instance;
+
+            if (userInfo == "Succession")
+                return localization.GetString("langren_succession_yes", "Can attack.");
+
+            if (string.IsNullOrEmpty(userInfo))
+                return localization.GetString("langren_succession_no", "Cannot attack yet.");
+
+            var txt = localization.GetString("ghostbride_witness_info", "Bride and groom are: {0}");
+            return txt.Replace("{0}", userInfo);
+        }
+
+        private static string GhostBrideCoupleAttackHandler(string userInfo, string userInfo2)
+        {
+            if (userInfo == "Succession")
+                return LocalizationManager.Instance.GetString("langren_succession_yes", "Can attack.");
+            return LocalizationManager.Instance.GetString("langren_succession_no", "Cannot attack yet.");
+        }
+
+        private static string MeiYangYangInfoHandler(string userInfo, string userInfo2)
+        {
+            string txt = "";
+            if (userInfo2 == "yes")
+                txt = LocalizationManager.Instance.GetString("hongtailang_info", "Your are poisoned and will die next night.");
+            return txt + LocalizationManager.Instance.GetString("meiyangyang_cannot_sacrifice_self", "You cannot sacrifice yourself to save your sacrifice target.");
+        }
+
+        private static string MeiYangYangCivilianInfoHandler(string userInfo, string userInfo2)
+        {
+            string txt2 = "";
+            if (userInfo2 == "yes")
+                txt2 = LocalizationManager.Instance.GetString("hongtailang_info", "Your are poisoned and will die next night.");
+            // userInfo contains the MeiYangYang player ID
+            if (string.IsNullOrEmpty(userInfo))
+                return txt2 + LocalizationManager.Instance.GetString("meiyangyang_cannot_sacrifice_self", "You cannot sacrifice yourself to save your sacrifice target.");
+            var txt = LocalizationManager.Instance.GetString("meiyangyang_civilian_info", "MeiYangYang player is: {0}");
+            return txt2 + txt.Replace("{0}", userInfo);
+        }
+
+        private static string MeiYangYangSacrificeSelfHandler(string userInfo, string userInfo2)
+        {
+            // userInfo contains the sacrifice target player ID who is about to die
+            var txt = LocalizationManager.Instance.GetString("meiyangyang_sacrifice_self", "Your sacrifice target {0} is about to die. Sacrifice yourself to save them?");
+            return txt.Replace("{0}", userInfo);
+        }
+
+        private static string MeiYangYangCivilianMayActHandler(string userInfo, string userInfo2)
+        {
+            // userInfo contains the sacrifice target player ID (the civilian being notified)
+            if (userInfo == "yes")
+            {
+                return LocalizationManager.Instance.GetString("meiyangyang_civilian_may_act", "You may sacrifice for MeiYangYang later.");
+            }
+            else
+            {
+                return LocalizationManager.Instance.GetString("meiyangyang_civilian_may_not_act", "You cannot sacrifice for MeiYangYang later.");
+            }
+        }
+
+        private static string MeiYangYangCivilianSacrificeHandler(string userInfo, string userInfo2)
+        {
+            // userInfo contains the MeiYangYang player ID who is about to die
+            var txt = LocalizationManager.Instance.GetString("meiyangyang_civilian_sacrifice_for_meiyangyang", "MeiYangYang {0} is about to die. Sacrifice yourself to save them?");
+            return txt.Replace("{0}", userInfo);
+        }
+
+        private static string GameWinnerHandler(string userInfo, string userInfo2)
         {
             // userInfo is "Good" or "Evil"
             var winnerName = LocalizationManager.Instance.GetString(userInfo, userInfo);
@@ -172,14 +284,27 @@ namespace PotatoVillage
             return txt.Replace("{0}", winnerName);
         }
 
-        private static string LangRenSuccessionHandler(string userInfo)
+        private static string LangRenSuccessionHandler(string userInfo, string userInfo2)
         {
-            if (string.IsNullOrEmpty(userInfo))
-                return LocalizationManager.Instance.GetString("langren_succession_no", "Cannot yet attack");
-            return LocalizationManager.Instance.GetString("langren_succession_yes", "Can attack");
+            var parts = userInfo.Split(';');
+            var successionInfo = parts.Length > 0 ? parts[0] : "";
+            var teammatesInfo = parts.Length > 1 ? parts[1] : "";
+
+            string ret = "";
+            if (string.IsNullOrEmpty(successionInfo))
+                ret += LocalizationManager.Instance.GetString("langren_succession_no", "Cannot yet attack");
+            else
+                ret += LocalizationManager.Instance.GetString("langren_succession_yes", "Can attack");
+
+            if (!string.IsNullOrEmpty(teammatesInfo))
+            {
+                var tm = LocalizationManager.Instance.GetString("langren_info", "Teammates are: {0}");
+                ret += ";" + tm.Replace("{0}", teammatesInfo);
+            }
+            return ret;
         }
 
-        private static string JiXieLangInfoHandler(string userInfo)
+        private static string JiXieLangInfoHandler(string userInfo, string userInfo2)
         {
             // Day 0: userInfo is the mimicked role name. Day 1+: "1" = can attack, "0" = cannot
             var localization = LocalizationManager.Instance;
@@ -195,7 +320,7 @@ namespace PotatoVillage
             return txt.Replace("{0}", roleName);
         }
 
-        private static string JiXieLangActAgainHandler(string userInfo)
+        private static string JiXieLangActAgainHandler(string userInfo, string userInfo2)
         {
             // userInfo is the mimicked role name
             if (string.IsNullOrEmpty(userInfo))
@@ -206,7 +331,7 @@ namespace PotatoVillage
             return txt.Replace("{0}", roleName);
         }
 
-        private static string JiXieLangActAgainInfoHandler(string userInfo)
+        private static string JiXieLangActAgainInfoHandler(string userInfo, string userInfo2)
         {
             // Formats:
             //   TongLingShi: role name string (e.g. "NvWu")
@@ -230,22 +355,22 @@ namespace PotatoVillage
             return txt.Replace("{0}", roleName);
         }
 
-        private static string SheriffSpeechHandler(string userInfo)
+        private static string SheriffSpeechHandler(string userInfo, string userInfo2)
         {
             return LocalizationManager.Instance.GetString("sheriff_speech_info", "{0} volunteered.").Replace("{0}", userInfo);
         }
-        private static string SheriffPKHandler(string userInfo)
+        private static string SheriffPKHandler(string userInfo, string userInfo2)
         {
             return LocalizationManager.Instance.GetString("sheriff_pk_info", "{0} PK.").Replace("{0}", userInfo);
         }
 
-        private static string VoteResultInfoHandler(string userInfo)
+        private static string VoteResultInfoHandler(string userInfo, string userInfo2)
         {
             var txt = LocalizationManager.Instance.GetString("vote_result", "Vote result: {0}");
             return txt.Replace("{0}", userInfo);
         }
 
-        private static string DeathAnnouncementHandler(string userInfo)
+        private static string DeathAnnouncementHandler(string userInfo, string userInfo2)
         {
             var localization = LocalizationManager.Instance;
 
@@ -284,7 +409,7 @@ namespace PotatoVillage
             return result;
         }
 
-        private static string CheckRoleInfoHandler(string userInfo)
+        private static string CheckRoleInfoHandler(string userInfo, string userInfo2)
         {
             var localization = LocalizationManager.Instance;
 
@@ -310,7 +435,7 @@ namespace PotatoVillage
             return txt.Replace("{0}", $"{role} ({allegianceText})");
         }
 
-        private static string NvWuInfoHandler(string userInfo)
+        private static string NvWuInfoHandler(string userInfo, string userInfo2)
         {
             if (string.IsNullOrEmpty(userInfo) || userInfo == "0")
                 return LocalizationManager.Instance.GetString("nvwu_no_save", "Cannot view attack info.");
@@ -318,7 +443,7 @@ namespace PotatoVillage
             return txt.Replace("{0}", userInfo);
         }
 
-        private static string YuYanJiaInfoHandler(string userInfo)
+        private static string YuYanJiaInfoHandler(string userInfo, string userInfo2)
         {
             int.TryParse(userInfo, out var result);
             var txt = LocalizationManager.Instance.GetString("yuyanjia_chayan_result", "Yuyanjia's Chayan result: {0}");
@@ -333,7 +458,7 @@ namespace PotatoVillage
             }
         }
 
-        private static string JiaMianInfoHandler(string userInfo)
+        private static string JiaMianInfoHandler(string userInfo, string userInfo2)
         {
             int.TryParse(userInfo, out var result);
             var txt = LocalizationManager.Instance.GetString("jiamian_info", "Your check result: {0}. Select target to flip");
@@ -778,6 +903,13 @@ namespace PotatoVillage
                 17 => "jixielang_info",
                 18 => "jixielang_actagain",
                 19 => "jixielang_actagain_info",
+                20 => "meiyangyang_choose_sacrifice",
+                21 => "meiyangyang_info",
+                22 => "meiyangyang_info",
+                23 => "meiyangyang_info",
+                24 => "meiyangyang_info",
+                25 => "meiyangyang_info",
+                26 => "meiyangyang_info",
                 50 => "open_eyes",
                 51 => "close_eyes",
                 52 => "lucky_one_open_eyes",
@@ -793,6 +925,12 @@ namespace PotatoVillage
                 80 => "fuchouzhe_dead_shoot",
                 81 => "fuchouzhe_thirdparty_kill",
                 82 => "fuchouzhe_alliance",
+                83 => "ghostbride_choose_groom",
+                84 => "ghostbride_groom_check",
+                85 => "ghostbride_couple_choose_witness",
+                86 => "ghostbride_witness_check",
+                87 => "ghostbride_witness",
+                92 => "ghostbride_attack_status",
                 100 => "volunteer_sheriff",
                 101 => "vote_sheriff",
                 102 => "round_table",
@@ -960,7 +1098,11 @@ namespace PotatoVillage
                 var userTargetsHint = GetInt32Value(gameDict.TryGetValue(DictUserActionTargetsHint, out var uthObj) ? uthObj : null) ?? -1;
                 var userRole = GetStringValue(gameDict.TryGetValue(DictUserActionRole, out var uroleObj) ? uroleObj : null) ?? "";
                 var userInfo = GetStringValue(gameDict.TryGetValue(DictUserActionInfo, out var uiObj) ? uiObj : null) ?? "";
+                var userInfo2 = GetStringValue(gameDict.TryGetValue(DictUserActionInfo2, out var ui2Obj) ? ui2Obj : null) ?? "";
                 var userResponse = GetDictionaryValue(gameDict.TryGetValue(DictUserActionResponse, out var urObj) ? urObj : null);
+
+                // Track user response changes for action history
+                TrackUserResponseForHistory(userResponse, userTargetsHint);
 
                 // Calculate server-client clock offset for accurate countdown
                 var serverTime = GetInt32Value(gameDict.TryGetValue(DictServerTime, out var stObj) ? stObj : null) ?? 0;
@@ -979,7 +1121,7 @@ namespace PotatoVillage
 
                 if (isSelfActable)
                 {
-                    DisplayTargetSelection(userAction, userTargets, userTargetsCount, userTargetsHint, userInfo, phaseValue == 0 ? userResponse : null);
+                    DisplayTargetSelection(userAction, userTargets, userTargetsCount, userTargetsHint, userInfo, userInfo2, phaseValue == 0 ? userResponse : null);
                 }
                 else
                 {
@@ -990,7 +1132,7 @@ namespace PotatoVillage
                 {
                     // Pass isSelfActable to avoid double-managing the countdown
                     // When isSelfActable is true, DisplayTargetSelection already handles the countdown
-                    DisplayCurrentlyActing(userAction, userUsers, userTargetsHint, userInfo, userRole, speaker, phaseValue ?? 0, !isSelfActable);
+                    DisplayCurrentlyActing(userAction, userUsers, userTargetsHint, userInfo, userInfo2, userRole, speaker, phaseValue ?? 0, !isSelfActable);
                 }
                 else
                 {
@@ -1000,7 +1142,7 @@ namespace PotatoVillage
             });
         }
 
-        private void DisplayCurrentlyActing(int deadline, List<int> actingPlayerIds, int userTargetsHint, string userInfo, string userRole, int speaker = 0, int phaseValue = 0, bool manageCountdown = true)
+        private void DisplayCurrentlyActing(int deadline, List<int> actingPlayerIds, int userTargetsHint, string userInfo, string userInfo2, string userRole, int speaker = 0, int phaseValue = 0, bool manageCountdown = true)
         {
             // Only manage countdown if we're not showing target selection (which has its own countdown)
             if (manageCountdown)
@@ -1016,7 +1158,7 @@ namespace PotatoVillage
                 string statusText;
                 if (AnnouncementInfoHandlers.TryGetValue(userTargetsHint, out var handler))
                 {
-                    statusText = handler(userInfo);
+                    statusText = handler(userInfo, userInfo2);
                 }
                 else
                 {
@@ -1132,7 +1274,7 @@ namespace PotatoVillage
             }
         }
 
-        private void DisplayTargetSelection(int userActionDeadline, List<int> availableTargets, int maxTargetCount, int hintIndex, string userInfo = "", Dictionary<string, object>? userResponse = null)
+        private void DisplayTargetSelection(int userActionDeadline, List<int> availableTargets, int maxTargetCount, int hintIndex, string userInfo = "", string userInfo2 = "", Dictionary<string, object>? userResponse = null)
         {
             // Check if we're already displaying the same target selection
             // Only compare deadline and hint - don't rely on UI visibility state which can have race conditions
@@ -1215,7 +1357,37 @@ namespace PotatoVillage
                     userInfo = userInfo == playerId.ToString() ? localization.GetString("yes") : localization.GetString("no");
                 }
             }
-            var ui = UserInfoHints.TryGetValue(hintIndex, out var handler) ? handler(userInfo) : userInfo;
+            if (hintIndex == 84 || hintIndex == 86 || hintIndex == 25)
+            {
+                userInfo = userInfo == playerId.ToString() ? "yes" : "no";
+            }
+            if (hintIndex == 22 || hintIndex == 25)
+            {
+                userInfo2 = userInfo2 == playerId.ToString() ? "yes" : "no";
+            }
+            if (hintIndex == 22)
+            {
+                var split = userInfo.Split(":");
+                if (split.Length == 2)
+                {
+                    var split1 = split[0];
+                    var split2 = split[1];
+                    var civilians = split2.Split(",");
+                    if (civilians.Contains(playerId.ToString()))
+                    {
+                        userInfo = split1;
+                    }
+                    else
+                    {
+                        userInfo = "";
+                    }
+                }
+                else
+                {
+                    userInfo = "";
+                }
+            }
+            var ui = UserInfoHints.TryGetValue(hintIndex, out var handler) ? handler(userInfo, userInfo2) : userInfo;
 
             // Set the full instruction text with color support
             SetTargetInstructionText($"{instructionText}\n{ui}");
@@ -1535,10 +1707,15 @@ namespace PotatoVillage
             {
                 ConfirmButton.Text = "✓";
 
+                var targetsList = selectedTargets.ToList();
+
+                // Record the action as "Selected" (client-side click)
+                RecordPlayerAction(currentDisplayedHint, targetsList, isConfirmed: false);
+
                 // Send the selected targets to the server via SignalR
                 // Don't hide the selection - let server state drive the UI
                 // This prevents countdown timer from resetting when server sends update
-                await connectionManager.SendTargetSelectionAsync(gameId, playerId, selectedTargets.ToList());
+                await connectionManager.SendTargetSelectionAsync(gameId, playerId, targetsList);
             }
             catch (Exception ex)
             {
@@ -1622,6 +1799,120 @@ namespace PotatoVillage
                 AnnouncerBtn.Text = "×";
                 AnnouncerBtn.BackgroundColor = Colors.LightGray;
                 VoiceoverService.Instance.IsEnabled = false;
+            }
+        }
+
+        private void OnPastActionsClicked(object? sender, EventArgs e)
+        {
+            actionHistoryVisible = !actionHistoryVisible;
+            ActionHistoryContainer.IsVisible = actionHistoryVisible;
+
+            // Update button appearance
+            if (actionHistoryVisible)
+            {
+                PastActionsBtn.BackgroundColor = Colors.Green;
+                UpdateActionHistoryDisplay();
+            }
+            else
+            {
+                PastActionsBtn.BackgroundColor = Colors.LightGray;
+            }
+        }
+
+        /// <summary>
+        /// Tracks user_response dictionary changes from server and records actions for the current player.
+        /// This ensures action history is captured even on reconnection or when local tracking misses updates.
+        /// Records as "Confirmed" to distinguish from local "Selected" actions.
+        /// </summary>
+        private void TrackUserResponseForHistory(Dictionary<string, object> userResponse, int hintIndex)
+        {
+            if (userResponse == null || userResponse.Count == 0)
+            {
+                return;
+            }
+
+            // Check if there's a response for the current player
+            var playerKey = playerId.ToString();
+            if (!userResponse.TryGetValue(playerKey, out var responseObj))
+            {
+                return;
+            }
+
+            // Get the response as a list of targets
+            var targets = GetInt32List(responseObj);
+            if (targets == null || targets.Count == 0)
+            {
+                return;
+            }
+
+            // Record the server-confirmed response
+            RecordPlayerAction(hintIndex, targets, isConfirmed: true);
+        }
+
+        /// <summary>
+        /// Records a player action with timestamp.
+        /// Translates special targets using SpecialTargets dictionary.
+        /// </summary>
+        /// <param name="hintIndex">The hint index for the action</param>
+        /// <param name="targets">The selected targets</param>
+        /// <param name="isConfirmed">True if this is a server-confirmed action, false if client-selected</param>
+        private void RecordPlayerAction(int hintIndex, List<int> targets, bool isConfirmed = false)
+        {
+            if (targets.Count == 0) return;
+
+            var localization = LocalizationManager.Instance;
+            var timestamp = DateTime.Now.ToString("HH:mm:ss");
+            var actionText = isConfirmed 
+                ? localization.GetString("action_confirmed", "Confirmed") 
+                : localization.GetString("action_selected", "Selected");
+
+            foreach (var target in targets)
+            {
+                string targetLabel;
+
+                // Try to translate using SpecialTargets
+                if (target <= 0 && SpecialTargets.TryGetValue(hintIndex, out var specialTargetsForHint))
+                {
+                    if (specialTargetsForHint.TryGetValue(target, out var label))
+                    {
+                        targetLabel = localization.GetString(label, label);
+                    }
+                    else
+                    {
+                        targetLabel = target.ToString();
+                    }
+                }
+                else
+                {
+                    // Regular player target
+                    targetLabel = target.ToString();
+                }
+
+                var entry = $"{timestamp} {actionText} {targetLabel}";
+                actionHistory.Add(entry);
+            }
+
+            // Update display if visible
+            if (actionHistoryVisible)
+            {
+                UpdateActionHistoryDisplay();
+            }
+        }
+
+        /// <summary>
+        /// Updates the action history display label.
+        /// </summary>
+        private void UpdateActionHistoryDisplay()
+        {
+            if (actionHistory.Count == 0)
+            {
+                ActionHistoryLabel.Text = LocalizationManager.Instance.GetString("past_actions", "Past Actions") + ": --";
+            }
+            else
+            {
+                // Show most recent actions first (reversed order)
+                var reversedHistory = actionHistory.AsEnumerable().Reverse().Take(50).ToList();
+                ActionHistoryLabel.Text = string.Join("\n", reversedHistory);
             }
         }
     }

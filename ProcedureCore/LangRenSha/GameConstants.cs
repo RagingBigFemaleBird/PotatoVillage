@@ -29,106 +29,141 @@ namespace ProcedureCore.LangRenSha
         HunZi_Act = 21,
         HunZi_CloseEyes = 22,
 
-        // === JiXieLang (24-27, 105-108) ===
+        // === JiXieLang (24-27, 125-128) ===
         JiXieLang_OpenEyes = 24,
         JiXieLang_Act = 25,
         JiXieLang_Info = 26,
         JiXieLang_CloseEyes = 27,
-        JiXieLang_ActAgain_OpenEyes = 105,
-        JiXieLang_ActAgain = 106,
-        JiXieLang_ActAgain_Info = 107,
-        JiXieLang_ActAgain_CloseEyes = 108,
+        JiXieLang_ActAgain_OpenEyes = 125,
+        JiXieLang_ActAgain = 126,
+        JiXieLang_ActAgain_Info = 127,
+        JiXieLang_ActAgain_CloseEyes = 128,
 
-        // === YingZi (30-33) ===
-        YingZi_OpenEyes = 30,
-        YingZi_Act = 31,
-        YingZi_Info = 32,
-        YingZi_CloseEyes = 33,
+        // === GhostBride (29-43) ===
+        GhostBride_OpenEyes = 29,
+        GhostBride_ChooseGroom = 30,
+        GhostBride_CloseEyes = 31,
+        GhostBride_GroomOpenEyes = 32,
+        GhostBride_GroomCheckLinked = 33,
+        GhostBride_GroomCloseEyes = 34,
+        GhostBride_CoupleOpenEyes = 35,
+        GhostBride_CoupleChooseWitness = 36,
+        GhostBride_CoupleCloseEyes = 37,
+        GhostBride_WitnessLuckyOpenEyes = 38,
+        GhostBride_WitnessCheckLinked = 39,
+        GhostBride_WitnessLuckyCloseEyes = 40,
+        GhostBride_WitnessOpenEyes = 41,
+        GhostBride_WitnessInfo = 42,
+        GhostBride_WitnessCloseEyes = 43,
 
-        // === DaMao (35-37) ===
-        DaMao_OpenEyes = 35,
-        DaMao_Act = 36,
-        DaMao_CloseEyes = 37,
+        // === YingZi (60-63) ===
+        YingZi_OpenEyes = 60,
+        YingZi_Act = 61,
+        YingZi_Info = 62,
+        YingZi_CloseEyes = 63,
 
-        // === LaoShu (40-48) ===
-        LaoShu_OpenEyes = 40,
-        LaoShu_Tag = 41,
-        LaoShu_CloseEyes = 42,
-        LaoShu_LuckyOneOpenEyes = 43,
-        LaoShu_CheckMice = 44,
-        LaoShu_LuckyOneCloseEyes = 45,
-        LaoShu_GiftOpenEyes = 46,
-        LaoShu_GiftAct = 47,
-        LaoShu_GiftCloseEyes = 48,
+        // === DaMao (65-67) ===
+        DaMao_OpenEyes = 65,
+        DaMao_Act = 66,
+        DaMao_CloseEyes = 67,
 
-        // === SheMengRen (50-52) ===
-        SheMengRen_OpenEyes = 50,
-        SheMengRen_Act = 51,
-        SheMengRen_CloseEyes = 52,
+        // === LaoShu (70-78) ===
+        LaoShu_OpenEyes = 70,
+        LaoShu_Tag = 71,
+        LaoShu_CloseEyes = 72,
+        LaoShu_LuckyOneOpenEyes = 73,
+        LaoShu_CheckMice = 74,
+        LaoShu_LuckyOneCloseEyes = 75,
+        LaoShu_GiftOpenEyes = 76,
+        LaoShu_GiftAct = 77,
+        LaoShu_GiftCloseEyes = 78,
 
-        // === ShouWei (55-57) ===
-        ShouWei_OpenEyes = 55,
-        ShouWei_Act = 56,
-        ShouWei_CloseEyes = 57,
+        // === SheMengRen (80-82) ===
+        SheMengRen_OpenEyes = 80,
+        SheMengRen_Act = 81,
+        SheMengRen_CloseEyes = 82,
 
-        // === WuZhe (69-71, 130) ===
-        WuZhe_OpenEyes = 69,
-        WuZhe_Act = 70,
-        WuZhe_CloseEyes = 71,
-        WuZhe_Dance = 130,
+        // === ShouWei (85-87) ===
+        ShouWei_OpenEyes = 85,
+        ShouWei_Act = 86,
+        ShouWei_CloseEyes = 87,
 
-        // === JiaMian (79-82) ===
-        JiaMian_OpenEyes = 79,
-        JiaMian_ChaYan = 80,
-        JiaMian_Reverse = 81,
-        JiaMian_CloseEyes = 82,
+        // === WuZhe (99-101, 150) ===
+        WuZhe_OpenEyes = 99,
+        WuZhe_Act = 100,
+        WuZhe_CloseEyes = 101,
+        WuZhe_Dance = 150,
 
-        // === LangRen (99-101, 103, 200) ===
-        LangRen_OpenEyes = 99,
-        LangRen_SelectTarget = 100,
-        LangRen_ConfirmKill = 101,
-        LangMeiRen_Act = 102,
-        LangRen_CloseEyes = 103,
-        LangRen_Kill = 200,
+        // === JiaMian (109-112) ===
+        JiaMian_OpenEyes = 109,
+        JiaMian_ChaYan = 110,
+        JiaMian_Reverse = 111,
+        JiaMian_CloseEyes = 112,
 
-        // === NvWu (119-121) ===
-        NvWu_OpenEyes = 119,
-        NvWu_Act = 120,
-        NvWu_CloseEyes = 121,
+        // === HongTaiLang (114-116, 222) ===
+        HongTaiLang_OpenEyes = 114,
+        HongTaiLang_ChooseTarget = 115,
+        HongTaiLang_CloseEyes = 116,
+        HongTaiLang_KillTarget = 222,
 
-        // === YuYanJia (149-152) ===
-        YuYanJia_OpenEyes = 149,
-        YuYanJia_ChaYan = 150,
-        YuYanJia_Result = 151,
-        YuYanJia_CloseEyes = 152,
+        // === LangRen (119-123, 220) ===
+        LangRen_OpenEyes = 119,
+        LangRen_SelectTarget = 120,
+        LangRen_ConfirmKill = 121,
+        LangMeiRen_Act = 122,
+        LangRen_CloseEyes = 123,
+        LangRen_Kill = 220,
 
-        // === TongLingShi (153-156) ===
-        TongLingShi_OpenEyes = 153,
-        TongLingShi_ChaYan = 154,
-        TongLingShi_Result = 155,
-        TongLingShi_CloseEyes = 156,
+        // === NvWu (139-141) ===
+        NvWu_OpenEyes = 139,
+        NvWu_Act = 140,
+        NvWu_CloseEyes = 141,
 
-        // === Xiong (160-162, 230) ===
-        Xiong_OpenEyes = 160,
-        Xiong_Act = 161,
-        Xiong_CloseEyes = 162,
-        Xiong_BarkCheck = 290,
+        // === YuYanJia (169-172) ===
+        YuYanJia_OpenEyes = 169,
+        YuYanJia_ChaYan = 170,
+        YuYanJia_Result = 171,
+        YuYanJia_CloseEyes = 172,
 
-        // === LieRen (270-272) ===
-        LieRen_OpenEyes = 270,
-        LieRen_Act = 271,
-        LieRen_CloseEyes = 272,
+        // === TongLingShi (173-176) ===
+        TongLingShi_OpenEyes = 173,
+        TongLingShi_ChaYan = 174,
+        TongLingShi_Result = 175,
+        TongLingShi_CloseEyes = 176,
 
-        // === LangQiang (275-277) ===
-        LangQiang_OpenEyes = 275,
-        LangQiang_Act = 276,
-        LangQiang_CloseEyes = 277,
+        // === Xiong (180-182, 310) ===
+        Xiong_OpenEyes = 180,
+        Xiong_Act = 181,
+        Xiong_CloseEyes = 182,
+        Xiong_BarkCheck = 310,
 
-        // === FuChouZhe (280-283) ===
-        FuChouZhe_OpenEyes = 280,
-        FuChouZhe_ThirdPartyKill = 281,
-        FuChouZhe_DeadShoot = 282,
-        FuChouZhe_CloseEyes = 283,
+        // === MeiYangYang (240-249) ===
+        MeiYangYang_OpenEyes = 240,
+        MeiYangYang_ChooseSacrifice = 241,
+        MeiYangYang_Info = 242,
+        MeiYangYang_CloseEyes = 243,
+        MeiYangYang_CivilianOpenEyes = 244,
+        MeiYangYang_CivilianInfo = 245,
+        MeiYangYang_CivilianCloseEyes = 246,
+        MeiYangYang_SacrificeOpenEyes = 247,
+        MeiYangYang_SacrificeAction = 248,
+        MeiYangYang_SacrificeCloseEyes = 249,
+
+        // === LieRen (290-292) ===
+        LieRen_OpenEyes = 290,
+        LieRen_Act = 291,
+        LieRen_CloseEyes = 292,
+
+        // === LangQiang (295-297) ===
+        LangQiang_OpenEyes = 295,
+        LangQiang_Act = 296,
+        LangQiang_CloseEyes = 297,
+
+        // === FuChouZhe (300-303) ===
+        FuChouZhe_OpenEyes = 300,
+        FuChouZhe_ThirdPartyKill = 301,
+        FuChouZhe_DeadShoot = 302,
+        FuChouZhe_CloseEyes = 303,
 
         // === MengMianRen (350) - Must be last night action ===
         MengMianRen_Act = 350,
@@ -245,6 +280,19 @@ namespace ProcedureCore.LangRenSha
         JiXieLang_ActAgain = 18,
         JiXieLang_ActAgain_Info = 19,
 
+        // === MeiYangYang (20-26) ===
+        MeiYangYang_ChooseSacrifice = 20,
+        MeiYangYang_Info = 21,
+        MeiYangYang_CivilianInfo = 22,
+        MeiYangYang_SacrificeAction = 23,
+        MeiYangYang_SacrificeSelf = 24,
+        MeiYangYang_CivilianMayAct = 25,
+        MeiYangYang_CivilianSacrificeForMeiYangYang = 26,
+
+        // === HongTaiLang (27-28) ===
+        HongTaiLang_ChooseTarget = 27,
+        HongTaiLang_Info = 28,
+
         // === Open/Close Eyes Announcements (50-55) ===
         OpenEyes = 50,
         CloseEyes = 51,
@@ -266,6 +314,14 @@ namespace ProcedureCore.LangRenSha
 
         // === MengMianRen (77) ===
         MengMianRen_Death = 77,
+
+        // === GhostBride (83-92) ===
+        GhostBride_ChooseGroom = 83,
+        GhostBride_GroomCheckLinked = 84,
+        GhostBride_CoupleChooseWitness = 85,
+        GhostBride_WitnessCheckLinked = 86,
+        GhostBride_WitnessInfo = 87,
+        GhostBride_AttackStatus = 92,
 
         // === Sheriff Election (100-107) ===
         SheriffVolunteer = 100,

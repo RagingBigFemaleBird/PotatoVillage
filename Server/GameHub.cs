@@ -135,6 +135,9 @@ namespace Server
                 { "HunZi", new HunZi() },
                 { "JiXieLang", new JiXieLang() },
                 { "LangMeiRen", new LangMeiRen() },
+                { "GhostBride", new GhostBride() },
+                { "MeiYangYang", new MeiYangYang() },
+                { "HongTaiLang", new HongTaiLang() },
             };
 
             if (!roleDict.ContainsKey("LangRen"))
@@ -160,10 +163,20 @@ namespace Server
             // Apply game options if provided
             if (gameOptions != null)
             {
+                // Extract minVersionRequired before applying to game state
+                if (gameOptions.TryGetValue("minVersionRequired", out var minVersion))
+                {
+                    game.MinVersionRequired = minVersion;
+                }
+
                 var optionsDict = new Dictionary<string, object>();
                 foreach (var item in gameOptions)
                 {
-                    optionsDict[item.Key] = item.Value;
+                    // Don't add minVersionRequired to game state dictionary
+                    if (item.Key != "minVersionRequired")
+                    {
+                        optionsDict[item.Key] = item.Value;
+                    }
                 }
                 game.StateUpdate(optionsDict, true);
             }
@@ -496,6 +509,18 @@ namespace Server
             if (gameOwners.TryGetValue(gameId, out var ownerId) && game.PlayerToId.TryGetValue(ownerId, out var ownerPlayerId))
             {
                 roomState["ownerId"] = ownerPlayerId;
+            }
+
+            // Add role configuration
+            if (game.RoleConfiguration != null)
+            {
+                roomState["roles"] = game.RoleConfiguration;
+            }
+
+            // Add minimum version required (set by the room creator)
+            if (game.MinVersionRequired > 0)
+            {
+                roomState["minVersionRequired"] = game.MinVersionRequired;
             }
 
             return JsonSerializer.Serialize(roomState);

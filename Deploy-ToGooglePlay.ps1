@@ -78,7 +78,7 @@ Write-Host "`n[3/4] Building Android App Bundle (AAB)..." -ForegroundColor Yello
 $buildArgs = @(
     "publish",
     $ProjectPath,
-    "-f", "net9.0-android",
+    "-f", "net10.0-android",
     "-c", "Release",
     "-p:AndroidKeyStore=true",
     "-p:AndroidSigningKeyStore=$((Resolve-Path $KeystorePath).Path)",
@@ -107,7 +107,7 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host "Build successful!" -ForegroundColor Green
 
 # Find the output AAB
-$outputDir = "PotatoVillage/bin/Release/net9.0-android/publish"
+$outputDir = "PotatoVillage/bin/Release/net10.0-android/publish"
 $aabFile = Get-ChildItem -Path $outputDir -Filter "*.aab" -Recurse | Select-Object -First 1
 
 if ($aabFile) {

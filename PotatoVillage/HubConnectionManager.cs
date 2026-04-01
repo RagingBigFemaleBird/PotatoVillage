@@ -205,6 +205,24 @@ namespace PotatoVillage
                 MergeGameDict(initialState);
                 roomState = JsonSerializer.Deserialize<Dictionary<string, object>>(roomStateJson) ?? new();
 
+                // Check minimum version required
+                if (roomState.TryGetValue("minVersionRequired", out var minVersionObj))
+                {
+                    int minVersionRequired = GetInt32FromObject(minVersionObj) ?? 0;
+                    int currentVersion = 0;
+                    if (int.TryParse(AppInfo.Current.BuildString, out var buildVersion))
+                    {
+                        currentVersion = buildVersion;
+                    }
+
+                    if (minVersionRequired > currentVersion)
+                    {
+                        // Version too old, fail the join with a special message
+                        joinCompletionSource?.TrySetResult((false, $"VERSION_TOO_OLD:{minVersionRequired}"));
+                        return;
+                    }
+                }
+
                 // Check if game has already started
                 bool gameStarted = false;
                 if (roomState.TryGetValue("gameStarted", out var gameStartedObj))
@@ -313,7 +331,7 @@ namespace PotatoVillage
             }
         }
 
-        public async Task<bool> CreateRoomAsync2(int numberOfPlayers, Dictionary<string, int> roleDict, int speechDuration = 120, int werewolfDuration = 60, int godDuration = 30, int roundTableMode = 0, int ownerControlEnabled = 0, int seatCounterClockwise = 0)
+        public async Task<bool> CreateRoomAsync2(int numberOfPlayers, Dictionary<string, int> roleDict, int speechDuration = 120, int werewolfDuration = 60, int godDuration = 30, int roundTableMode = 0, int ownerControlEnabled = 0, int seatCounterClockwise = 0, int sheriffExtraTime = 0)
         {
             try
             {
@@ -323,14 +341,23 @@ namespace PotatoVillage
                     return false;
                 }
 
+                // Get the app's build version number to set as minimum required version
+                int appVersion = 0;
+                if (int.TryParse(AppInfo.Current.BuildString, out var buildVersion))
+                {
+                    appVersion = buildVersion;
+                }
+
                 var gameOptions = new Dictionary<string, int>
                 {
                     { "duration_speech", speechDuration },
                     { "duration_langren", werewolfDuration },
                     { "duration_player_react", godDuration },
+                    { "duration_sheriff_extra_time", sheriffExtraTime },
                     { "round_table_mode", roundTableMode },
                     { "owner_control_enabled", ownerControlEnabled },
-                    { "seat_counter_clockwise", seatCounterClockwise }
+                    { "seat_counter_clockwise", seatCounterClockwise },
+                    { "minVersionRequired", appVersion }
                 };
 
                 await connection.InvokeAsync("CreateRoom", clientId, nickname, numberOfPlayers, roleDict, gameOptions);

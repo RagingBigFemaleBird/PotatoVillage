@@ -52,13 +52,31 @@
 
         <!-- Player List -->
         <ScrollView Grid.Row="1" Margin="0,20,0,20">
-            <FlexLayout x:Name="PlayerListContainer" 
-                        Wrap="Wrap" 
-                        JustifyContent="Start"
-                        AlignItems="Start"
-                        AlignContent="Start">
-                <!-- Player entries will be added dynamically -->
-            </FlexLayout>
+            <VerticalStackLayout Spacing="16">
+                <FlexLayout x:Name="PlayerListContainer" 
+                            Wrap="Wrap" 
+                            JustifyContent="Start"
+                            AlignItems="Start"
+                            AlignContent="Start">
+                    <!-- Player entries will be added dynamically -->
+                </FlexLayout>
+
+                <!-- Roles Display -->
+                <VerticalStackLayout x:Name="RolesContainer" Spacing="8">
+                    <Label Text="{m:Translate roles_in_game}" 
+                           FontAttributes="Bold" 
+                           FontSize="16" 
+                           TextColor="#FFF8DC"
+                           Margin="0,8,0,4"/>
+                    <FlexLayout x:Name="RolesListContainer" 
+                                Wrap="Wrap" 
+                                JustifyContent="Start"
+                                AlignItems="Start"
+                                AlignContent="Start">
+                        <!-- Role entries will be added dynamically -->
+                    </FlexLayout>
+                </VerticalStackLayout>
+            </VerticalStackLayout>
         </ScrollView>
 
         <!-- Bottom Buttons -->

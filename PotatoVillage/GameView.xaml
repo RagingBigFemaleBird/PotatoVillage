@@ -104,31 +104,52 @@
                 </ScrollView>
             </Border>
 
-            <!-- Row 3: Regular target selection area (player buttons) -->
-            <Border x:Name="TargetSelectionContainer" 
-                    Grid.Row="3"
-                    IsVisible="False"
-                    Padding="10"
-                    Margin="5"
-                    StrokeShape="RoundRectangle 8"
-                    BackgroundColor="#00000000"
-                    Stroke="Transparent"
-                    VerticalOptions="Fill"
-                    HorizontalOptions="Fill">
-                <ScrollView>
-                    <FlexLayout x:Name="TargetButtonsContainer"
-                                Wrap="Wrap"
-                                JustifyContent="Start"
-                                AlignItems="Center"
-                                AlignContent="Start"
-                                Direction="Row"
-                                MinimumHeightRequest="50" />
-                </ScrollView>
-            </Border>
+            <!-- Row 3: Regular target selection area (player buttons) and action history -->
+            <Grid Grid.Row="3" RowDefinitions="*,Auto">
+                <Border x:Name="TargetSelectionContainer" 
+                        Grid.Row="0"
+                        IsVisible="False"
+                        Padding="10"
+                        Margin="5"
+                        StrokeShape="RoundRectangle 8"
+                        BackgroundColor="#00000000"
+                        Stroke="Transparent"
+                        VerticalOptions="Fill"
+                        HorizontalOptions="Fill">
+                    <ScrollView>
+                        <FlexLayout x:Name="TargetButtonsContainer"
+                                    Wrap="Wrap"
+                                    JustifyContent="Start"
+                                    AlignItems="Center"
+                                    AlignContent="Start"
+                                    Direction="Row"
+                                    MinimumHeightRequest="50" />
+                    </ScrollView>
+                </Border>
+
+                <!-- Action History Panel (independent, always visible when toggled) -->
+                <Border x:Name="ActionHistoryContainer"
+                        Grid.Row="1"
+                        IsVisible="False"
+                        Padding="8"
+                        Margin="5,0,5,5"
+                        StrokeShape="RoundRectangle 6"
+                        BackgroundColor="#F5F5DC"
+                        Stroke="#D0D0A0"
+                        HeightRequest="100">
+                    <ScrollView>
+                        <Label x:Name="ActionHistoryLabel"
+                               Text=""
+                               FontSize="11"
+                               TextColor="#444444"
+                               LineBreakMode="WordWrap" />
+                    </ScrollView>
+                </Border>
+            </Grid>
 
             <!-- Bottom bar: Confirm, Sheriff, Reveal, Mute, Leave -->
             <Grid Grid.Row="4"
-                  ColumnDefinitions="Auto,*,Auto,Auto,Auto"
+                  ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto"
                   BackgroundColor="#F0F0F0"
                   Padding="6,0">
 
@@ -156,9 +177,22 @@
                        VerticalOptions="Center"
                        HorizontalOptions="Start" />
 
+                <!-- Past Actions button -->
+                <Button x:Name="PastActionsBtn"
+                        Grid.Column="2"
+                        Text="📋"
+                        Clicked="OnPastActionsClicked"
+                        FontSize="10"
+                        Padding="6,0"
+                        Margin="4,0"
+                        HeightRequest="20"
+                        BackgroundColor="LightGray"
+                        TextColor="#333333"
+                        VerticalOptions="Center" />
+
                 <!-- Reveal button -->
                 <Button x:Name="RevealBtn"
-                        Grid.Column="2"
+                        Grid.Column="3"
                         Text="Reveal"
                         Clicked="OnRevealClicked"
                         FontSize="11"
@@ -170,7 +204,7 @@
 
                 <!-- Announcer Toggle Button -->
                 <Button x:Name="AnnouncerBtn"
-                        Grid.Column="3"
+                        Grid.Column="4"
                         Text="×"
                         FontSize="10"
                         WidthRequest="15"
@@ -184,7 +218,7 @@
 
                 <!-- Disconnect button -->
                 <Button Text="X"
-                        Grid.Column="4"
+                        Grid.Column="5"
                         Clicked="OnDisconnectClicked"
                         FontSize="11"
                         Padding="8,0"

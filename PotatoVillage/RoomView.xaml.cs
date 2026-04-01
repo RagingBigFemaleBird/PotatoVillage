@@ -189,7 +189,107 @@ namespace PotatoVillage
 
                     PlayerListContainer.Add(border);
                 }
+
+                // Update roles display
+                UpdateRolesDisplay(roomState);
             });
+        }
+
+        private void UpdateRolesDisplay(Dictionary<string, object> roomState)
+        {
+            RolesListContainer.Clear();
+
+            var roles = GetDictionaryValue(roomState, "roles");
+            if (roles.Count == 0)
+            {
+                RolesContainer.IsVisible = false;
+                return;
+            }
+
+            RolesContainer.IsVisible = true;
+            var localization = LocalizationManager.Instance;
+
+            foreach (var role in roles)
+            {
+                var roleName = role.Key;
+
+                // Filter out LangRenSha as it's the game itself, not a role
+                if (roleName == "LangRenSha")
+                    continue;
+
+                var count = GetInt32FromObject(role.Value) ?? 1;
+
+                // Get localized role name
+                var displayName = localization.GetString(roleName, roleName);
+
+                // Create a badge for each role
+                var border = new Border
+                {
+                    Padding = new Thickness(8, 4),
+                    StrokeShape = new RoundRectangle { CornerRadius = 12 },
+                    BackgroundColor = GetRoleColor(roleName),
+                    Stroke = Colors.Transparent,
+                    Margin = new Thickness(2),
+                };
+
+                // Always show the count
+                var label = new Label
+                {
+                    Text = $"{displayName} x{count}",
+                    FontSize = 12,
+                    TextColor = Colors.White,
+                    VerticalOptions = LayoutOptions.Center,
+                };
+
+                border.Content = label;
+                RolesListContainer.Add(border);
+            }
+        }
+
+        private Color GetRoleColor(string roleName)
+        {
+            // Wolves - red shades
+            if (roleName.StartsWith("LangRen") || roleName == "JiaMian" || roleName == "LangQiang" || 
+                roleName == "DaMao" || roleName == "JiXieLang" || roleName == "LangMeiRen" ||
+                roleName == "HongTaiLang")
+            {
+                return Color.FromArgb("#8B0000");
+            }
+            // Gods - blue shades
+            if (roleName == "YuYanJia" || roleName == "TongLingShi" || roleName == "NvWu" || 
+                roleName == "WuZhe" || roleName == "LieRen" || roleName == "BaiChi" ||
+                roleName == "LaoShu" || roleName == "SheMengRen" || roleName == "Xiong" ||
+                roleName == "Thief" || roleName == "MengMianRen" || roleName == "ShouWei" ||
+                roleName == "MeiYangYang")
+            {
+                return Color.FromArgb("#1E3A8A");
+            }
+            // Third party - purple
+            if (roleName == "YingZi" || roleName == "FuChouZhe" || roleName == "HunZi" || roleName == "GhostBride")
+            {
+                return Color.FromArgb("#6B21A8");
+            }
+            // Villagers - green
+            if (roleName.StartsWith("PingMin"))
+            {
+                return Color.FromArgb("#166534");
+            }
+            // Game mode / special - orange
+            if (roleName == "ShenLangGongWu1")
+            {
+                return Color.FromArgb("#C2410C");
+            }
+            // Default - gray
+            return Color.FromArgb("#4B5563");
+        }
+
+        private int? GetInt32FromObject(object? obj)
+        {
+            if (obj == null) return null;
+            if (obj is int intValue) return intValue;
+            if (obj is JsonElement je && je.ValueKind == JsonValueKind.Number) return je.GetInt32();
+            if (int.TryParse(obj.ToString(), out var parsed)) return parsed;
+            return null;
         }
 
         private void OnGameStarted()

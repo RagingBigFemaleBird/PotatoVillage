@@ -27,8 +27,8 @@
 		<ApplicationId>com.biwuenterprise.potatovillage</ApplicationId>
 
 		<!-- Versions -->
-		<ApplicationDisplayVersion>1.9</ApplicationDisplayVersion>
-		<ApplicationVersion>10</ApplicationVersion>
+		<ApplicationDisplayVersion>2.0</ApplicationDisplayVersion>
+		<ApplicationVersion>11</ApplicationVersion>
 
 		<!-- To develop, package, and publish an app to the Microsoft Store, see: https://aka.ms/MauiTemplateUnpackaged -->
 		<WindowsPackageType>None</WindowsPackageType>
@@ -51,20 +51,26 @@
 	<PropertyGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">
 	  <ApplicationTitle>土豆天天村</ApplicationTitle>
 	  <ApplicationId>com.biwuenterprise.potatovillage</ApplicationId>
-	  <ProvisioningType>manual</ProvisioningType>
-	  <EnableCodeSigning>true</EnableCodeSigning>
-	  <CodesignKey>iPhone Distribution: Bi Wu (24G79NU8G9)</CodesignKey>
-	  <CodesignProvision>PotatoVillage</CodesignProvision>
 	</PropertyGroup>
 
-	<!-- Debug-only iOS overrides -->
+	<!-- Debug-only iOS overrides - disable code signing for simulator -->
 	<PropertyGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios' AND '$(Configuration)' == 'Debug'">
 	  <MtouchLink>None</MtouchLink>
+	  <CodesignKey></CodesignKey>
+	  <EnableCodeSigning>false</EnableCodeSigning>
 	</PropertyGroup>
 
 	<!-- Suppress signing detection during VS design-time builds (project loading/IntelliSense) -->
 	<PropertyGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios' AND '$(DesignTimeBuild)' == 'true'">
 	  <EnableCodeSigning>false</EnableCodeSigning>
+	</PropertyGroup>
+
+	<!-- Release iOS - enable code signing for device/distribution -->
+	<PropertyGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios' AND '$(Configuration)' == 'Release'">
+	  <ProvisioningType>manual</ProvisioningType>
+	  <EnableCodeSigning>true</EnableCodeSigning>
+	  <CodesignKey>iPhone Distribution: Bi Wu (24G79NU8G9)</CodesignKey>
+	  <CodesignProvision>PotatoVillage</CodesignProvision>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net10.0-maccatalyst|AnyCPU'">

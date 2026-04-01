@@ -17,6 +17,13 @@ namespace PotatoVillage
 
         // Preferences keys
         private const string NicknamePreferenceKey = "user_nickname";
+        private const string SpeechDurationPreferenceKey = "create_game_speech_duration";
+        private const string WerewolfDurationPreferenceKey = "create_game_werewolf_duration";
+        private const string GodDurationPreferenceKey = "create_game_god_duration";
+        private const string SheriffExtraTimePreferenceKey = "create_game_sheriff_extra_time";
+        private const string RoundTableModePreferenceKey = "create_game_round_table_mode";
+        private const string OwnerControlPreferenceKey = "create_game_owner_control";
+        private const string SeatCounterClockwisePreferenceKey = "create_game_seat_counter_clockwise";
 
         // UI colors for popups
         private static readonly Color PopupTextColor = Color.FromArgb("#FFF8DC");
@@ -44,6 +51,9 @@ namespace PotatoVillage
         private bool selectedHunZi = false;
         private bool selectedJiXieLang = false;
         private bool selectedLangMeiRen = false;
+        private bool selectedGhostBride = false;
+        private bool selectedMeiYangYang = false;
+        private bool selectedHongTaiLang = false;
         private HashSet<string> selectedPingMin = new();
 
         // Server URL (discovered at startup, not persisted)
@@ -54,12 +64,13 @@ namespace PotatoVillage
         private string sessionSeatNumber = "";
 
         // Duration settings (stored for create game popup)
-        private int speechDuration = 95;
-        private int werewolfDuration = 125;
-        private int godDuration = 18;
-        private bool roundTableMode = false;
-        private bool ownerControlEnabled = true;
-        private bool seatCounterClockwise = false;
+        private int speechDuration;
+        private int werewolfDuration;
+        private int godDuration;
+        private int sheriffExtraTime;
+        private bool roundTableMode;
+        private bool ownerControlEnabled;
+        private bool seatCounterClockwise;
 
         // Track if server discovery has been done this session
         private static bool serverDiscoveryDone = false;
@@ -87,6 +98,15 @@ namespace PotatoVillage
             {
                 NicknameEntry.Text = Preferences.Get(NicknamePreferenceKey, "");
             }
+
+            // Load create game settings from preferences
+            speechDuration = Preferences.Get(SpeechDurationPreferenceKey, 95);
+            werewolfDuration = Preferences.Get(WerewolfDurationPreferenceKey, 125);
+            godDuration = Preferences.Get(GodDurationPreferenceKey, 18);
+            sheriffExtraTime = Preferences.Get(SheriffExtraTimePreferenceKey, 0);
+            roundTableMode = Preferences.Get(RoundTableModePreferenceKey, false);
+            ownerControlEnabled = Preferences.Get(OwnerControlPreferenceKey, true);
+            seatCounterClockwise = Preferences.Get(SeatCounterClockwisePreferenceKey, false);
         }
 
         private async Task DiscoverServerAsync()
@@ -156,6 +176,8 @@ namespace PotatoVillage
                    selectedHunZi ||
                    selectedJiXieLang ||
                    selectedLangMeiRen ||
+                   selectedGhostBride ||
+                   selectedMeiYangYang ||
                    selectedPingMin.Count > 0;
         }
 
@@ -311,7 +333,16 @@ namespace PotatoVillage
             var (success, errorMessage) = await connectionManager.JoinGameAsync(roomNumber, seatNumber);
             if (!success)
             {
-                await DisplayAlertAsync(localization.GetString("error"), errorMessage, localization.GetString("yes"));
+                // Check if this is a version mismatch error
+                if (errorMessage.StartsWith("VERSION_TOO_OLD:"))
+                {
+                    var minVersion = errorMessage.Replace("VERSION_TOO_OLD:", "");
+                    await ShowUpdateRequiredPopup(minVersion);
+                }
+                else
+                {
+                    await DisplayAlertAsync(localization.GetString("error"), errorMessage, localization.GetString("yes"));
+                }
                 await connectionManager.Disconnect();
                 connectionManager = null;
                 ResetUIState();
@@ -354,6 +385,9 @@ namespace PotatoVillage
             selectedHunZi = false;
             selectedJiXieLang = false;
             selectedLangMeiRen = false;
+            selectedGhostBride = false;
+            selectedMeiYangYang = false;
+            selectedHongTaiLang = false;
             selectedPingMin.Clear();
         }
 
@@ -377,10 +411,12 @@ namespace PotatoVillage
             var speechEntry = new Entry { Text = speechDuration.ToString(), Keyboard = Keyboard.Numeric, TextColor = PopupTextColor, WidthRequest = 80 };
             var werewolfEntry = new Entry { Text = werewolfDuration.ToString(), Keyboard = Keyboard.Numeric, TextColor = PopupTextColor, WidthRequest = 80 };
             var godEntry = new Entry { Text = godDuration.ToString(), Keyboard = Keyboard.Numeric, TextColor = PopupTextColor, WidthRequest = 80 };
+            var sheriffExtraTimeEntry = new Entry { Text = sheriffExtraTime.ToString(), Keyboard = Keyboard.Numeric, TextColor = PopupTextColor, WidthRequest = 80 };
 
             mainStack.Children.Add(CreateHorizontalEntry(speechEntry, localization.GetString("speech_duration", "Speech Duration")));
             mainStack.Children.Add(CreateHorizontalEntry(werewolfEntry, localization.GetString("werewolf_duration", "Werewolf Duration")));
             mainStack.Children.Add(CreateHorizontalEntry(godEntry, localization.GetString("god_duration", "God Duration")));
+            mainStack.Children.Add(CreateHorizontalEntry(sheriffExtraTimeEntry, localization.GetString("sheriff_extra_time", "Sheriff Extra Time")));
 
             // Switches
             var roundTableSwitch = new Switch { IsToggled = roundTableMode };
@@ -408,13 +444,17 @@ namespace PotatoVillage
             mainStack.Children.Add(langRenBtns);
 
             // Special LangRen row
-            var specialLangRenBtns = new HorizontalStackLayout { Spacing = 4 };
-            specialLangRenBtns.Children.Add(CreateRoleButton(localization.GetString("LangQiang", "LangQiang"), () => selectedLangQiang, v => selectedLangQiang = v));
-            specialLangRenBtns.Children.Add(CreateRoleButton(localization.GetString("JiaMian", "JiaMian"), () => selectedJiaMian, v => selectedJiaMian = v));
-            specialLangRenBtns.Children.Add(CreateRoleButton(localization.GetString("DaMao", "DaMao"), () => selectedDaMao, v => selectedDaMao = v));
-            specialLangRenBtns.Children.Add(CreateRoleButton(localization.GetString("JiXieLang", "JiXieLang"), () => selectedJiXieLang, v => selectedJiXieLang = v));
-            specialLangRenBtns.Children.Add(CreateRoleButton(localization.GetString("LangMeiRen", "LangMeiRen"), () => selectedLangMeiRen, v => selectedLangMeiRen = v));
-            mainStack.Children.Add(specialLangRenBtns);
+            var specialLangRenBtns1 = new HorizontalStackLayout { Spacing = 4 };
+            specialLangRenBtns1.Children.Add(CreateRoleButton(localization.GetString("LangQiang", "LangQiang"), () => selectedLangQiang, v => selectedLangQiang = v));
+            specialLangRenBtns1.Children.Add(CreateRoleButton(localization.GetString("JiaMian", "JiaMian"), () => selectedJiaMian, v => selectedJiaMian = v));
+            specialLangRenBtns1.Children.Add(CreateRoleButton(localization.GetString("DaMao", "DaMao"), () => selectedDaMao, v => selectedDaMao = v));
+            specialLangRenBtns1.Children.Add(CreateRoleButton(localization.GetString("JiXieLang", "JiXieLang"), () => selectedJiXieLang, v => selectedJiXieLang = v));
+            specialLangRenBtns1.Children.Add(CreateRoleButton(localization.GetString("LangMeiRen", "LangMeiRen"), () => selectedLangMeiRen, v => selectedLangMeiRen = v));
+            mainStack.Children.Add(specialLangRenBtns1);
+
+            var specialLangRenBtns2 = new HorizontalStackLayout { Spacing = 4 };
+            specialLangRenBtns2.Children.Add(CreateRoleButton(localization.GetString("HongTaiLang", "HongTaiLang"), () => selectedHongTaiLang, v => selectedHongTaiLang = v));
+            mainStack.Children.Add(specialLangRenBtns2);
 
             // God row 1
             var godBtns1 = new HorizontalStackLayout { Spacing = 4 };
@@ -438,6 +478,7 @@ namespace PotatoVillage
             var godBtns3 = new HorizontalStackLayout { Spacing = 4 };
             godBtns3.Children.Add(CreateRoleButton(localization.GetString("MengMianRen", "MengMianRen"), () => selectedMengMianRen, v => selectedMengMianRen = v));
             godBtns3.Children.Add(CreateRoleButton(localization.GetString("ShouWei", "ShouWei"), () => selectedShouWei, v => selectedShouWei = v));
+            godBtns3.Children.Add(CreateRoleButton(localization.GetString("MeiYangYang", "MeiYangYang"), () => selectedMeiYangYang, v => selectedMeiYangYang = v));
             mainStack.Children.Add(godBtns3);
 
             // Third party row
@@ -445,6 +486,7 @@ namespace PotatoVillage
             thirdPartyBtns.Children.Add(CreateRoleButton(localization.GetString("YingZi", "YingZi"), () => selectedYingZi, v => selectedYingZi = v));
             thirdPartyBtns.Children.Add(CreateRoleButton(localization.GetString("FuChouZhe", "FuChouZhe"), () => selectedFuChouZhe, v => selectedFuChouZhe = v));
             thirdPartyBtns.Children.Add(CreateRoleButton(localization.GetString("HunZi", "HunZi"), () => selectedHunZi, v => selectedHunZi = v));
+            thirdPartyBtns.Children.Add(CreateRoleButton(localization.GetString("GhostBride", "GhostBride"), () => selectedGhostBride, v => selectedGhostBride = v));
             mainStack.Children.Add(thirdPartyBtns);
 
             // PingMin row
@@ -467,13 +509,22 @@ namespace PotatoVillage
 
             createBtn.Clicked += async (s, args) =>
             {
-                // Update duration settings
+                // Update duration settings and save to preferences
                 speechDuration = int.TryParse(speechEntry.Text, out var sd) ? sd : 95;
-                werewolfDuration = int.TryParse(werewolfEntry.Text, out var wd) ? wd : 125;
-                godDuration = int.TryParse(godEntry.Text, out var gd) ? gd : 18;
+                werewolfDuration = int.TryParse(werewolfEntry.Text, out var wd) ? wd : 155;
+                godDuration = int.TryParse(godEntry.Text, out var gd) ? gd : 19;
+                sheriffExtraTime = int.TryParse(sheriffExtraTimeEntry.Text, out var set) ? set : 30;
                 roundTableMode = roundTableSwitch.IsToggled;
                 ownerControlEnabled = ownerControlSwitch.IsToggled;
                 seatCounterClockwise = counterClockwiseSwitch.IsToggled;
+
+                Preferences.Set(SpeechDurationPreferenceKey, speechDuration);
+                Preferences.Set(WerewolfDurationPreferenceKey, werewolfDuration);
+                Preferences.Set(GodDurationPreferenceKey, godDuration);
+                Preferences.Set(SheriffExtraTimePreferenceKey, sheriffExtraTime);
+                Preferences.Set(RoundTableModePreferenceKey, roundTableMode);
+                Preferences.Set(OwnerControlPreferenceKey, ownerControlEnabled);
+                Preferences.Set(SeatCounterClockwisePreferenceKey, seatCounterClockwise);
 
                 if (!HasRolesSelected())
                 {
@@ -652,7 +703,7 @@ namespace PotatoVillage
             int ownerCtrl = ownerControlEnabled ? 1 : 0;
             int ccw = seatCounterClockwise ? 1 : 0;
 
-            if (!await connectionManager.CreateRoomAsync2(totalPlayers, roleDict, speechDuration, werewolfDuration, godDuration, rtMode, ownerCtrl, ccw))
+            if (!await connectionManager.CreateRoomAsync2(totalPlayers, roleDict, speechDuration, werewolfDuration, godDuration, rtMode, ownerCtrl, ccw, sheriffExtraTime))
             {
                 ResetUIState();
             }
@@ -684,6 +735,9 @@ namespace PotatoVillage
             if (selectedHunZi) roleDict["HunZi"] = 1;
             if (selectedJiXieLang) roleDict["JiXieLang"] = 1;
             if (selectedLangMeiRen) roleDict["LangMeiRen"] = 1;
+            if (selectedGhostBride) roleDict["GhostBride"] = 1;
+            if (selectedMeiYangYang) roleDict["MeiYangYang"] = 1;
+            if (selectedHongTaiLang) roleDict["HongTaiLang"] = 1;
             if (selectedPingMin.Count > 0) roleDict["PingMin"] = selectedPingMin.Count;
 
             return roleDict;
@@ -798,6 +852,38 @@ namespace PotatoVillage
             var ok = localization.GetString("yes", "OK");
 
             await DisplayAlertAsync(title, message, ok);
+        }
+
+        private async Task ShowUpdateRequiredPopup(string requiredVersion)
+        {
+            var localization = Services.LocalizationManager.Instance;
+            var title = localization.GetString("update_required", "Update Required");
+            var message = localization.GetString("update_required_message", "The room requires a newer version of the app. Please update to continue.");
+            var updateBtn = localization.GetString("update_now", "Update Now");
+            var cancelBtn = localization.GetString("cancel", "Cancel");
+
+            var result = await DisplayAlert(title, message, updateBtn, cancelBtn);
+            if (result)
+            {
+                // Open the appropriate app store based on platform
+                string storeUrl = "";
+#if ANDROID
+                storeUrl = "https://play.google.com/store/apps/details?id=com.biwuenterprise.potatovillage";
+#elif IOS || MACCATALYST
+                storeUrl = "https://apps.apple.com/app/id6744692044";
+#endif
+                if (!string.IsNullOrEmpty(storeUrl))
+                {
+                    try
+                    {
+                        await Launcher.OpenAsync(new Uri(storeUrl));
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"Failed to open store: {ex.Message}");
+                    }
+                }
+            }
         }
     }
 }

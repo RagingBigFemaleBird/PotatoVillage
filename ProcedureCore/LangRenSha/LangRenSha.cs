@@ -68,6 +68,7 @@ namespace ProcedureCore.LangRenSha
         public LangRenSha()
         {
             players = new List<(int, Role)>();
+            RegisterDeadPlayerHandler(GhostBride.HandleGhostBrideDeathSkill);
             RegisterDeadPlayerHandler(LieRen.HandleHunterDeathSkill);
             RegisterDeadPlayerHandler(LangQiang.HandleLangQiangDeathSkill);
             RegisterDeadPlayerHandler(Xiong.HandleXiongDeathSkill);
@@ -105,6 +106,9 @@ namespace ProcedureCore.LangRenSha
                 "HunZi" => new HunZi(),
                 "JiXieLang" => new JiXieLang(),
                 "LangMeiRen" => new LangMeiRen(),
+                "GhostBride" => new GhostBride(),
+                "MeiYangYang" => new MeiYangYang(),
+                "HongTaiLang" => new HongTaiLang(),
                 _ => throw new ArgumentException($"Not a role: {roleName}")
             };
         }
@@ -150,6 +154,7 @@ namespace ProcedureCore.LangRenSha
         public static string dictDurationLangRen = "duration_langren";
         public static string dictDurationSpeech = "duration_speech";
         public static string dictDurationPlayerReact = "duration_player_react";
+        public static string dictDurationSheriffExtraTime = "duration_sheriff_extra_time"; // Extra time for sheriff speech
         public static string dictRoundTableMode = "round_table_mode"; // 0 = start from sheriff, 1 = start from dead player (if single dead)
         public static string dictOwnerControlEnabled = "owner_control_enabled"; // 0 = disabled, 1 = owner can override day flow
         public static string dictSeatCounterClockwise = "seat_counter_clockwise"; // 0 = clockwise (default), 1 = counter-clockwise
@@ -590,10 +595,12 @@ namespace ProcedureCore.LangRenSha
                         // Sheriff already elected or no candidates - proceed to death announcement
                         update[dictSpeak] = (int)SpeakConstant.DeathAnnouncement;
                     }
+                    update[dictDay0AnnouncementDone] = 0;
                     return GameActionResult.Restart;
                 }
                 else
                 {
+                    update[dictDay0AnnouncementDone] = 0;
                     // Day 2+: Skip directly to DeathAnnouncement
                     update[dictSpeak] = (int)SpeakConstant.DeathAnnouncement;
                     return GameActionResult.Restart;
@@ -939,7 +946,7 @@ namespace ProcedureCore.LangRenSha
                 var skipDaySpeech = Game.GetGameDictionaryProperty(game, dictSkipDaySpeech, 0) == 1;
                 var day = Game.GetGameDictionaryProperty(game, dictDay, 0);
                 var announcementDone = Game.GetGameDictionaryProperty(game, dictDay0AnnouncementDone, 0) == 1;
-                if (skipDaySpeech && (day != 0 || announcementDone))
+                if (skipDaySpeech && ((day != 0 && day != 1) || announcementDone))
                 {
                     update[dictSpeak] = (int)SpeakConstant.DeathProcessingEntry;
                     return GameActionResult.Restart;
@@ -985,7 +992,7 @@ namespace ProcedureCore.LangRenSha
                 if (skipDaySpeech)
                     interrupted[dictSpeak] = (int)SpeakConstant.EndOfDay;
                 else
-                    interrupted[dictSpeak] = (int)SpeakConstant.WinConditionCheck; // Go to win condition check first
+                    interrupted[dictSpeak] = (int)SpeakConstant.WinConditionCheck;
                 update[dictSpeak] = (int)SpeakConstant.DeathHandlingInterrupt;
                 update[dictSkipDaySpeech] = 0;
                 update[dictInterrupt] = interrupted;
@@ -1549,7 +1556,8 @@ namespace ProcedureCore.LangRenSha
             {
                 var dp = Game.GetGameDictionaryProperty(game, dictDeadPlayerAction, new List<int>());
                 var lastAction = (int)Game.GetGameDictionaryProperty(game, dictInterrupt, new Dictionary<string, object>())[dictSpeak];
-                if (dp.Count > 0 && (lastAction == (int)SpeakConstant.EndOfDay || Game.GetGameDictionaryProperty(game, dictDay, 0) == 0))
+                var announcementDone = Game.GetGameDictionaryProperty(game, dictDay0AnnouncementDone, 0) == 1;
+                if (dp.Count > 0 && ((!announcementDone && lastAction == (int)SpeakConstant.EndOfDay) || Game.GetGameDictionaryProperty(game, dictDay, 0) == 0))
                 {
                     return HandleRoundTableSpeak(game, dp, dp[game.GetRandomNumber() % dp.Count], game.GetRandomNumber() % 2 == 1, update, -1, 102);
                 }
@@ -1693,6 +1701,51 @@ namespace ProcedureCore.LangRenSha
             else
             {
                 var actionDuration = Game.GetGameDictionaryProperty(game, LangRenSha.dictDurationSpeech, actionDurationPlayerSpeak);
+                var sheriffExtraTime = Game.GetGameDictionaryProperty(game, LangRenSha.dictDurationSheriffExtraTime, 0);
+                var currentSheriff = Game.GetGameDictionaryProperty(game, dictCurrentSheriff, 0);
+
+                // Determine the next speaker first to check if they are the sheriff
+                var lastTemp = speakers.Count == 0 ? startingPlayer : speakers.Last();
+                var nextTemp = lastTemp;
+                var remainingPlayersTemp = players.Where(p => !speakers.Contains(p)).ToList();
+                bool onlyLastPlayerRemainsTemp = lastPlayer > 0 && 
+                                                  remainingPlayersTemp.Count == 1 && 
+                                                  remainingPlayersTemp.Contains(lastPlayer);
+                do
+                {
+                    if (directionPlus)
+                    {
+                        nextTemp++;
+                        if (nextTemp > allPlayers.Count)
+                        {
+                            nextTemp = 1;
+                        }
+                    }
+                    else
+                    {
+                        nextTemp--;
+                        if (nextTemp <= 0)
+                        {
+                            nextTemp = allPlayers.Count;
+                        }
+                    }
+                    if (nextTemp == lastPlayer && !onlyLastPlayerRemainsTemp)
+                    {
+                        continue;
+                    }
+                    if (players.Contains(nextTemp))
+                    {
+                        break;
+                    }
+                } while (nextTemp != lastTemp);
+
+                var upcomingSpeaker = (speakers.Contains(nextTemp) && onlyLastPlayerRemainsTemp) ? lastPlayer : nextTemp;
+
+                // Add extra time if the upcoming speaker is the sheriff
+                if (currentSheriff > 0 && upcomingSpeaker == currentSheriff && sheriffExtraTime > 0)
+                {
+                    actionDuration += sheriffExtraTime;
+                }
 
                 if (UserAction.StartUserAction(game, actionDuration, update))
                 {
@@ -1964,6 +2017,7 @@ namespace ProcedureCore.LangRenSha
             var lmrLinkPlayer = lmrPlayer > 0 ? LangRenSha.GetPlayerProperty(game, lmrPlayer, LangMeiRen.dictLangMeiRenLink, 0) : 0;
             var sheMengRenAlive = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == "SheMengRen" && (int)x[LangRenSha.dictAlive] == 1);
             var sheMengRenPlayer = sheMengRenAlive.Count > 0 ? sheMengRenAlive[0] : 0;
+            var ghostBrideLinkedTo = LangRenSha.GetPlayerProperty(game, target, GhostBride.dictLinkedTo, 0);
 
             if (currentAboutToDie.Contains(target))
             {
@@ -2003,6 +2057,13 @@ namespace ProcedureCore.LangRenSha
             {
                 LangRenSha.SetPlayerProperty(game, lmrLinkPlayer, LieRen.dictHuntingDisabled, 1, update);
                 ChainKill(game, target, lmrLinkPlayer, currentAboutToDie, update);
+            }
+
+            // GhostBride couple death link - if one dies, the other dies too (cannot hunter shoot)
+            if (ghostBrideLinkedTo > 0 && !currentAboutToDie.Contains(ghostBrideLinkedTo))
+            {
+                LangRenSha.SetPlayerProperty(game, ghostBrideLinkedTo, LieRen.dictHuntingDisabled, 1, update);
+                ChainKill(game, target, ghostBrideLinkedTo, currentAboutToDie, update);
             }
 
         }

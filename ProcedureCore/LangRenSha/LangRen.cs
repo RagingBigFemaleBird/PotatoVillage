@@ -134,6 +134,7 @@ namespace ProcedureCore.LangRenSha
                 var langRenSuccession2Alive = LangRenSha.GetPlayers(game, x => x.ContainsKey(dictSuceession) && (int)x[dictSuceession] == 2 && (int)x[LangRenSha.dictAlive] == 1);
                 var langRenSuccession3Alive = LangRenSha.GetPlayers(game, x => x.ContainsKey(dictSuceession) && (int)x[dictSuceession] == 3 && (int)x[LangRenSha.dictAlive] == 1);
                 var day0 = Game.GetGameDictionaryProperty(game, LangRenSha.dictDay, 0) == 0;
+                var teammates = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == "DaMao");
 
                 langRen.AddRange(langRenSuccession1);
                 langRenAlive.AddRange(langRenSuccession1Alive);
@@ -155,6 +156,7 @@ namespace ProcedureCore.LangRenSha
                 }
 
                 var alivePlayers = LangRenSha.GetPlayers(game, x => (int)x[LangRenSha.dictAlive] == 1 && (string)x[LangRenSha.dictRole] != "LangMeiRen");
+                var thirdPartyPresent = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == "GhostBride").Count > 0;
                 var thiefPresent = Game.GetGameDictionaryProperty(game, Thief.dictThiefPlayer, 0) > 0;
                 if (thiefPresent && day0)
                 {
@@ -167,7 +169,7 @@ namespace ProcedureCore.LangRenSha
                     (var inputValid, var input, var input_others) = UserAction.GetUserResponse(game, true, langRenAlive, update);
                     if (inputValid)
                     {
-                        var targets = UserAction.TallyUserInput(input, 0, UserAction.UserInputMode.VoteMost, -1);
+                        var targets = UserAction.TallyUserInput(input, 0, thirdPartyPresent ? UserAction.UserInputMode.UniaminousVote : UserAction.UserInputMode.VoteMost, -1);
                         var choose = new List<int>();
                         if (targets.Count > 0 && targets[0] > 0)
                         {
@@ -189,6 +191,7 @@ namespace ProcedureCore.LangRenSha
                         update[UserAction.dictUserActionTargetsCount] = 1;
                         update[UserAction.dictUserActionTargetsHint] = (int)HintConstant.LangRen_Kill;
                         update[UserAction.dictUserActionRole] = Name;
+                        update[UserAction.dictUserActionInfo] = string.Join(", ", teammates);
                         return GameActionResult.Restart;
                     }
                     else
@@ -208,7 +211,7 @@ namespace ProcedureCore.LangRenSha
                             if (allResponded)
                             {
                                 (inputValid, input, input_others) = UserAction.GetUserResponse(game, true, langRenAlive, update);
-                                var targets = UserAction.TallyUserInput(input, 0, UserAction.UserInputMode.VoteMost, -1);
+                                var targets = UserAction.TallyUserInput(input, 0, thirdPartyPresent ? UserAction.UserInputMode.UniaminousVote : UserAction.UserInputMode.VoteMost, -1);
                                 var choose = new List<int>();
                                 if (targets.Count > 0 && targets[0] > 0)
                                 {

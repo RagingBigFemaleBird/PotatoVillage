@@ -29,6 +29,7 @@ namespace ProcedureCore.Core
         public static string dictUserActionTargetsHint = "user_targets_hint";
         public static string dictUserActionRole = "user_role"; // Role name currently acting (for client display)
         public static string dictUserActionInfo = "user_info";
+        public static string dictUserActionInfo2 = "user_info2"; // Secondary info (e.g., poisoned player for MeiYangYang civilians)
         public static string dictUserActionResponse = "user_response";
         public static string dictUserActionSelects = "user_selects";
         public static string dictUserActionSelectsUpdate = "user_selects_update";
@@ -123,6 +124,7 @@ namespace ProcedureCore.Core
             if (game.TestMode || (ua != 0 && ua <= now) || force)
             {
                 update[dictUserActionInfo] = null;
+                update[dictUserActionInfo2] = null;
                 update[dictUserActionRole] = null;
                 update[dictUserAction] = 0;
                 update[dictUserActionPauseStart] = null;
@@ -324,6 +326,14 @@ namespace ProcedureCore.Core
                     {
                         ret.Add(voteResult.Key);
                     }
+                }
+                return ret;
+            }
+            if (mode == UserInputMode.UniaminousVote)
+            {
+                if (vote.Count == 1)
+                {
+                    ret.Add(vote.First().Key);
                 }
                 return ret;
             }

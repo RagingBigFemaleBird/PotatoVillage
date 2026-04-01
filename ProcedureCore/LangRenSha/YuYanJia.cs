@@ -106,6 +106,7 @@ namespace ProcedureCore.LangRenSha
                 var yuYanJiaAlive = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == Name && (int)x[LangRenSha.dictAlive] == 1);
                 var alivePlayers = LangRenSha.GetPlayers(game, x => (int)x[LangRenSha.dictAlive] == 1);
                 var miceTagged = yuYanJiaAlive.Count > 0 ? (yuYanJiaAlive[0] == Game.GetGameDictionaryProperty(game, LaoShu.dictMiceTag, 0)) : false;
+                var isEvil = yuYanJiaAlive.Count > 0 ? (LangRenSha.GetPlayerProperty(game, yuYanJiaAlive[0], LangRenSha.dictPlayerAlliance, 0) == 2) : false;
                 var actionDuration = Game.GetGameDictionaryProperty(game, LangRenSha.dictDurationPlayerReact, ActionDuration);
                 if (yuYanJiaAlive.Count == 0)
                 {
@@ -138,7 +139,7 @@ namespace ProcedureCore.LangRenSha
                             {
                                 return GameActionResult.NotExecuted;
                             }
-                            if (miceTagged)
+                            if (miceTagged || isEvil)
                             {
                                 TongLing(game, targets[0], update);
                             }

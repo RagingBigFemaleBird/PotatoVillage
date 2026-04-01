@@ -91,6 +91,12 @@ namespace ProcedureCore.LangRenSha
             {
                 var daMao = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == Name);
                 var daMaoAlive = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == Name && (int)x[LangRenSha.dictAlive] == 1);
+                var teammates = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == "LangRen");
+                var actionDuration = Game.GetGameDictionaryProperty(game, LangRenSha.dictDurationPlayerReact, ActionDuration) + 10;
+                if (daMaoAlive.Count == 0)
+                {
+                    actionDuration = new Random().Next(6, 10);
+                }
 
                 var alivePlayers = LangRenSha.GetPlayers(game, x => (int)x[LangRenSha.dictAlive] == 1);
 
@@ -102,7 +108,6 @@ namespace ProcedureCore.LangRenSha
                 }
                 else
                 {
-                    var actionDuration = Game.GetGameDictionaryProperty(game, LangRenSha.dictDurationPlayerReact, ActionDuration);
                     var langRenAlive = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == "LangRen" && (int)x[LangRenSha.dictAlive] == 1);
                     var langRenSuccession1Alive = LangRenSha.GetPlayers(game, x => x.ContainsKey(LangRen.dictSuceession) && (int)x[LangRen.dictSuceession] == 1 && (int)x[LangRenSha.dictAlive] == 1);
 
@@ -113,10 +118,12 @@ namespace ProcedureCore.LangRenSha
                         update[UserAction.dictUserActionTargetsCount] = 1;
                         update[UserAction.dictUserActionTargetsHint] = (int)HintConstant.DaMao_Act;
                         update[UserAction.dictUserActionRole] = Name;
+                        update[UserAction.dictUserActionInfo] = "";
                         if (langRenAlive.Count + langRenSuccession1Alive.Count == 0)
                         {
                             update[UserAction.dictUserActionInfo] = "Succession";
                         }
+                        update[UserAction.dictUserActionInfo] += ";" + string.Join(", ", teammates);
                         return GameActionResult.Restart;
                     }
                     else

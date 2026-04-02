@@ -51,13 +51,15 @@
 	<PropertyGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">
 	  <ApplicationTitle>土豆天天村</ApplicationTitle>
 	  <ApplicationId>com.biwuenterprise.potatovillage</ApplicationId>
+	  <ProvisioningType>manual</ProvisioningType>
+	  <EnableCodeSigning>true</EnableCodeSigning>
+	  <CodesignKey>iPhone Distribution: Bi Wu (24G79NU8G9)</CodesignKey>
+	  <CodesignProvision>PotatoVillage</CodesignProvision>
 	</PropertyGroup>
 
-	<!-- Debug-only iOS overrides - disable code signing for simulator -->
+	<!-- Debug-only iOS overrides -->
 	<PropertyGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios' AND '$(Configuration)' == 'Debug'">
 	  <MtouchLink>None</MtouchLink>
-	  <CodesignKey></CodesignKey>
-	  <EnableCodeSigning>false</EnableCodeSigning>
 	</PropertyGroup>
 
 	<!-- Suppress signing detection during VS design-time builds (project loading/IntelliSense) -->
@@ -65,17 +67,32 @@
 	  <EnableCodeSigning>false</EnableCodeSigning>
 	</PropertyGroup>
 
-	<!-- Release iOS - enable code signing for device/distribution -->
+	<!-- Release iOS - additional settings for device/distribution -->
 	<PropertyGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios' AND '$(Configuration)' == 'Release'">
-	  <ProvisioningType>manual</ProvisioningType>
-	  <EnableCodeSigning>true</EnableCodeSigning>
-	  <CodesignKey>iPhone Distribution: Bi Wu (24G79NU8G9)</CodesignKey>
-	  <CodesignProvision>PotatoVillage</CodesignProvision>
+	  <MtouchUseLlvm>true</MtouchUseLlvm>
+	  <BuildIpa>true</BuildIpa>
+	</PropertyGroup>
+
+	<!-- ArchiveOnBuild only on macOS where codesigning happens locally -->
+	<PropertyGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios' AND '$(Configuration)' == 'Release' AND $([MSBuild]::IsOSPlatform('osx'))">
+	  <ArchiveOnBuild>true</ArchiveOnBuild>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net10.0-maccatalyst|AnyCPU'">
 	  <ApplicationTitle>土豆天天村</ApplicationTitle>
 	  <ApplicationId>com.biwuenterprise.potatovillage</ApplicationId>
+	</PropertyGroup>
+
+	<!-- MacCatalyst Release - enable code signing for distribution -->
+	<PropertyGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst' AND '$(Configuration)' == 'Release'">
+	  <ApplicationTitle>土豆天天村</ApplicationTitle>
+	  <ApplicationId>com.biwuenterprise.potatovillage</ApplicationId>
+	  <EnableCodeSigning>true</EnableCodeSigning>
+	  <CodesignKey>Apple Distribution: Bi Wu (24G79NU8G9)</CodesignKey>
+	  <CodesignProvision>PotatoVillage Mac</CodesignProvision>
+	  <ProvisioningType>manual</ProvisioningType>
+	  <CreatePackage>true</CreatePackage>
+	  <ArchiveOnBuild>true</ArchiveOnBuild>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net10.0-windows10.0.19041.0|AnyCPU'">
@@ -99,25 +116,9 @@
 	</PropertyGroup>
 
 
-	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net10.0-maccatalyst|AnyCPU'">
-	  <ApplicationTitle>土豆天天村</ApplicationTitle>
-	  <ApplicationId>com.biwuenterprise.potatovillage</ApplicationId>
-	</PropertyGroup>
-
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net10.0-windows10.0.19041.0|AnyCPU'">
 	  <ApplicationTitle>土豆天天村</ApplicationTitle>
 	  <ApplicationId>com.biwuenterprise.potatovillage</ApplicationId>
-	</PropertyGroup>
-
-	<!-- Release-only iOS build settings -->
-	<PropertyGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios' AND '$(Configuration)' == 'Release'">
-	  <MtouchUseLlvm>True</MtouchUseLlvm>
-	  <BuildIpa>true</BuildIpa>
-	</PropertyGroup>
-
-	<!-- ArchiveOnBuild only works on macOS where codesigning can actually happen -->
-	<PropertyGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios' AND '$(Configuration)' == 'Release' AND $([MSBuild]::IsOSPlatform('osx'))">
-	  <ArchiveOnBuild>true</ArchiveOnBuild>
 	</PropertyGroup>
 
 

@@ -169,17 +169,16 @@ namespace ProcedureCore.LangRenSha
                     if (inputValid)
                     {
                         var targets = UserAction.TallyUserInput(input, 0, UserAction.UserInputMode.VoteMost, -1);
-                        if (targets.Count == 0)
+                        if (targets.Count > 0)
                         {
-                            return GameActionResult.NotExecuted;
-                        }
-                        if (targets[0] > 0)
-                        {
-                            Poison(game, nvWuAlive[0], targets[0], update);
-                        }
-                        else if (targets[0] == 0)
-                        {
-                            Save(game, update);
+                            if (targets[0] > 0)
+                            {
+                                Poison(game, nvWuAlive[0], targets[0], update);
+                            }
+                            else if (targets[0] == 0)
+                            {
+                                Save(game, update);
+                            }
                         }
                         UserAction.EndUserAction(game, update, true);
                         LangRenSha.AdvanceAction(game, update);

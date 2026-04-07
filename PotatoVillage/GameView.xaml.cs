@@ -72,6 +72,7 @@ namespace PotatoVillage
             { 112, new Dictionary<int, string> { { 0, "SkipVote" } } },
             { 151, new Dictionary<int, string> { { -100, "DoNotUse"} } },
             { 153, new Dictionary<int, string> { { -2, "Left" }, { -1, "Right"} } },
+            { 98, new Dictionary<int, string> { { -1, "Kill" }, { -100, "DoNotKill"} } },
             { 1000, new Dictionary<int, string> { { 0, "acknowledge"} }  },
         };
 
@@ -96,6 +97,8 @@ namespace PotatoVillage
             { 87, GhostBrideWitnessInfoHandler },
             { 92, GhostBrideCoupleAttackHandler },
             { 94, TufuAttackHandler },
+            { 96, ShouMuRenInfoHandler },
+            { 98, AwkSheMengRenJudgeActHandler },
             { 17, JiXieLangInfoHandler },
             { 18, JiXieLangActAgainHandler },
             { 19, JiXieLangActAgainInfoHandler },
@@ -352,6 +355,49 @@ namespace PotatoVillage
                 return LocalizationManager.Instance.GetString("langren_succession_yes", "Can attack");
             else
                 return LocalizationManager.Instance.GetString("langren_succession_no", "Cannot yet attack");
+        }
+
+        private static string ShouMuRenInfoHandler(string userInfo, string userInfo2)
+        {
+            var localization = LocalizationManager.Instance;
+            // userInfo is "good", "evil", or empty
+            if (string.IsNullOrEmpty(userInfo))
+                return localization.GetString("shoumuren_info_none", "No one was voted out yesterday.");
+            if (userInfo == "good")
+                return localization.GetString("shoumuren_info_good", "The voted out player was good.");
+            if (userInfo == "evil")
+                return localization.GetString("shoumuren_info_evil", "The voted out player was evil.");
+            return userInfo;
+        }
+
+        private static string AwkSheMengRenJudgeActHandler(string userInfo, string userInfo2)
+        {
+            var localization = LocalizationManager.Instance;
+            // userInfo format: "target,acted" where acted is "1" (acted) or "0" (not acted)
+            if (string.IsNullOrEmpty(userInfo))
+                return localization.GetString("awkshemengren_judge_act", "Kill the guarded player?");
+
+            var parts = userInfo.Split(',');
+            if (parts.Length < 2)
+                return localization.GetString("awkshemengren_judge_act", "Kill the guarded player?");
+
+            var target = parts[0];
+            var acted = parts[1] == "1";
+
+            string infoText;
+            if (acted)
+            {
+                var txt = localization.GetString("awkshemengren_judge_acted", "Player {0} acted during the night.");
+                infoText = txt.Replace("{0}", target);
+            }
+            else
+            {
+                var txt = localization.GetString("awkshemengren_judge_not_acted", "Player {0} did not act during the night.");
+                infoText = txt.Replace("{0}", target);
+            }
+
+            var actionText = localization.GetString("awkshemengren_judge_act", "Kill the guarded player?");
+            return infoText + ";" + actionText;
         }
 
         private static string JiXieLangInfoHandler(string userInfo, string userInfo2)
@@ -967,6 +1013,8 @@ namespace PotatoVillage
                 54 => "converted_open_eyes",
                 55 => "converted_close_eyes",
                 63 => "langmeiren_act",
+                64 => "awkshixianggui_act",
+                65 => "awkshixianggui_check_conversion",
                 70 => "shouwei_act",
                 75 => "check_mice",
                 77 => "mengmianren_death",
@@ -984,6 +1032,7 @@ namespace PotatoVillage
                 93 => "liemoren_act",
                 94 => "tufu_act",
                 95 => "tufu_attack_status",
+                96 => "shoumuren_info",
                 100 => "volunteer_sheriff",
                 101 => "vote_sheriff",
                 102 => "round_table",
@@ -1409,6 +1458,11 @@ namespace PotatoVillage
                 {
                     userInfo = userInfo == playerId.ToString() ? localization.GetString("yes") : localization.GetString("no");
                 }
+            }
+            if (hintIndex == 65)
+            {
+                // AwkShiXiangGui_CheckConversion - check if player was converted
+                userInfo = userInfo == playerId.ToString() ? localization.GetString("awkshixianggui_converted") : localization.GetString("awkshixianggui_not_converted");
             }
             if (hintIndex == 84 || hintIndex == 86 || hintIndex == 25)
             {

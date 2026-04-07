@@ -18,26 +18,26 @@ namespace ProcedureCore.LangRenSha
         ShenLangGongWu1_Check = 11,
         ShenLangGongWu1_CloseEyes = 12,
 
-        // === Thief (15-18) ===
-        Thief_OpenEyes = 15,
-        Thief_PickRole = 16,
-        Thief_ShowAttackStatus = 17,
-        Thief_CloseEyes = 18,
+        // === AwkShiXiangGui Converted Check (13-15) - Day 1+ only, after ShenLangGongWu1 ===
+        AwkShiXiangGui_ConvertedOpenEyes = 13,
+        AwkShiXiangGui_ConvertedCheckAttack = 14,
+        AwkShiXiangGui_ConvertedCloseEyes = 15,
+
+        // === Thief (16-19) ===
+        Thief_OpenEyes = 16,
+        Thief_PickRole = 17,
+        Thief_ShowAttackStatus = 18,
+        Thief_CloseEyes = 19,
 
         // === HunZi (20-22) ===
         HunZi_OpenEyes = 20,
         HunZi_Act = 21,
         HunZi_CloseEyes = 22,
 
-        // === JiXieLang (24-27, 125-128) ===
-        JiXieLang_OpenEyes = 24,
-        JiXieLang_Act = 25,
-        JiXieLang_Info = 26,
-        JiXieLang_CloseEyes = 27,
-        JiXieLang_ActAgain_OpenEyes = 125,
-        JiXieLang_ActAgain = 126,
-        JiXieLang_ActAgain_Info = 127,
-        JiXieLang_ActAgain_CloseEyes = 128,
+        // === AwkShiXiangGui (23-25) - Day 0 only for selection, wakes all LangRen ===
+        AwkShiXiangGui_OpenEyes = 23,
+        AwkShiXiangGui_Act = 24,
+        AwkShiXiangGui_CloseEyes = 25,
 
         // === GhostBride (29-43) ===
         GhostBride_OpenEyes = 29,
@@ -55,6 +55,16 @@ namespace ProcedureCore.LangRenSha
         GhostBride_WitnessOpenEyes = 41,
         GhostBride_WitnessInfo = 42,
         GhostBride_WitnessCloseEyes = 43,
+
+        // === JiXieLang (44-47, 133-136) ===
+        JiXieLang_OpenEyes = 44,
+        JiXieLang_Act = 45,
+        JiXieLang_Info = 46,
+        JiXieLang_CloseEyes = 47,
+        JiXieLang_ActAgain_OpenEyes = 133,
+        JiXieLang_ActAgain = 134,
+        JiXieLang_ActAgain_Info = 135,
+        JiXieLang_ActAgain_CloseEyes = 136,
 
         // === YingZi (60-63) ===
         YingZi_OpenEyes = 60,
@@ -88,6 +98,11 @@ namespace ProcedureCore.LangRenSha
         ShouWei_Act = 86,
         ShouWei_CloseEyes = 87,
 
+        // === AwkSheMengRen Guard Phase (88-90) - After ShouWei ===
+        AwkSheMengRen_OpenEyes = 88,
+        AwkSheMengRen_Act = 89,
+        AwkSheMengRen_CloseEyes = 90,
+
         // === WuZhe (99-101, 150) ===
         WuZhe_OpenEyes = 99,
         WuZhe_Act = 100,
@@ -111,12 +126,12 @@ namespace ProcedureCore.LangRenSha
         TuFu_Act = 118,
         TuFu_CloseEyes = 119,
 
-        // === LangRen (121-125, 220) ===
+        // === LangRen (121-128, 220) ===
         LangRen_OpenEyes = 121,
         LangRen_SelectTarget = 122,
         LangRen_ConfirmKill = 123,
         LangMeiRen_Act = 124,
-        LangRen_CloseEyes = 125,
+        LangRen_CloseEyes = 128,
         LangRen_Kill = 220,
 
         // === NvWu (139-141) ===
@@ -147,6 +162,11 @@ namespace ProcedureCore.LangRenSha
         Xiong_CloseEyes = 182,
         Xiong_BarkCheck = 310,
 
+        // === ShouMuRen (185-188) - Day 1+ only, receives info about voted out player ===
+        ShouMuRen_OpenEyes = 185,
+        ShouMuRen_Info = 186,
+        ShouMuRen_CloseEyes = 187,
+
         // === MeiYangYang (240-249) ===
         MeiYangYang_OpenEyes = 240,
         MeiYangYang_ChooseSacrifice = 241,
@@ -158,6 +178,11 @@ namespace ProcedureCore.LangRenSha
         MeiYangYang_SacrificeOpenEyes = 247,
         MeiYangYang_SacrificeAction = 248,
         MeiYangYang_SacrificeCloseEyes = 249,
+
+        // === AwkSheMengRen Judge Phase (285-287) - Just before LieRen ===
+        AwkSheMengRen_JudgeOpenEyes = 285,
+        AwkSheMengRen_JudgeAct = 286,
+        AwkSheMengRen_JudgeCloseEyes = 287,
 
         // === LieRen (290-292) ===
         LieRen_OpenEyes = 290,
@@ -174,6 +199,11 @@ namespace ProcedureCore.LangRenSha
         FuChouZhe_ThirdPartyKill = 301,
         FuChouZhe_DeadShoot = 302,
         FuChouZhe_CloseEyes = 303,
+
+        // === AwkShiXiangGui Conversion Check (305-307) - Day 0 only, very last before MengMianRen ===
+        AwkShiXiangGui_LuckyOneOpenEyes = 305,
+        AwkShiXiangGui_CheckConversion = 306,
+        AwkShiXiangGui_LuckyOneCloseEyes = 307,
 
         // === MengMianRen (350) - Must be last night action ===
         MengMianRen_Act = 350,
@@ -318,6 +348,10 @@ namespace ProcedureCore.LangRenSha
         // === LangMeiRen (63) ===
         LangMeiRen_Act = 63,
 
+        // === AwkShiXiangGui (64-65) ===
+        AwkShiXiangGui_Act = 64,
+        AwkShiXiangGui_CheckConversion = 65,
+
         // === LaoShu (72, 75-76) ===
         LaoShu_Tag = 72,
         LaoShu_CheckMice = 75,
@@ -339,6 +373,13 @@ namespace ProcedureCore.LangRenSha
 
         // === TuFu (94-95) ===
         TuFu_Act = 94,
+
+        // === ShouMuRen (96) ===
+        ShouMuRen_Info = 96,
+
+        // === AwkSheMengRen (97-98) ===
+        AwkSheMengRen_Act = 97,
+        AwkSheMengRen_JudgeAct = 98,
 
         // === Sheriff Election (100-107) ===
         SheriffVolunteer = 100,

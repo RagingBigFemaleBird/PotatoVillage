@@ -88,6 +88,10 @@ namespace ProcedureCore.LangRenSha
             if (LangRenSha.GetPlayerProperty(game, target, dictCannotBePoisoned, 0) == 0)
             {
                 LangRenSha.ChainKill(game, source, target, aboutToDie, update);
+                if (aboutToDie.Contains(target))
+                {
+                    LangRenSha.SetPlayerProperty(game, target, LieRen.dictHuntingDisabled, 1, update);
+                }
                 update[LangRenSha.dictAboutToDie] = aboutToDie;
             }
 

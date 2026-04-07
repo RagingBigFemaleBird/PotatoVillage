@@ -101,7 +101,7 @@ namespace ProcedureCore.LangRenSha
             }
 
             // Groom open/close eyes announcements (Day 0)
-            if (LangRenSha.AnnouncerAction(game, update, false, (int)ActionConstant.GhostBride_GroomOpenEyes, (int)ActionConstant.GhostBride_GroomCloseEyes, 1000, 1001, "GroomCheck", 4) == GameActionResult.Restart)
+            if (LangRenSha.AnnouncerAction(game, update, false, (int)ActionConstant.GhostBride_GroomOpenEyes, (int)ActionConstant.GhostBride_GroomCloseEyes, 1000, 1001, "", 4) == GameActionResult.Restart)
             {
                 return GameActionResult.Restart;
             }
@@ -125,7 +125,7 @@ namespace ProcedureCore.LangRenSha
             }
 
             // Witness open/close eyes announcements (Day 0)
-            if (LangRenSha.AnnouncerAction(game, update, false, (int)ActionConstant.GhostBride_WitnessLuckyOpenEyes, (int)ActionConstant.GhostBride_WitnessLuckyCloseEyes, 1000, 1001, "WitnessCheck", 4) == GameActionResult.Restart)
+            if (LangRenSha.AnnouncerAction(game, update, false, (int)ActionConstant.GhostBride_WitnessLuckyOpenEyes, (int)ActionConstant.GhostBride_WitnessLuckyCloseEyes, 1000, 1001, "", 4) == GameActionResult.Restart)
             {
                 return GameActionResult.Restart;
             }

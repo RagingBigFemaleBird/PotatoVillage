@@ -27,14 +27,14 @@ namespace ProcedureCore.LangRenSha
 
         private static List<int> actionOrders = new()
         {
-            (int)ActionConstant.JiXieLang_OpenEyes,         // 0: 24
-            (int)ActionConstant.JiXieLang_Act,              // 1: 25
-            (int)ActionConstant.JiXieLang_Info,             // 2: 26
-            (int)ActionConstant.JiXieLang_CloseEyes,        // 3: 27
-            (int)ActionConstant.JiXieLang_ActAgain_OpenEyes,// 4: 105
-            (int)ActionConstant.JiXieLang_ActAgain,         // 5: 106
-            (int)ActionConstant.JiXieLang_ActAgain_Info,    // 6: 107
-            (int)ActionConstant.JiXieLang_ActAgain_CloseEyes,// 7: 108
+            (int)ActionConstant.JiXieLang_OpenEyes,         // 0: 44
+            (int)ActionConstant.JiXieLang_Act,              // 1: 45
+            (int)ActionConstant.JiXieLang_Info,             // 2: 46
+            (int)ActionConstant.JiXieLang_CloseEyes,        // 3: 47
+            (int)ActionConstant.JiXieLang_ActAgain_OpenEyes,// 4: 133
+            (int)ActionConstant.JiXieLang_ActAgain,         // 5: 134
+            (int)ActionConstant.JiXieLang_ActAgain_Info,    // 6: 135
+            (int)ActionConstant.JiXieLang_ActAgain_CloseEyes,// 7: 136
         };
 
         public JiXieLang() { }

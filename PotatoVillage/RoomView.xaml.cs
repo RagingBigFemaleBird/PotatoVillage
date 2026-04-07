@@ -251,7 +251,7 @@ namespace PotatoVillage
             // Wolves - red shades
             if (roleName.StartsWith("LangRen") || roleName == "JiaMian" || roleName == "LangQiang" || 
                 roleName == "DaMao" || roleName == "JiXieLang" || roleName == "LangMeiRen" ||
-                roleName == "HongTaiLang" || roleName == "TuFu")
+                roleName == "HongTaiLang" || roleName == "TuFu" || roleName == "AwkShiXiangGui")
             {
                 return Color.FromArgb("#8B0000");
             }
@@ -260,7 +260,8 @@ namespace PotatoVillage
                 roleName == "WuZhe" || roleName == "LieRen" || roleName == "BaiChi" ||
                 roleName == "LaoShu" || roleName == "SheMengRen" || roleName == "Xiong" ||
                 roleName == "Thief" || roleName == "MengMianRen" || roleName == "ShouWei" ||
-                roleName == "MeiYangYang" || roleName == "LieMoRen")
+                roleName == "MeiYangYang" || roleName == "LieMoRen" || roleName == "AwkSheMengRen" ||
+                roleName == "ShouMuRen")
             {
                 return Color.FromArgb("#1E3A8A");
             }

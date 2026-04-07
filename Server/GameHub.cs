@@ -135,11 +135,14 @@ namespace Server
                 { "HunZi", new HunZi() },
                 { "JiXieLang", new JiXieLang() },
                 { "LangMeiRen", new LangMeiRen() },
+                { "AwkShiXiangGui", new AwkShiXiangGui() },
                 { "GhostBride", new GhostBride() },
                 { "MeiYangYang", new MeiYangYang() },
                 { "HongTaiLang", new HongTaiLang() },
                 { "LieMoRen", new LieMoRen() },
                 { "TuFu", new TuFu() },
+                { "ShouMuRen", new ShouMuRen() },
+                { "AwkSheMengRen", new AwkSheMengRen() },
             };
 
             if (!roleDict.ContainsKey("LangRen"))

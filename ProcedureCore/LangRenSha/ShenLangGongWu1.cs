@@ -53,7 +53,7 @@ namespace ProcedureCore.LangRenSha
             get { return 3; }
         }
 
-        public static string dictConvertedPlayer = "ShenLangGongWu1_ConvertedPlayer";
+        public static string dictConvertedPlayer = "ConvertedPlayer";
 
         public GameActionResult GenerateStateDiff(Game game, Dictionary<string, object> update)
         {
@@ -100,6 +100,10 @@ namespace ProcedureCore.LangRenSha
                     {
                         var randomIndex = game.GetRandomNumber() % godPlayers.Count;
                         var targetPlayer = godPlayers[randomIndex];
+
+                        // Store before conversion faction for AwkSheMengRen
+                        var currentFaction = LangRenSha.GetPlayerProperty(game, targetPlayer, LangRenSha.dictPlayerFaction, 0);
+                        LangRenSha.SetPlayerProperty(game, targetPlayer, AwkSheMengRen.dictBeforeConversionFaction, currentFaction, update);
 
                         // Change allegiance to evil (2)
                         update[dictConvertedPlayer] = targetPlayer;

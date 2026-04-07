@@ -79,6 +79,10 @@ namespace PotatoVillage.Services
             { "游戏结束", "youxi_jieshu" },
             { "没有", "meiyou" },
             { "咆哮", "paoxiao" },
+            { "射杀", "shesha" },
+            { "链接", "lianjie" },
+            { "复仇", "fuchou" },
+            { "成功", "chenggong" },
             
             // Numbers (for player references)
             { "一号", "yihao" },

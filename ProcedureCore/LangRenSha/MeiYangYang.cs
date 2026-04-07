@@ -87,7 +87,7 @@ namespace ProcedureCore.LangRenSha
             }
 
             // Civilian open/close eyes announcements
-            if (LangRenSha.AnnouncerAction(game, update, false, (int)ActionConstant.MeiYangYang_CivilianOpenEyes, (int)ActionConstant.MeiYangYang_CivilianCloseEyes, 1000, 1001, "Civilian", 4) == GameActionResult.Restart)
+            if (LangRenSha.AnnouncerAction(game, update, false, (int)ActionConstant.MeiYangYang_CivilianOpenEyes, (int)ActionConstant.MeiYangYang_CivilianCloseEyes, 1000, 1001, "", 4) == GameActionResult.Restart)
             {
                 return GameActionResult.Restart;
             }

@@ -101,6 +101,12 @@ namespace ProcedureCore.LangRenSha
                 var superGuardTarget = Game.GetGameDictionaryProperty(game, JiXieLang.dictSuperGuardTarget, 0);
                 var wuZhe = Game.GetGameDictionaryProperty(game, WuZhe.dictDanced, new List<int>());
 
+                // Check AwkSheMengRen protection - target is immune to ALL deaths
+                if (AwkSheMengRen.IsProtected(game, target))
+                {
+                    continue;
+                }
+
                 if (guardTarget == target || superGuardTarget == target || wuZhe.Contains(target))
                 {
                     continue;

@@ -15,7 +15,7 @@ namespace ProcedureCore.LangRenSha
     {
         private List<(int, Role)> players;
         private static List<Func<Game, int, List<int>, Dictionary<string, object>, GameActionResult>> interruptHandlers = new()
-            { LangRen.RevealSelf, LangQiang.RevealSelf, LangRenSha.WithdrawSheriff, LangRenSha.OverrideDayVote, LangRenSha.OverrideSheriffVote };
+            { LangRen.RevealSelf, LangQiang.RevealSelf, AwkShiXiangGui.RevealSelf, LangRenSha.WithdrawSheriff, LangRenSha.OverrideDayVote, LangRenSha.OverrideSheriffVote };
         public static List<Func<Game, int, List<int>, Dictionary<string, object>, GameActionResult>> InterruptHandlers
         {
             get
@@ -111,6 +111,9 @@ namespace ProcedureCore.LangRenSha
                 "HongTaiLang" => new HongTaiLang(),
                 "LieMoRen" => new LieMoRen(),
                 "TuFu" => new TuFu(),
+                "AwkShiXiangGui" => new AwkShiXiangGui(),
+                "ShouMuRen" => new ShouMuRen(),
+                "AwkSheMengRen" => new AwkSheMengRen(),
                 _ => throw new ArgumentException($"Not a role: {roleName}")
             };
         }
@@ -1404,6 +1407,7 @@ namespace ProcedureCore.LangRenSha
                     }
                     else
                     {
+                        update[ShouMuRen.dictLastVotedOutPlayer] = 0;
                         update[dictSpeak] = (int)SpeakConstant.EndOfDay;
                     }
                     return GameActionResult.Restart;
@@ -1442,6 +1446,7 @@ namespace ProcedureCore.LangRenSha
                     }
                     else
                     {
+                        update[ShouMuRen.dictLastVotedOutPlayer] = 0;
                         update[dictSpeak] = (int)SpeakConstant.EndOfDay;
                     }
                     return GameActionResult.Restart;
@@ -1492,6 +1497,7 @@ namespace ProcedureCore.LangRenSha
                     }
                     else
                     {
+                        update[ShouMuRen.dictLastVotedOutPlayer] = 0;
                         update[dictSpeak] = (int)SpeakConstant.EndOfDay;
                     }
                     return GameActionResult.Restart;
@@ -1524,6 +1530,7 @@ namespace ProcedureCore.LangRenSha
                     if (voteOut.Count > 1)
                     {
                         // Tie
+                        update[ShouMuRen.dictLastVotedOutPlayer] = 0;
                         update[dictSpeak] = (int)SpeakConstant.EndOfDay;
                     }
                     else if (voteOut.Count == 1)
@@ -1533,6 +1540,7 @@ namespace ProcedureCore.LangRenSha
                     }
                     else
                     {
+                        update[ShouMuRen.dictLastVotedOutPlayer] = 0;
                         update[dictSpeak] = (int)SpeakConstant.EndOfDay;
                     }
                     return GameActionResult.Restart;
@@ -1562,7 +1570,8 @@ namespace ProcedureCore.LangRenSha
                 // Owner selects who to vote out
                 if (UserAction.EndUserAction(game, update))
                 {
-                    // No one selected, skip to end of day
+                    // No one selected, skip to end of day - clear the tracker for ShouMuRen
+                    update[ShouMuRen.dictLastVotedOutPlayer] = 0;
                     update[dictSpeak] = (int)SpeakConstant.EndOfDay;
                     update[dictOwnerVoteOverride] = 1;
                     return GameActionResult.Restart;
@@ -1591,6 +1600,9 @@ namespace ProcedureCore.LangRenSha
                                 var targets = (List<int>)entry.Value;
                                 if (targets.Count > 0 && targets[0] > 0)
                                 {
+                                    // Track the voted out player for ShouMuRen
+                                    update[ShouMuRen.dictLastVotedOutPlayer] = targets[0];
+
                                     // Mark the selected player as about to die
                                     MarkPlayerAboutToDie(game, targets[0], update);
 
@@ -1606,7 +1618,8 @@ namespace ProcedureCore.LangRenSha
                                 }
                                 if (targets.Count > 0 && targets[0] == 0)
                                 {
-                                    // Owner selected no one (0 = skip)
+                                    // Owner selected no one (0 = skip) - clear the tracker for ShouMuRen
+                                    update[ShouMuRen.dictLastVotedOutPlayer] = 0;
                                     update[dictSpeak] = (int)SpeakConstant.EndOfDay;
                                     update[dictOwnerVoteOverride] = 1;
                                     UserAction.EndUserAction(game, update, true);
@@ -1625,6 +1638,9 @@ namespace ProcedureCore.LangRenSha
 
                 if (voteout.Count == 1)
                 {
+                    // Track the voted out player for ShouMuRen
+                    update[ShouMuRen.dictLastVotedOutPlayer] = voteout[0];
+
                     // Mark the voteout player as about to die
                     foreach (var player in voteout)
                     {
@@ -1639,6 +1655,8 @@ namespace ProcedureCore.LangRenSha
                 }
                 else
                 {
+                    // No one voted out - clear the tracker for ShouMuRen
+                    update[ShouMuRen.dictLastVotedOutPlayer] = 0;
                     update[dictSpeak] = (int)SpeakConstant.EndOfDay;
                 }
                 return GameActionResult.Restart;
@@ -2225,6 +2243,12 @@ namespace ProcedureCore.LangRenSha
 
         public static bool MarkPlayerAboutToDie(Game game, int target, Dictionary<string, object> update)
         {
+            // Check AwkSheMengRen protection - target is immune to ALL deaths
+            if (AwkSheMengRen.IsProtected(game, target))
+            {
+                return false;
+            }
+
             var aboutToDie = Game.GetGameDictionaryProperty(game, dictAboutToDie, new List<int>());
             if (aboutToDie.Contains(target))
             {
@@ -2253,6 +2277,12 @@ namespace ProcedureCore.LangRenSha
             var ghostBrideLinkedTo = LangRenSha.GetPlayerProperty(game, target, GhostBride.dictLinkedTo, 0);
 
             if (currentAboutToDie.Contains(target))
+            {
+                return;
+            }
+
+            // Check AwkSheMengRen protection - target is immune to ALL deaths
+            if (AwkSheMengRen.IsProtected(game, target))
             {
                 return;
             }

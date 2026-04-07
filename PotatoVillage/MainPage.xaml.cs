@@ -53,12 +53,64 @@ namespace PotatoVillage
         private bool selectedHunZi = false;
         private bool selectedJiXieLang = false;
         private bool selectedLangMeiRen = false;
+        private bool selectedAwkShiXiangGui = false;
         private bool selectedGhostBride = false;
         private bool selectedMeiYangYang = false;
         private bool selectedHongTaiLang = false;
         private bool selectedLieMoRen = false;
         private bool selectedTuFu = false;
+        private bool selectedShouMuRen = false;
+        private bool selectedAwkSheMengRen = false;
         private HashSet<string> selectedPingMin = new();
+
+        // Dictionary to store button references for template application
+        private Dictionary<string, Button> roleButtons = new();
+
+        // Role templates: when a template role is selected as the first/only role, auto-select the whole template
+        private static readonly Dictionary<string, Dictionary<string, int>> RoleTemplates = new()
+        {
+            ["AwkSheMengRen"] = new()
+            {
+                ["LangRen"] = 1, ["LangQiang"] = 1, ["AwkShiXiangGui"] = 1,
+                ["YuYanJia"] = 1, ["NvWu"] = 1, ["LieRen"] = 1, ["ShouMuRen"] = 1,
+                ["PingMin"] = 4
+            },
+            ["ShenLangGongWu1"] = new()
+            {
+                ["LangRen"] = 2, ["LangQiang"] = 1,
+                ["YuYanJia"] = 1, ["NvWu"] = 1, ["LieRen"] = 1, ["SheMengRen"] = 1, ["Xiong"] = 1,
+                ["PingMin"] = 3
+            },
+            ["Thief"] = new()
+            {
+                ["LangRen"] = 3, ["LangQiang"] = 1,
+                ["TongLingShi"] = 1, ["NvWu"] = 1, ["LieRen"] = 1, ["SheMengRen"] = 1, ["MengMianRen"] = 1,
+                ["PingMin"] = 4
+            },
+            ["JiXieLang"] = new()
+            {
+                ["LangRen"] = 3,
+                ["TongLingShi"] = 1, ["NvWu"] = 1, ["LieRen"] = 1, ["ShouWei"] = 1
+            },
+            ["YingZi"] = new()
+            {
+                ["LangRen"] = 4,
+                ["YuYanJia"] = 1, ["NvWu"] = 1, ["LieRen"] = 1, ["ShouWei"] = 1, ["FuChouZhe"] = 1,
+                ["PingMin"] = 4
+            },
+            ["FuChouZhe"] = new()
+            {
+                ["LangRen"] = 4,
+                ["YuYanJia"] = 1, ["NvWu"] = 1, ["LieRen"] = 1, ["ShouWei"] = 1, ["YingZi"] = 1,
+                ["PingMin"] = 4
+            },
+            ["GhostBride"] = new()
+            {
+                ["LangRen"] = 4,
+                ["YuYanJia"] = 1, ["NvWu"] = 1, ["LieRen"] = 1, ["ShouWei"] = 1,
+                ["PingMin"] = 3
+            }
+        };
 
         // Server URL (discovered at startup, not persisted)
         private string currentServerUrl = "";
@@ -184,8 +236,11 @@ namespace PotatoVillage
                    selectedHunZi ||
                    selectedJiXieLang ||
                    selectedLangMeiRen ||
+                   selectedAwkShiXiangGui ||
                    selectedGhostBride ||
                    selectedMeiYangYang ||
+                   selectedShouMuRen ||
+                   selectedAwkSheMengRen ||
                    selectedPingMin.Count > 0;
         }
 
@@ -393,12 +448,16 @@ namespace PotatoVillage
             selectedHunZi = false;
             selectedJiXieLang = false;
             selectedLangMeiRen = false;
+            selectedAwkShiXiangGui = false;
             selectedGhostBride = false;
             selectedMeiYangYang = false;
             selectedHongTaiLang = false;
             selectedLieMoRen = false;
             selectedTuFu = false;
+            selectedShouMuRen = false;
+            selectedAwkSheMengRen = false;
             selectedPingMin.Clear();
+            roleButtons.Clear();
         }
 
         private ContentPage CreateCreateGamePopup(LocalizationManager localization)
@@ -445,7 +504,7 @@ namespace PotatoVillage
             mainStack.Children.Add(new Label { Text = localization.GetString("select_roles_new_game", "Select Roles"), FontAttributes = FontAttributes.Bold, FontSize = 14, TextColor = PopupTextColor, Margin = new Thickness(0, 12, 0, 0) });
 
             // Game Mode
-            var shenLangGongWu1Btn = CreateRoleButton(localization.GetString("ShenLangGongWu1", "ShenLangGongWu1"), () => selectedShenLangGongWu1, v => selectedShenLangGongWu1 = v);
+            var shenLangGongWu1Btn = CreateRoleButton(localization.GetString("ShenLangGongWu1", "ShenLangGongWu1"), "ShenLangGongWu1", () => selectedShenLangGongWu1, v => selectedShenLangGongWu1 = v);
             mainStack.Children.Add(new HorizontalStackLayout { Spacing = 4, Children = { shenLangGongWu1Btn } });
 
             // LangRen row
@@ -459,50 +518,57 @@ namespace PotatoVillage
 
             // Special LangRen row
             var specialLangRenBtns1 = new HorizontalStackLayout { Spacing = 4 };
-            specialLangRenBtns1.Children.Add(CreateRoleButton(localization.GetString("LangQiang", "LangQiang"), () => selectedLangQiang, v => selectedLangQiang = v));
-            specialLangRenBtns1.Children.Add(CreateRoleButton(localization.GetString("JiaMian", "JiaMian"), () => selectedJiaMian, v => selectedJiaMian = v));
-            specialLangRenBtns1.Children.Add(CreateRoleButton(localization.GetString("DaMao", "DaMao"), () => selectedDaMao, v => selectedDaMao = v));
-            specialLangRenBtns1.Children.Add(CreateRoleButton(localization.GetString("JiXieLang", "JiXieLang"), () => selectedJiXieLang, v => selectedJiXieLang = v));
-            specialLangRenBtns1.Children.Add(CreateRoleButton(localization.GetString("LangMeiRen", "LangMeiRen"), () => selectedLangMeiRen, v => selectedLangMeiRen = v));
+            specialLangRenBtns1.Children.Add(CreateRoleButton(localization.GetString("LangQiang", "LangQiang"), "LangQiang", () => selectedLangQiang, v => selectedLangQiang = v));
+            specialLangRenBtns1.Children.Add(CreateRoleButton(localization.GetString("JiaMian", "JiaMian"), "JiaMian", () => selectedJiaMian, v => selectedJiaMian = v));
+            specialLangRenBtns1.Children.Add(CreateRoleButton(localization.GetString("DaMao", "DaMao"), "DaMao", () => selectedDaMao, v => selectedDaMao = v));
+            specialLangRenBtns1.Children.Add(CreateRoleButton(localization.GetString("JiXieLang", "JiXieLang"), "JiXieLang", () => selectedJiXieLang, v => selectedJiXieLang = v));
+            specialLangRenBtns1.Children.Add(CreateRoleButton(localization.GetString("LangMeiRen", "LangMeiRen"), "LangMeiRen", () => selectedLangMeiRen, v => selectedLangMeiRen = v));
             mainStack.Children.Add(specialLangRenBtns1);
 
             var specialLangRenBtns2 = new HorizontalStackLayout { Spacing = 4 };
-            specialLangRenBtns2.Children.Add(CreateRoleButton(localization.GetString("HongTaiLang", "HongTaiLang"), () => selectedHongTaiLang, v => selectedHongTaiLang = v));
-            specialLangRenBtns2.Children.Add(CreateRoleButton(localization.GetString("TuFu", "TuFu"), () => selectedTuFu, v => selectedTuFu = v));
+            specialLangRenBtns2.Children.Add(CreateRoleButton(localization.GetString("HongTaiLang", "HongTaiLang"), "HongTaiLang", () => selectedHongTaiLang, v => selectedHongTaiLang = v));
+            specialLangRenBtns2.Children.Add(CreateRoleButton(localization.GetString("TuFu", "TuFu"), "TuFu", () => selectedTuFu, v => selectedTuFu = v));
+            specialLangRenBtns2.Children.Add(CreateRoleButton(localization.GetString("AwkShiXiangGui", "AwkShiXiangGui"), "AwkShiXiangGui", () => selectedAwkShiXiangGui, v => selectedAwkShiXiangGui = v));
             mainStack.Children.Add(specialLangRenBtns2);
 
             // God row 1
             var godBtns1 = new HorizontalStackLayout { Spacing = 4 };
-            godBtns1.Children.Add(CreateRoleButton(localization.GetString("NvWu", "NvWu"), () => selectedNvWu, v => selectedNvWu = v));
-            godBtns1.Children.Add(CreateRoleButton(localization.GetString("YuYanJia", "YuYanJia"), () => selectedYuYanJia, v => selectedYuYanJia = v));
-            godBtns1.Children.Add(CreateRoleButton(localization.GetString("TongLingShi", "TongLingShi"), () => selectedTongLingShi, v => selectedTongLingShi = v));
-            godBtns1.Children.Add(CreateRoleButton(localization.GetString("WuZhe", "WuZhe"), () => selectedWuZhe, v => selectedWuZhe = v));
-            godBtns1.Children.Add(CreateRoleButton(localization.GetString("LieRen", "LieRen"), () => selectedLieRen, v => selectedLieRen = v));
+            godBtns1.Children.Add(CreateRoleButton(localization.GetString("NvWu", "NvWu"), "NvWu", () => selectedNvWu, v => selectedNvWu = v));
+            godBtns1.Children.Add(CreateRoleButton(localization.GetString("YuYanJia", "YuYanJia"), "YuYanJia", () => selectedYuYanJia, v => selectedYuYanJia = v));
+            godBtns1.Children.Add(CreateRoleButton(localization.GetString("TongLingShi", "TongLingShi"), "TongLingShi", () => selectedTongLingShi, v => selectedTongLingShi = v));
+            godBtns1.Children.Add(CreateRoleButton(localization.GetString("WuZhe", "WuZhe"), "WuZhe", () => selectedWuZhe, v => selectedWuZhe = v));
+            godBtns1.Children.Add(CreateRoleButton(localization.GetString("LieRen", "LieRen"), "LieRen", () => selectedLieRen, v => selectedLieRen = v));
             mainStack.Children.Add(godBtns1);
 
             // God row 2
             var godBtns2 = new HorizontalStackLayout { Spacing = 4 };
-            godBtns2.Children.Add(CreateRoleButton(localization.GetString("LaoShu", "LaoShu"), () => selectedLaoShu, v => selectedLaoShu = v));
-            godBtns2.Children.Add(CreateRoleButton(localization.GetString("BaiChi", "BaiChi"), () => selectedBaiChi, v => selectedBaiChi = v));
-            godBtns2.Children.Add(CreateRoleButton(localization.GetString("SheMengRen", "SheMengRen"), () => selectedSheMengRen, v => selectedSheMengRen = v));
-            godBtns2.Children.Add(CreateRoleButton(localization.GetString("Xiong", "Xiong"), () => selectedXiong, v => selectedXiong = v));
-            godBtns2.Children.Add(CreateRoleButton(localization.GetString("Thief", "Thief"), () => selectedThief, v => selectedThief = v));
+            godBtns2.Children.Add(CreateRoleButton(localization.GetString("LaoShu", "LaoShu"), "LaoShu", () => selectedLaoShu, v => selectedLaoShu = v));
+            godBtns2.Children.Add(CreateRoleButton(localization.GetString("BaiChi", "BaiChi"), "BaiChi", () => selectedBaiChi, v => selectedBaiChi = v));
+            godBtns2.Children.Add(CreateRoleButton(localization.GetString("SheMengRen", "SheMengRen"), "SheMengRen", () => selectedSheMengRen, v => selectedSheMengRen = v));
+            godBtns2.Children.Add(CreateRoleButton(localization.GetString("Xiong", "Xiong"), "Xiong", () => selectedXiong, v => selectedXiong = v));
+            godBtns2.Children.Add(CreateRoleButton(localization.GetString("Thief", "Thief"), "Thief", () => selectedThief, v => selectedThief = v));
             mainStack.Children.Add(godBtns2);
 
             // God row 3
             var godBtns3 = new HorizontalStackLayout { Spacing = 4 };
-            godBtns3.Children.Add(CreateRoleButton(localization.GetString("MengMianRen", "MengMianRen"), () => selectedMengMianRen, v => selectedMengMianRen = v));
-            godBtns3.Children.Add(CreateRoleButton(localization.GetString("ShouWei", "ShouWei"), () => selectedShouWei, v => selectedShouWei = v));
-            godBtns3.Children.Add(CreateRoleButton(localization.GetString("MeiYangYang", "MeiYangYang"), () => selectedMeiYangYang, v => selectedMeiYangYang = v));
-            godBtns3.Children.Add(CreateRoleButton(localization.GetString("LieMoRen", "LieMoRen"), () => selectedLieMoRen, v => selectedLieMoRen = v));
+            godBtns3.Children.Add(CreateRoleButton(localization.GetString("MengMianRen", "MengMianRen"), "MengMianRen", () => selectedMengMianRen, v => selectedMengMianRen = v));
+            godBtns3.Children.Add(CreateRoleButton(localization.GetString("ShouWei", "ShouWei"), "ShouWei", () => selectedShouWei, v => selectedShouWei = v));
+            godBtns3.Children.Add(CreateRoleButton(localization.GetString("MeiYangYang", "MeiYangYang"), "MeiYangYang", () => selectedMeiYangYang, v => selectedMeiYangYang = v));
+            godBtns3.Children.Add(CreateRoleButton(localization.GetString("LieMoRen", "LieMoRen"), "LieMoRen", () => selectedLieMoRen, v => selectedLieMoRen = v));
+            godBtns3.Children.Add(CreateRoleButton(localization.GetString("ShouMuRen", "ShouMuRen"), "ShouMuRen", () => selectedShouMuRen, v => selectedShouMuRen = v));
             mainStack.Children.Add(godBtns3);
+
+            // God row 4
+            var godBtns4 = new HorizontalStackLayout { Spacing = 4 };
+            godBtns4.Children.Add(CreateRoleButton(localization.GetString("AwkSheMengRen", "AwkSheMengRen"), "AwkSheMengRen", () => selectedAwkSheMengRen, v => selectedAwkSheMengRen = v));
+            mainStack.Children.Add(godBtns4);
 
             // Third party row
             var thirdPartyBtns = new HorizontalStackLayout { Spacing = 4 };
-            thirdPartyBtns.Children.Add(CreateRoleButton(localization.GetString("YingZi", "YingZi"), () => selectedYingZi, v => selectedYingZi = v));
-            thirdPartyBtns.Children.Add(CreateRoleButton(localization.GetString("FuChouZhe", "FuChouZhe"), () => selectedFuChouZhe, v => selectedFuChouZhe = v));
-            thirdPartyBtns.Children.Add(CreateRoleButton(localization.GetString("HunZi", "HunZi"), () => selectedHunZi, v => selectedHunZi = v));
-            thirdPartyBtns.Children.Add(CreateRoleButton(localization.GetString("GhostBride", "GhostBride"), () => selectedGhostBride, v => selectedGhostBride = v));
+            thirdPartyBtns.Children.Add(CreateRoleButton(localization.GetString("YingZi", "YingZi"), "YingZi", () => selectedYingZi, v => selectedYingZi = v));
+            thirdPartyBtns.Children.Add(CreateRoleButton(localization.GetString("FuChouZhe", "FuChouZhe"), "FuChouZhe", () => selectedFuChouZhe, v => selectedFuChouZhe = v));
+            thirdPartyBtns.Children.Add(CreateRoleButton(localization.GetString("HunZi", "HunZi"), "HunZi", () => selectedHunZi, v => selectedHunZi = v));
+            thirdPartyBtns.Children.Add(CreateRoleButton(localization.GetString("GhostBride", "GhostBride"), "GhostBride", () => selectedGhostBride, v => selectedGhostBride = v));
             mainStack.Children.Add(thirdPartyBtns);
 
             // PingMin row
@@ -616,18 +682,28 @@ namespace PotatoVillage
             };
         }
 
-        private Button CreateRoleButton(string text, Func<bool> getSelected, Action<bool> setSelected)
+        private Button CreateRoleButton(string text, string roleName, Func<bool> getSelected, Action<bool> setSelected)
         {
             var btn = new Button
             {
                 Text = text,
                 BackgroundColor = Colors.LightGray
             };
+            roleButtons[roleName] = btn;
             btn.Clicked += (s, e) =>
             {
                 var newValue = !getSelected();
-                setSelected(newValue);
-                btn.BackgroundColor = newValue ? Colors.Green : Colors.LightGray;
+
+                // Check if we should apply a template (first role selected and it's a template role)
+                if (newValue && !HasRolesSelected() && RoleTemplates.TryGetValue(roleName, out var template))
+                {
+                    ApplyRoleTemplate(roleName, template);
+                }
+                else
+                {
+                    setSelected(newValue);
+                    btn.BackgroundColor = newValue ? Colors.Green : Colors.LightGray;
+                }
             };
             return btn;
         }
@@ -639,6 +715,7 @@ namespace PotatoVillage
                 Text = text,
                 BackgroundColor = Colors.LightGray
             };
+            roleButtons[id] = btn;
             btn.Clicked += (s, e) =>
             {
                 if (selectedSet.Contains(id))
@@ -653,6 +730,89 @@ namespace PotatoVillage
                 }
             };
             return btn;
+        }
+
+        private void ApplyRoleTemplate(string triggerRole, Dictionary<string, int> template)
+        {
+            // First, select the trigger role itself
+            SelectRoleByName(triggerRole, true);
+            if (roleButtons.TryGetValue(triggerRole, out var triggerBtn))
+            {
+                triggerBtn.BackgroundColor = Colors.Green;
+            }
+
+            // Then apply all roles in the template
+            foreach (var (role, count) in template)
+            {
+                if (role == "LangRen")
+                {
+                    for (int i = 1; i <= count && i <= 5; i++)
+                    {
+                        var id = $"LangRen{i}";
+                        selectedLangRen.Add(id);
+                        if (roleButtons.TryGetValue(id, out var langRenBtn))
+                        {
+                            langRenBtn.BackgroundColor = Colors.Green;
+                        }
+                    }
+                }
+                else if (role == "PingMin")
+                {
+                    for (int i = 1; i <= count && i <= 5; i++)
+                    {
+                        var id = $"PingMin{i}";
+                        selectedPingMin.Add(id);
+                        if (roleButtons.TryGetValue(id, out var pingMinBtn))
+                        {
+                            pingMinBtn.BackgroundColor = Colors.Green;
+                        }
+                    }
+                }
+                else
+                {
+                    SelectRoleByName(role, true);
+                    if (roleButtons.TryGetValue(role, out var roleBtn))
+                    {
+                        roleBtn.BackgroundColor = Colors.Green;
+                    }
+                }
+            }
+        }
+
+        private void SelectRoleByName(string roleName, bool selected)
+        {
+            switch (roleName)
+            {
+                case "JiaMian": selectedJiaMian = selected; break;
+                case "NvWu": selectedNvWu = selected; break;
+                case "YuYanJia": selectedYuYanJia = selected; break;
+                case "TongLingShi": selectedTongLingShi = selected; break;
+                case "WuZhe": selectedWuZhe = selected; break;
+                case "LieRen": selectedLieRen = selected; break;
+                case "LangQiang": selectedLangQiang = selected; break;
+                case "DaMao": selectedDaMao = selected; break;
+                case "LaoShu": selectedLaoShu = selected; break;
+                case "BaiChi": selectedBaiChi = selected; break;
+                case "SheMengRen": selectedSheMengRen = selected; break;
+                case "Xiong": selectedXiong = selected; break;
+                case "ShenLangGongWu1": selectedShenLangGongWu1 = selected; break;
+                case "Thief": selectedThief = selected; break;
+                case "MengMianRen": selectedMengMianRen = selected; break;
+                case "ShouWei": selectedShouWei = selected; break;
+                case "YingZi": selectedYingZi = selected; break;
+                case "FuChouZhe": selectedFuChouZhe = selected; break;
+                case "HunZi": selectedHunZi = selected; break;
+                case "JiXieLang": selectedJiXieLang = selected; break;
+                case "LangMeiRen": selectedLangMeiRen = selected; break;
+                case "AwkShiXiangGui": selectedAwkShiXiangGui = selected; break;
+                case "GhostBride": selectedGhostBride = selected; break;
+                case "MeiYangYang": selectedMeiYangYang = selected; break;
+                case "HongTaiLang": selectedHongTaiLang = selected; break;
+                case "LieMoRen": selectedLieMoRen = selected; break;
+                case "TuFu": selectedTuFu = selected; break;
+                case "ShouMuRen": selectedShouMuRen = selected; break;
+                case "AwkSheMengRen": selectedAwkSheMengRen = selected; break;
+            }
         }
 
         private async Task CreateGameAsync()
@@ -756,11 +916,14 @@ namespace PotatoVillage
             if (selectedHunZi) roleDict["HunZi"] = 1;
             if (selectedJiXieLang) roleDict["JiXieLang"] = 1;
             if (selectedLangMeiRen) roleDict["LangMeiRen"] = 1;
+            if (selectedAwkShiXiangGui) roleDict["AwkShiXiangGui"] = 1;
             if (selectedGhostBride) roleDict["GhostBride"] = 1;
             if (selectedMeiYangYang) roleDict["MeiYangYang"] = 1;
             if (selectedHongTaiLang) roleDict["HongTaiLang"] = 1;
             if (selectedLieMoRen) roleDict["LieMoRen"] = 1;
             if (selectedTuFu) roleDict["TuFu"] = 1;
+            if (selectedShouMuRen) roleDict["ShouMuRen"] = 1;
+            if (selectedAwkSheMengRen) roleDict["AwkSheMengRen"] = 1;
             if (selectedPingMin.Count > 0) roleDict["PingMin"] = selectedPingMin.Count;
 
             return roleDict;

@@ -203,7 +203,7 @@ namespace ProcedureCore.LangRenSha
             }
 
             // Actions 33 and 35 are announcer actions for everyone to open/close eyes to check mice information
-            if (LangRenSha.AnnouncerAction(game, update, false, ActionOrders[3], ActionOrders[5], 1000, 1001, "MiceCheck", 4) == GameActionResult.Restart)
+            if (LangRenSha.AnnouncerAction(game, update, false, ActionOrders[3], ActionOrders[5], 1000, 1001, "", 4) == GameActionResult.Restart)
             {
                 return GameActionResult.Restart;
             }

@@ -106,18 +106,28 @@ namespace ProcedureCore.LangRenSha
         HongTaiLang_CloseEyes = 116,
         HongTaiLang_KillTarget = 222,
 
-        // === LangRen (119-123, 220) ===
-        LangRen_OpenEyes = 119,
-        LangRen_SelectTarget = 120,
-        LangRen_ConfirmKill = 121,
-        LangMeiRen_Act = 122,
-        LangRen_CloseEyes = 123,
+        // === TuFu (117-119) - Day 1+ only ===
+        TuFu_OpenEyes = 117,
+        TuFu_Act = 118,
+        TuFu_CloseEyes = 119,
+
+        // === LangRen (121-125, 220) ===
+        LangRen_OpenEyes = 121,
+        LangRen_SelectTarget = 122,
+        LangRen_ConfirmKill = 123,
+        LangMeiRen_Act = 124,
+        LangRen_CloseEyes = 125,
         LangRen_Kill = 220,
 
         // === NvWu (139-141) ===
         NvWu_OpenEyes = 139,
         NvWu_Act = 140,
         NvWu_CloseEyes = 141,
+
+        // === LieMoRen (145-147) - Day 1+ only ===
+        LieMoRen_OpenEyes = 145,
+        LieMoRen_Act = 146,
+        LieMoRen_CloseEyes = 147,
 
         // === YuYanJia (169-172) ===
         YuYanJia_OpenEyes = 169,
@@ -213,12 +223,13 @@ namespace ProcedureCore.LangRenSha
         // === End of Day (40) ===
         EndOfDay = 40,
 
-        // === Death Handling (97-101) ===
+        // === Death Handling (97-102) ===
         DeathHandlingInterrupt = 97,
         DeadPlayerSkillsProcessing = 98,
         DeadPlayerSheriffHandover = 99,
         DeadPlayerSpeak = 100,
         MengMianRenDeath = 101,
+        SkillUseAnnouncement = 102,
     }
 
     /// <summary>
@@ -323,6 +334,12 @@ namespace ProcedureCore.LangRenSha
         GhostBride_WitnessInfo = 87,
         GhostBride_AttackStatus = 92,
 
+        // === LieMoRen (93) ===
+        LieMoRen_Act = 93,
+
+        // === TuFu (94-95) ===
+        TuFu_Act = 94,
+
         // === Sheriff Election (100-107) ===
         SheriffVolunteer = 100,
         SheriffVote = 101,
@@ -350,5 +367,8 @@ namespace ProcedureCore.LangRenSha
         DayTime = 1002,
         GameOver = 1003,
         PutDownDevice = 1020,
+
+        // === Skill Use Announcement (1100) ===
+        SkillUseAnnouncement = 1100,
     }
 }

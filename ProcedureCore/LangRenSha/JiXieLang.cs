@@ -485,7 +485,8 @@ namespace ProcedureCore.LangRenSha
                 if (targets.Count > 0 && targets[0] > 0)
                 {
                     var currentAboutToDie = Game.GetGameDictionaryProperty(game, LangRenSha.dictAboutToDie, new List<int>());
-                    LangRenSha.MarkPlayerAboutToDie(game, targets[0], update);
+                    var target = targets[0];
+                    LangRenSha.MarkPlayerAboutToDie(game, target, update);
                     LangRenSha.SetPlayerProperty(game, deadPlayer, LieRen.dictHuntingDisabled, 1, update);
 
                     var skillsProcessed = Game.GetGameDictionaryProperty(game, LangRenSha.dictDeadSkillsProcessed, new List<int>());
@@ -495,18 +496,33 @@ namespace ProcedureCore.LangRenSha
                         update[LangRenSha.dictDeadSkillsProcessed] = skillsProcessed;
                     }
 
+                    // Set up interrupt chain: SkillUseAnnouncement -> DeathHandling -> Continue processing
                     var currentInterrupt = Game.GetGameDictionaryProperty(game, LangRenSha.dictInterrupt, new Dictionary<string, object>());
                     var currentDeadPlayers = Game.GetGameDictionaryProperty(game, LangRenSha.dictDeadPlayerAction, new List<int>());
 
-                    var newInterrupt = new Dictionary<string, object>();
-                    newInterrupt[LangRenSha.dictSpeak] = 98;
-                    newInterrupt[LangRenSha.dictInterrupt] = currentInterrupt;
-                    newInterrupt[LangRenSha.dictDeadPlayerAction] = currentDeadPlayers;
-                    newInterrupt[LangRenSha.dictDeadSkillsProcessed] = skillsProcessed;
-                    newInterrupt[LangRenSha.dictAboutToDie] = currentAboutToDie;
+                    // Inner interrupt: return to continue processing dead player skills
+                    var deathHandlingInterrupt = new Dictionary<string, object>();
+                    deathHandlingInterrupt[LangRenSha.dictSpeak] = 98; // Return to continue processing dead player skills
+                    deathHandlingInterrupt[LangRenSha.dictInterrupt] = currentInterrupt;
 
-                    update[LangRenSha.dictInterrupt] = newInterrupt;
-                    update[LangRenSha.dictSpeak] = 97;
+                    // Save death-related fields for restoration
+                    deathHandlingInterrupt[LangRenSha.dictDeadPlayerAction] = currentDeadPlayers;
+                    deathHandlingInterrupt[LangRenSha.dictDeadSkillsProcessed] = skillsProcessed;
+                    deathHandlingInterrupt[LangRenSha.dictAboutToDie] = currentAboutToDie;
+
+                    // Outer interrupt: skill use announcement -> death handling
+                    var skillAnnouncementInterrupt = new Dictionary<string, object>();
+                    skillAnnouncementInterrupt[LangRenSha.dictSpeak] = (int)SpeakConstant.DeathHandlingInterrupt; // Go to death handling after announcement
+                    skillAnnouncementInterrupt[LangRenSha.dictInterrupt] = deathHandlingInterrupt;
+
+                    // Set up skill use announcement fields
+                    update[LangRenSha.dictSkillUseFrom] = deadPlayer;
+                    update[LangRenSha.dictSkillUseTo] = new List<int> { target };
+                    update[LangRenSha.dictSkillUse] = "hunted";
+                    update[LangRenSha.dictSkillUseResult] = "1"; // Succeeded
+
+                    update[LangRenSha.dictInterrupt] = skillAnnouncementInterrupt;
+                    update[LangRenSha.dictSpeak] = (int)SpeakConstant.SkillUseAnnouncement;
                     UserAction.EndUserAction(game, update, true);
 
                     return (true, GameActionResult.Restart);

@@ -24,6 +24,8 @@ namespace PotatoVillage
         private const string RoundTableModePreferenceKey = "create_game_round_table_mode";
         private const string OwnerControlPreferenceKey = "create_game_owner_control";
         private const string SeatCounterClockwisePreferenceKey = "create_game_seat_counter_clockwise";
+        private const string ViewRoleInTurnPreferenceKey = "create_game_view_role_in_turn";
+        private const string RoleViewingGroupSizePreferenceKey = "create_game_role_viewing_group_size";
 
         // UI colors for popups
         private static readonly Color PopupTextColor = Color.FromArgb("#FFF8DC");
@@ -54,6 +56,8 @@ namespace PotatoVillage
         private bool selectedGhostBride = false;
         private bool selectedMeiYangYang = false;
         private bool selectedHongTaiLang = false;
+        private bool selectedLieMoRen = false;
+        private bool selectedTuFu = false;
         private HashSet<string> selectedPingMin = new();
 
         // Server URL (discovered at startup, not persisted)
@@ -71,6 +75,8 @@ namespace PotatoVillage
         private bool roundTableMode;
         private bool ownerControlEnabled;
         private bool seatCounterClockwise;
+        private bool viewRoleInTurn;
+        private int roleViewingGroupSize;
 
         // Track if server discovery has been done this session
         private static bool serverDiscoveryDone = false;
@@ -107,6 +113,8 @@ namespace PotatoVillage
             roundTableMode = Preferences.Get(RoundTableModePreferenceKey, false);
             ownerControlEnabled = Preferences.Get(OwnerControlPreferenceKey, true);
             seatCounterClockwise = Preferences.Get(SeatCounterClockwisePreferenceKey, false);
+            viewRoleInTurn = Preferences.Get(ViewRoleInTurnPreferenceKey, false);
+            roleViewingGroupSize = Preferences.Get(RoleViewingGroupSizePreferenceKey, 3);
         }
 
         private async Task DiscoverServerAsync()
@@ -388,6 +396,8 @@ namespace PotatoVillage
             selectedGhostBride = false;
             selectedMeiYangYang = false;
             selectedHongTaiLang = false;
+            selectedLieMoRen = false;
+            selectedTuFu = false;
             selectedPingMin.Clear();
         }
 
@@ -412,6 +422,7 @@ namespace PotatoVillage
             var werewolfEntry = new Entry { Text = werewolfDuration.ToString(), Keyboard = Keyboard.Numeric, TextColor = PopupTextColor, WidthRequest = 80 };
             var godEntry = new Entry { Text = godDuration.ToString(), Keyboard = Keyboard.Numeric, TextColor = PopupTextColor, WidthRequest = 80 };
             var sheriffExtraTimeEntry = new Entry { Text = sheriffExtraTime.ToString(), Keyboard = Keyboard.Numeric, TextColor = PopupTextColor, WidthRequest = 80 };
+            var roleViewingGroupSizeEntry = new Entry { Text = roleViewingGroupSize.ToString(), Keyboard = Keyboard.Numeric, TextColor = PopupTextColor, WidthRequest = 80 };
 
             mainStack.Children.Add(CreateHorizontalEntry(speechEntry, localization.GetString("speech_duration", "Speech Duration")));
             mainStack.Children.Add(CreateHorizontalEntry(werewolfEntry, localization.GetString("werewolf_duration", "Werewolf Duration")));
@@ -422,10 +433,13 @@ namespace PotatoVillage
             var roundTableSwitch = new Switch { IsToggled = roundTableMode };
             var ownerControlSwitch = new Switch { IsToggled = ownerControlEnabled };
             var counterClockwiseSwitch = new Switch { IsToggled = seatCounterClockwise };
+            var viewRoleInTurnSwitch = new Switch { IsToggled = viewRoleInTurn };
 
             mainStack.Children.Add(CreateHorizontalSwitch(roundTableSwitch, localization.GetString("round_table_mode", "Round Table Mode")));
             mainStack.Children.Add(CreateHorizontalSwitch(ownerControlSwitch, localization.GetString("owner_control_mode", "Owner Control Mode")));
             mainStack.Children.Add(CreateHorizontalSwitch(counterClockwiseSwitch, localization.GetString("seat_counter_clockwise", "Seat Counter-Clockwise")));
+            mainStack.Children.Add(CreateHorizontalSwitch(viewRoleInTurnSwitch, localization.GetString("view_role_in_turn", "View Role In Turn")));
+            mainStack.Children.Add(CreateHorizontalEntry(roleViewingGroupSizeEntry, localization.GetString("role_viewing_group_size", "Role Viewing Group Size")));
 
             // Role Selection
             mainStack.Children.Add(new Label { Text = localization.GetString("select_roles_new_game", "Select Roles"), FontAttributes = FontAttributes.Bold, FontSize = 14, TextColor = PopupTextColor, Margin = new Thickness(0, 12, 0, 0) });
@@ -454,6 +468,7 @@ namespace PotatoVillage
 
             var specialLangRenBtns2 = new HorizontalStackLayout { Spacing = 4 };
             specialLangRenBtns2.Children.Add(CreateRoleButton(localization.GetString("HongTaiLang", "HongTaiLang"), () => selectedHongTaiLang, v => selectedHongTaiLang = v));
+            specialLangRenBtns2.Children.Add(CreateRoleButton(localization.GetString("TuFu", "TuFu"), () => selectedTuFu, v => selectedTuFu = v));
             mainStack.Children.Add(specialLangRenBtns2);
 
             // God row 1
@@ -479,6 +494,7 @@ namespace PotatoVillage
             godBtns3.Children.Add(CreateRoleButton(localization.GetString("MengMianRen", "MengMianRen"), () => selectedMengMianRen, v => selectedMengMianRen = v));
             godBtns3.Children.Add(CreateRoleButton(localization.GetString("ShouWei", "ShouWei"), () => selectedShouWei, v => selectedShouWei = v));
             godBtns3.Children.Add(CreateRoleButton(localization.GetString("MeiYangYang", "MeiYangYang"), () => selectedMeiYangYang, v => selectedMeiYangYang = v));
+            godBtns3.Children.Add(CreateRoleButton(localization.GetString("LieMoRen", "LieMoRen"), () => selectedLieMoRen, v => selectedLieMoRen = v));
             mainStack.Children.Add(godBtns3);
 
             // Third party row
@@ -514,9 +530,11 @@ namespace PotatoVillage
                 werewolfDuration = int.TryParse(werewolfEntry.Text, out var wd) ? wd : 155;
                 godDuration = int.TryParse(godEntry.Text, out var gd) ? gd : 19;
                 sheriffExtraTime = int.TryParse(sheriffExtraTimeEntry.Text, out var set) ? set : 30;
+                roleViewingGroupSize = int.TryParse(roleViewingGroupSizeEntry.Text, out var rvgs) ? rvgs : 3;
                 roundTableMode = roundTableSwitch.IsToggled;
                 ownerControlEnabled = ownerControlSwitch.IsToggled;
                 seatCounterClockwise = counterClockwiseSwitch.IsToggled;
+                viewRoleInTurn = viewRoleInTurnSwitch.IsToggled;
 
                 Preferences.Set(SpeechDurationPreferenceKey, speechDuration);
                 Preferences.Set(WerewolfDurationPreferenceKey, werewolfDuration);
@@ -525,6 +543,8 @@ namespace PotatoVillage
                 Preferences.Set(RoundTableModePreferenceKey, roundTableMode);
                 Preferences.Set(OwnerControlPreferenceKey, ownerControlEnabled);
                 Preferences.Set(SeatCounterClockwisePreferenceKey, seatCounterClockwise);
+                Preferences.Set(ViewRoleInTurnPreferenceKey, viewRoleInTurn);
+                Preferences.Set(RoleViewingGroupSizePreferenceKey, roleViewingGroupSize);
 
                 if (!HasRolesSelected())
                 {
@@ -702,8 +722,9 @@ namespace PotatoVillage
             int rtMode = roundTableMode ? 1 : 0;
             int ownerCtrl = ownerControlEnabled ? 1 : 0;
             int ccw = seatCounterClockwise ? 1 : 0;
+            int vrit = viewRoleInTurn ? 1 : 0;
 
-            if (!await connectionManager.CreateRoomAsync2(totalPlayers, roleDict, speechDuration, werewolfDuration, godDuration, rtMode, ownerCtrl, ccw, sheriffExtraTime))
+            if (!await connectionManager.CreateRoomAsync2(totalPlayers, roleDict, speechDuration, werewolfDuration, godDuration, rtMode, ownerCtrl, ccw, sheriffExtraTime, vrit, roleViewingGroupSize))
             {
                 ResetUIState();
             }
@@ -738,6 +759,8 @@ namespace PotatoVillage
             if (selectedGhostBride) roleDict["GhostBride"] = 1;
             if (selectedMeiYangYang) roleDict["MeiYangYang"] = 1;
             if (selectedHongTaiLang) roleDict["HongTaiLang"] = 1;
+            if (selectedLieMoRen) roleDict["LieMoRen"] = 1;
+            if (selectedTuFu) roleDict["TuFu"] = 1;
             if (selectedPingMin.Count > 0) roleDict["PingMin"] = selectedPingMin.Count;
 
             return roleDict;

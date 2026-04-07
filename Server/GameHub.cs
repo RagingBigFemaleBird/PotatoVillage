@@ -138,6 +138,8 @@ namespace Server
                 { "GhostBride", new GhostBride() },
                 { "MeiYangYang", new MeiYangYang() },
                 { "HongTaiLang", new HongTaiLang() },
+                { "LieMoRen", new LieMoRen() },
+                { "TuFu", new TuFu() },
             };
 
             if (!roleDict.ContainsKey("LangRen"))

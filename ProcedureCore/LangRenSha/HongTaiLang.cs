@@ -97,7 +97,7 @@ namespace ProcedureCore.LangRenSha
 
             if (poisonUsed || hongTaiLangAlive.Count == 0)
             {
-                actionDuration = new Random().Next(3, 6);
+                actionDuration = new Random().Next(6, 10);
             }
 
             if (UserAction.EndUserAction(game, update))

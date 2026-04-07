@@ -109,6 +109,8 @@ namespace ProcedureCore.LangRenSha
                 "GhostBride" => new GhostBride(),
                 "MeiYangYang" => new MeiYangYang(),
                 "HongTaiLang" => new HongTaiLang(),
+                "LieMoRen" => new LieMoRen(),
+                "TuFu" => new TuFu(),
                 _ => throw new ArgumentException($"Not a role: {roleName}")
             };
         }
@@ -158,6 +160,15 @@ namespace ProcedureCore.LangRenSha
         public static string dictRoundTableMode = "round_table_mode"; // 0 = start from sheriff, 1 = start from dead player (if single dead)
         public static string dictOwnerControlEnabled = "owner_control_enabled"; // 0 = disabled, 1 = owner can override day flow
         public static string dictSeatCounterClockwise = "seat_counter_clockwise"; // 0 = clockwise (default), 1 = counter-clockwise
+        public static string dictViewRoleInTurn = "view_role_in_turn"; // 0 = all at once (default), 1 = view in turn (轮流看牌)
+        public static string dictRoleViewingGroupSize = "role_viewing_group_size"; // Group size for turn-based viewing (看牌组大小), default 3
+        public static string dictRoleViewingStartPlayer = "role_viewing_start_player"; // Random starting player for turn-based viewing
+
+        // Skill use announcement fields
+        public static string dictSkillUseFrom = "skill_use_from"; // integer - who used the skill
+        public static string dictSkillUseTo = "skill_use_to"; // list of integers - whom the skill was used on
+        public static string dictSkillUse = "skill_use"; // string - what skill was used
+        public static string dictSkillUseResult = "skill_use_result"; // string - result of the skill
 
         public int Version
         {
@@ -209,7 +220,7 @@ namespace ProcedureCore.LangRenSha
                 update[LangRenSha.dictNightOrders] = no;
                 return GameActionResult.Continue;
             }
-            // Game begin announcement
+            // Game begin announcement - announces which players should view their role
             if (Game.GetGameDictionaryProperty(game, LangRenSha.dictAction, 0) == (int)ActionConstant.GameBeginAnnouncement)
             {
                 if (Game.GetGameDictionaryProperty(game, LangRenSha.dictDay, 0) != 0 || UserAction.EndUserAction(game, update))
@@ -221,76 +232,216 @@ namespace ProcedureCore.LangRenSha
                 {
                     if (UserAction.StartUserAction(game, 5, update))
                     {
+                        var allPlayers = LangRenSha.GetPlayers(game, x => true);
+                        var viewInTurn = Game.GetGameDictionaryProperty(game, dictViewRoleInTurn, 0) == 1;
+                        var roleCheckComplete = Game.GetGameDictionaryProperty(game, dictRoleCheckComplete, new List<int>());
+
+                        string announcementInfo = "";
+                        if (viewInTurn)
+                        {
+                            var groupSize = Game.GetGameDictionaryProperty(game, dictRoleViewingGroupSize, 3);
+                            var startPlayer = Game.GetGameDictionaryProperty(game, dictRoleViewingStartPlayer, 0);
+
+                            // Initialize starting player if not set
+                            if (startPlayer == 0)
+                            {
+                                startPlayer = (game.GetRandomNumber() % allPlayers.Count) + 1;
+                                update[dictRoleViewingStartPlayer] = startPlayer;
+                            }
+
+                            // Get current group of players who should view their role
+                            var currentGroupPlayers = GetCurrentViewingGroup(allPlayers.Count, startPlayer, groupSize, roleCheckComplete);
+                            announcementInfo = string.Join(", ", currentGroupPlayers);
+                        }
+
                         update[UserAction.dictUserActionTargets] = new List<int>();
                         update[UserAction.dictUserActionUsers] = new List<int> { -1 };
                         update[UserAction.dictUserActionTargetsCount] = 1;
                         update[UserAction.dictUserActionTargetsHint] = (int)HintConstant.CheckPrivate;
+                        update[UserAction.dictUserActionInfo] = announcementInfo;
                         return GameActionResult.Restart;
                     }
                 }
             }
 
-            // Role check
+            // Role check - players view their roles
             if (Game.GetGameDictionaryProperty(game, LangRenSha.dictAction, 0) == (int)ActionConstant.RoleCheck)
             {
-                if (Game.GetGameDictionaryProperty(game, LangRenSha.dictDay, 0) != 0 || UserAction.EndUserAction(game, update))
+                var allPlayers = LangRenSha.GetPlayers(game, x => true);
+                var roleCheckComplete = Game.GetGameDictionaryProperty(game, dictRoleCheckComplete, new List<int>());
+                var viewInTurn = Game.GetGameDictionaryProperty(game, dictViewRoleInTurn, 0) == 1;
+
+                // Skip on non-day-0
+                if (Game.GetGameDictionaryProperty(game, LangRenSha.dictDay, 0) != 0)
                 {
-                    update[dictRoleCheckComplete] = null; // Clear role check tracking
+                    update[dictRoleCheckComplete] = null;
+                    update[dictRoleViewingStartPlayer] = null;
                     LangRenSha.AdvanceAction(game, update);
                     return GameActionResult.Restart;
                 }
-                else
-                {
-                    var allPlayers = LangRenSha.GetPlayers(game, x => true);
-                    var roleCheckComplete = Game.GetGameDictionaryProperty(game, dictRoleCheckComplete, new List<int>());
 
-                    if (UserAction.StartUserAction(game, 60, update))
+                // Check if all players have completed
+                if (roleCheckComplete.Count >= allPlayers.Count)
+                {
+                    update[dictRoleCheckComplete] = null;
+                    update[dictRoleViewingStartPlayer] = null;
+                    UserAction.EndUserAction(game, update, true);
+                    LangRenSha.AdvanceAction(game, update);
+                    return GameActionResult.Restart;
+                }
+
+                if (viewInTurn)
+                {
+                    // Turn-based viewing (轮流看牌)
+                    var groupSize = Game.GetGameDictionaryProperty(game, dictRoleViewingGroupSize, 3);
+                    var startPlayer = Game.GetGameDictionaryProperty(game, dictRoleViewingStartPlayer, 0);
+
+                    // Initialize starting player if not set (should already be set in GameBeginAnnouncement)
+                    if (startPlayer == 0)
                     {
-                        // Only include players who haven't completed role check yet
-                        var pendingPlayers = allPlayers.Where(p => !roleCheckComplete.Contains(p)).ToList();
-                        update[UserAction.dictUserActionTargets] = new List<int>() { 0 };
-                        update[UserAction.dictUserActionUsers] = pendingPlayers;
-                        update[UserAction.dictUserActionTargetsCount] = 1;
-                        update[UserAction.dictUserActionTargetsHint] = (int)HintConstant.CheckPrivate;
+                        startPlayer = (game.GetRandomNumber() % allPlayers.Count) + 1;
+                        update[dictRoleViewingStartPlayer] = startPlayer;
+                    }
+
+                    // Get current group of players who should view their role
+                    var currentGroupPlayers = GetCurrentViewingGroup(allPlayers.Count, startPlayer, groupSize, roleCheckComplete);
+
+                    if (currentGroupPlayers.Count == 0)
+                    {
+                        // All groups complete
+                        update[dictRoleCheckComplete] = null;
+                        update[dictRoleViewingStartPlayer] = null;
+                        LangRenSha.AdvanceAction(game, update);
+                        return GameActionResult.Restart;
+                    }
+
+                    if (UserAction.EndUserAction(game, update))
+                    {
+                        // Time ended for current group, mark them as complete
+                        foreach (var player in currentGroupPlayers)
+                        {
+                            if (!roleCheckComplete.Contains(player))
+                            {
+                                roleCheckComplete.Add(player);
+                            }
+                        }
+                        update[dictRoleCheckComplete] = roleCheckComplete;
+
+                        // Check if more groups need to view - loop back to GameBeginAnnouncement
+                        if (roleCheckComplete.Count < allPlayers.Count)
+                        {
+                            update[dictAction] = (int)ActionConstant.GameBeginAnnouncement;
+                        }
                         return GameActionResult.Restart;
                     }
                     else
                     {
-                        // Check for early completions
-                        var pendingPlayers = allPlayers.Where(p => !roleCheckComplete.Contains(p)).ToList();
-                        (var inputValid, var input, var input_others) = UserAction.GetUserResponse(game, true, pendingPlayers, update);
-                        if (inputValid)
+                        if (UserAction.StartUserAction(game, 60, update))
                         {
-                            bool anyNewComplete = false;
-                            foreach (var entry in input)
+                            update[UserAction.dictUserActionTargets] = new List<int>() { 0 };
+                            update[UserAction.dictUserActionUsers] = currentGroupPlayers;
+                            update[UserAction.dictUserActionTargetsCount] = 1;
+                            update[UserAction.dictUserActionTargetsHint] = (int)HintConstant.CheckPrivate;
+                            return GameActionResult.Restart;
+                        }
+                        else
+                        {
+                            // Check for early completions in current group
+                            (var inputValid, var input, var input_others) = UserAction.GetUserResponse(game, true, currentGroupPlayers, update);
+                            if (inputValid)
                             {
-                                var player = int.Parse(entry.Key);
-                                var targets = (List<int>)entry.Value;
-                                // If player responded (any response means they acknowledged their role)
-                                if (targets.Count > 0 && !roleCheckComplete.Contains(player))
+                                bool anyNewComplete = false;
+                                foreach (var entry in input)
                                 {
-                                    roleCheckComplete.Add(player);
-                                    anyNewComplete = true;
+                                    var player = int.Parse(entry.Key);
+                                    var targets = (List<int>)entry.Value;
+                                    if (targets.Count > 0 && !roleCheckComplete.Contains(player))
+                                    {
+                                        roleCheckComplete.Add(player);
+                                        anyNewComplete = true;
+                                    }
+                                }
+
+                                if (anyNewComplete)
+                                {
+                                    update[dictRoleCheckComplete] = roleCheckComplete;
+
+                                    // Check if current group is complete
+                                    bool groupComplete = currentGroupPlayers.All(p => roleCheckComplete.Contains(p));
+                                    if (groupComplete)
+                                    {
+                                        UserAction.EndUserAction(game, update, true);
+                                        // Loop back to GameBeginAnnouncement for next group if not all done
+                                        if (roleCheckComplete.Count < allPlayers.Count)
+                                        {
+                                            update[dictAction] = (int)ActionConstant.GameBeginAnnouncement;
+                                        }
+                                        return GameActionResult.Restart;
+                                    }
+
+                                    // Update the action users to exclude completed players in group
+                                    var remainingInGroup = currentGroupPlayers.Where(p => !roleCheckComplete.Contains(p)).ToList();
+                                    update[UserAction.dictUserActionUsers] = remainingInGroup;
+                                    return GameActionResult.Continue;
                                 }
                             }
-
-                            if (anyNewComplete)
+                        }
+                    }
+                }
+                else
+                {
+                    // Original all-at-once viewing
+                    if (UserAction.EndUserAction(game, update))
+                    {
+                        update[dictRoleCheckComplete] = null;
+                        LangRenSha.AdvanceAction(game, update);
+                        return GameActionResult.Restart;
+                    }
+                    else
+                    {
+                        if (UserAction.StartUserAction(game, 60, update))
+                        {
+                            var pendingPlayers = allPlayers.Where(p => !roleCheckComplete.Contains(p)).ToList();
+                            update[UserAction.dictUserActionTargets] = new List<int>() { 0 };
+                            update[UserAction.dictUserActionUsers] = pendingPlayers;
+                            update[UserAction.dictUserActionTargetsCount] = 1;
+                            update[UserAction.dictUserActionTargetsHint] = (int)HintConstant.CheckPrivate;
+                            return GameActionResult.Restart;
+                        }
+                        else
+                        {
+                            var pendingPlayers = allPlayers.Where(p => !roleCheckComplete.Contains(p)).ToList();
+                            (var inputValid, var input, var input_others) = UserAction.GetUserResponse(game, true, pendingPlayers, update);
+                            if (inputValid)
                             {
-                                update[dictRoleCheckComplete] = roleCheckComplete;
-
-                                // Check if everyone has completed
-                                if (roleCheckComplete.Count >= allPlayers.Count)
+                                bool anyNewComplete = false;
+                                foreach (var entry in input)
                                 {
-                                    update[dictRoleCheckComplete] = null;
-                                    UserAction.EndUserAction(game, update, true);
-                                    LangRenSha.AdvanceAction(game, update);
-                                    return GameActionResult.Restart;
+                                    var player = int.Parse(entry.Key);
+                                    var targets = (List<int>)entry.Value;
+                                    if (targets.Count > 0 && !roleCheckComplete.Contains(player))
+                                    {
+                                        roleCheckComplete.Add(player);
+                                        anyNewComplete = true;
+                                    }
                                 }
 
-                                // Update the action users to exclude completed players
-                                var remainingPlayers = allPlayers.Where(p => !roleCheckComplete.Contains(p)).ToList();
-                                update[UserAction.dictUserActionUsers] = remainingPlayers;
-                                return GameActionResult.Continue;
+                                if (anyNewComplete)
+                                {
+                                    update[dictRoleCheckComplete] = roleCheckComplete;
+
+                                    if (roleCheckComplete.Count >= allPlayers.Count)
+                                    {
+                                        update[dictRoleCheckComplete] = null;
+                                        UserAction.EndUserAction(game, update, true);
+                                        LangRenSha.AdvanceAction(game, update);
+                                        return GameActionResult.Restart;
+                                    }
+
+                                    var remainingPlayers = allPlayers.Where(p => !roleCheckComplete.Contains(p)).ToList();
+                                    update[UserAction.dictUserActionUsers] = remainingPlayers;
+                                    return GameActionResult.Continue;
+                                }
                             }
                         }
                     }
@@ -1612,6 +1763,50 @@ namespace ProcedureCore.LangRenSha
                 return GameActionResult.NotExecuted;
             }
 
+            // Skill use announcement (speak=102)
+            // Displays "who" used "what" on "whom" with "result" format
+            if (Game.GetGameDictionaryProperty(game, dictSpeak, 0) == (int)SpeakConstant.SkillUseAnnouncement)
+            {
+                var skillFrom = Game.GetGameDictionaryProperty(game, dictSkillUseFrom, 0);
+                var skillTo = Game.GetGameDictionaryProperty(game, dictSkillUseTo, new List<int>());
+                var skillUse = Game.GetGameDictionaryProperty(game, dictSkillUse, "");
+                var skillResult = Game.GetGameDictionaryProperty(game, dictSkillUseResult, "");
+
+                if (UserAction.EndUserAction(game, update))
+                {
+                    // Return to interrupted task
+                    var interrupted = Game.GetGameDictionaryProperty(game, dictInterrupt, new Dictionary<string, object>());
+                    foreach (var item in interrupted)
+                    {
+                        update[item.Key] = item.Value;
+                    }
+                    // Clear skill use fields
+                    update[dictSkillUseFrom] = null;
+                    update[dictSkillUseTo] = null;
+                    update[dictSkillUse] = null;
+                    update[dictSkillUseResult] = null;
+                    return GameActionResult.Restart;
+                }
+                else
+                {
+                    // Broadcast skill use announcement
+                    if (UserAction.StartUserAction(game, 5, update))
+                    {
+                        // Format: "from;to1,to2,...;skill;result"
+                        var toStr = string.Join(",", skillTo);
+                        var announcementInfo = $"{skillFrom};{toStr};{skillUse};{skillResult}";
+
+                        update[UserAction.dictUserActionTargets] = new List<int>();
+                        update[UserAction.dictUserActionUsers] = new List<int> { -1 }; // Announcement
+                        update[UserAction.dictUserActionTargetsCount] = 0;
+                        update[UserAction.dictUserActionTargetsHint] = (int)HintConstant.SkillUseAnnouncement;
+                        update[UserAction.dictUserActionInfo] = announcementInfo;
+                        return GameActionResult.Restart;
+                    }
+                }
+                return GameActionResult.NotExecuted;
+            }
+
             return GameActionResult.NotExecuted;
         }
 
@@ -1638,6 +1833,44 @@ namespace ProcedureCore.LangRenSha
                 }
             } while (!players.Contains(next));
             return next;
+        }
+
+        /// <summary>
+        /// Gets the current group of players who should view their role in turn-based viewing mode.
+        /// Groups are determined by the starting player and group size.
+        /// For example: 13 players, start=9, groupSize=3 -> Group 0: 9,10,11, Group 1: 12,13,1, etc.
+        /// Returns only uncompleted players in the current group.
+        /// </summary>
+        private static List<int> GetCurrentViewingGroup(int totalPlayers, int startPlayer, int groupSize, List<int> completed)
+        {
+            var result = new List<int>();
+            int totalGroups = (totalPlayers + groupSize - 1) / groupSize;
+
+            for (int groupIndex = 0; groupIndex < totalGroups; groupIndex++)
+            {
+                // Get all players in this group
+                var groupPlayers = new List<int>();
+                int groupStart = groupIndex * groupSize;
+                int groupEnd = Math.Min(groupStart + groupSize, totalPlayers);
+
+                for (int i = groupStart; i < groupEnd; i++)
+                {
+                    // Calculate player number: wrap around from startPlayer
+                    int player = ((startPlayer - 1 + i) % totalPlayers) + 1;
+                    groupPlayers.Add(player);
+                }
+
+                // Check if this group has any uncompleted players
+                var uncompleted = groupPlayers.Where(p => !completed.Contains(p)).ToList();
+                if (uncompleted.Count > 0)
+                {
+                    // This is the current group - return uncompleted players
+                    result = uncompleted;
+                    break;
+                }
+            }
+
+            return result;
         }
 
         private static (bool, GameActionResult) RestoreInterrupted(Game game, List<int> speakers, int nextSpeak, Dictionary<string, object> update)

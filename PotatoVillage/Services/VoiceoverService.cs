@@ -57,6 +57,8 @@ namespace PotatoVillage.Services
             { "美羊羊", "meiyangyang" },
             { "替死鬼", "tisigui" },
             { "红太狼", "hongtailang" },
+            { "猎魔人", "liemoren" },
+            { "屠夫", "tufu" },
             
             // Common phrases
             { "请睁眼", "qing_zhengyan" },

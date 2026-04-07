@@ -29,12 +29,12 @@
 	<key>XSAppIconAssets</key>
 	<string>Assets.xcassets/appicon.appiconset</string>
 	<key>CFBundleShortVersionString</key>
-	<string>2.2</string>
+	<string>2.4</string>
 	<key>CFBundleIdentifier</key>
 	<string></string>
 	<key>NSBluetoothAlwaysUsageDescription</key>
 	<string>This app does not use Bluetooth functionality.</string>
 	<key>CFBundleVersion</key>
-	<string>13</string>
+	<string>14</string>
 </dict>
 </plist>

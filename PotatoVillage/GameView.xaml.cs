@@ -95,6 +95,7 @@ namespace PotatoVillage
             { 86, GhostBrideWitnessCheckHandler },
             { 87, GhostBrideWitnessInfoHandler },
             { 92, GhostBrideCoupleAttackHandler },
+            { 94, TufuAttackHandler },
             { 17, JiXieLangInfoHandler },
             { 18, JiXieLangActAgainHandler },
             { 19, JiXieLangActAgainInfoHandler },
@@ -116,8 +117,49 @@ namespace PotatoVillage
         {
             { 77, MengMianRenDeathHandler },
             { 152, DeathAnnouncementHandler },
+            { 1000, CheckPrivateAnnouncementHandler },
             { 1003, GameWinnerHandler },
+            { 1100, SkillUseAnnouncementHandler },
         };
+
+        private static string CheckPrivateAnnouncementHandler(string userInfo, string userInfo2)
+        {
+            var localization = LocalizationManager.Instance;
+            // If userInfo contains specific players (comma-separated), use check_private_players
+            // Otherwise use the default check_private message
+            if (!string.IsNullOrEmpty(userInfo))
+            {
+                var txt = localization.GetString("check_private_players", "{0} please check in private");
+                return txt.Replace("{0}", userInfo);
+            }
+            return localization.GetString("check_private", "Everyone please check in private");
+        }
+
+        private static string SkillUseAnnouncementHandler(string userInfo, string userInfo2)
+        {
+            // userInfo format: "from;to1,to2,...;skill;result"
+            // result is "0" (failed) or "1" (succeeded)
+            var parts = userInfo.Split(';');
+            if (parts.Length < 4)
+                return userInfo;
+
+            var from = parts[0];
+            var to = parts[1];
+            var skill = parts[2];
+            var result = parts[3];
+
+            // Parse result: "0" = Failed, "1" = Succeeded
+            var resultText = result == "1" 
+                ? LocalizationManager.Instance.GetString("skill_succeeded", "Succeeded")
+                : LocalizationManager.Instance.GetString("skill_failed", "Failed");
+
+            // Translate skill name
+            var skillName = LocalizationManager.Instance.GetString(skill, skill);
+
+            // Format: "Player {from} used {skill} on {to}: {result}"
+            var txt = LocalizationManager.Instance.GetString("skill_use_announcement", "{0} {1} {2}: {3}");
+            return txt.Replace("{0}", from).Replace("{1}", skillName).Replace("{2}", to).Replace("{3}", resultText);
+        }
 
         private static string MengMianRenDeathHandler(string userInfo, string userInfo2)
         {
@@ -302,6 +344,14 @@ namespace PotatoVillage
                 ret += ";" + tm.Replace("{0}", teammatesInfo);
             }
             return ret;
+        }
+
+        private static string TufuAttackHandler(string userInfo, string userInfo2)
+        {
+            if (userInfo == "Succession")
+                return LocalizationManager.Instance.GetString("langren_succession_yes", "Can attack");
+            else
+                return LocalizationManager.Instance.GetString("langren_succession_no", "Cannot yet attack");
         }
 
         private static string JiXieLangInfoHandler(string userInfo, string userInfo2)
@@ -931,6 +981,9 @@ namespace PotatoVillage
                 86 => "ghostbride_witness_check",
                 87 => "ghostbride_witness",
                 92 => "ghostbride_attack_status",
+                93 => "liemoren_act",
+                94 => "tufu_act",
+                95 => "tufu_attack_status",
                 100 => "volunteer_sheriff",
                 101 => "vote_sheriff",
                 102 => "round_table",

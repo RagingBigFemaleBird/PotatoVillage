@@ -331,7 +331,7 @@ namespace PotatoVillage
             }
         }
 
-        public async Task<bool> CreateRoomAsync2(int numberOfPlayers, Dictionary<string, int> roleDict, int speechDuration = 120, int werewolfDuration = 60, int godDuration = 30, int roundTableMode = 0, int ownerControlEnabled = 0, int seatCounterClockwise = 0, int sheriffExtraTime = 0)
+        public async Task<bool> CreateRoomAsync2(int numberOfPlayers, Dictionary<string, int> roleDict, int speechDuration = 120, int werewolfDuration = 60, int godDuration = 30, int roundTableMode = 0, int ownerControlEnabled = 0, int seatCounterClockwise = 0, int sheriffExtraTime = 0, int viewRoleInTurn = 0, int roleViewingGroupSize = 3)
         {
             try
             {
@@ -341,12 +341,7 @@ namespace PotatoVillage
                     return false;
                 }
 
-                // Get the app's build version number to set as minimum required version
-                int appVersion = 0;
-                if (int.TryParse(AppInfo.Current.BuildString, out var buildVersion))
-                {
-                    appVersion = buildVersion;
-                }
+                int appVersion = 14;
 
                 var gameOptions = new Dictionary<string, int>
                 {
@@ -357,6 +352,8 @@ namespace PotatoVillage
                     { "round_table_mode", roundTableMode },
                     { "owner_control_enabled", ownerControlEnabled },
                     { "seat_counter_clockwise", seatCounterClockwise },
+                    { "view_role_in_turn", viewRoleInTurn },
+                    { "role_viewing_group_size", roleViewingGroupSize },
                     { "minVersionRequired", appVersion }
                 };
 

@@ -63,6 +63,7 @@ namespace ProcedureCore.LangRenSha
         }
 
         public static string dictAttackTarget = "attack_target";
+        public static string dictAttackTargetSelected = "attack_target_selected";
         public static string dictSuceession = "lang_succession";
 
         public static GameActionResult RevealSelf(Game game, int player, List<int> targets, Dictionary<string, object> update)
@@ -169,12 +170,15 @@ namespace ProcedureCore.LangRenSha
                     (var inputValid, var input, var input_others) = UserAction.GetUserResponse(game, true, langRenAlive, update);
                     if (inputValid)
                     {
+                        var currentAttack = Game.GetGameDictionaryProperty(game, dictAttackTarget, new List<int>());
                         var targets = UserAction.TallyUserInput(input, 0, thirdPartyPresent ? UserAction.UserInputMode.UniaminousVote : UserAction.UserInputMode.VoteMost, -1);
                         var choose = new List<int>();
                         if (targets.Count > 0 && targets[0] > 0)
                         {
                             choose.Add(targets[0]);
                         }
+                        update[dictAttackTargetSelected] = new List<int>(choose);
+                        choose.AddRange(currentAttack);
                         update[dictAttackTarget] = choose;
                     }
                     LangRenSha.AdvanceAction(game, update);
@@ -213,10 +217,13 @@ namespace ProcedureCore.LangRenSha
                                 (inputValid, input, input_others) = UserAction.GetUserResponse(game, true, langRenAlive, update);
                                 var targets = UserAction.TallyUserInput(input, 0, thirdPartyPresent ? UserAction.UserInputMode.UniaminousVote : UserAction.UserInputMode.VoteMost, -1);
                                 var choose = new List<int>();
+                                var currentAttack = Game.GetGameDictionaryProperty(game, dictAttackTarget, new List<int>());
                                 if (targets.Count > 0 && targets[0] > 0)
                                 {
                                     choose.Add(targets[0]);
                                 }
+                                update[dictAttackTargetSelected] = new List<int>(choose);
+                                choose.AddRange(currentAttack);
                                 update[dictAttackTarget] = choose;
                                 UserAction.EndUserAction(game, update, true);
                                 LangRenSha.AdvanceAction(game, update);
@@ -274,7 +281,7 @@ namespace ProcedureCore.LangRenSha
                         update[UserAction.dictUserActionTargetsCount] = 1;
                         update[UserAction.dictUserActionTargetsHint] = (int)HintConstant.LangRen_KillTarget;
                         update[UserAction.dictUserActionRole] = Name;
-                        var at = Game.GetGameDictionaryProperty(game, dictAttackTarget, new List<int>());
+                        var at = Game.GetGameDictionaryProperty(game, dictAttackTargetSelected, new List<int>());
                         update[UserAction.dictUserActionInfo] = string.Join(", ", at);
                         return GameActionResult.Restart;
                     }

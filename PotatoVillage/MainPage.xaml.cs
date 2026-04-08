@@ -29,6 +29,9 @@ namespace PotatoVillage
 
         // UI colors for popups
         private static readonly Color PopupTextColor = Color.FromArgb("#FFF8DC");
+        private static readonly Color ButtonDefaultColor = Color.FromArgb("#2D2D2D"); // Very dark gray
+        private static readonly Color ButtonSelectedColor = Color.FromArgb("#8B0000"); // Dark red
+        private static readonly Color SwitchOnColor = Color.FromArgb("#8B0000"); // Dark red
 
         // Track selected roles
         private HashSet<string> selectedLangRen = new();
@@ -90,7 +93,8 @@ namespace PotatoVillage
             ["JiXieLang"] = new()
             {
                 ["LangRen"] = 3,
-                ["TongLingShi"] = 1, ["NvWu"] = 1, ["LieRen"] = 1, ["ShouWei"] = 1
+                ["TongLingShi"] = 1, ["NvWu"] = 1, ["LieRen"] = 1, ["ShouWei"] = 1,
+                ["PingMin"] = 4
             },
             ["YingZi"] = new()
             {
@@ -109,6 +113,12 @@ namespace PotatoVillage
                 ["LangRen"] = 4,
                 ["YuYanJia"] = 1, ["NvWu"] = 1, ["LieRen"] = 1, ["ShouWei"] = 1,
                 ["PingMin"] = 3
+            },
+            ["LaoShu"] = new()
+            {
+                ["LangRen"] = 3, ["DaMao"] = 1,
+                ["YuYanJia"] = 1, ["NvWu"] = 1, ["LieRen"] = 1,
+                ["PingMin"] = 4
             }
         };
 
@@ -506,6 +516,7 @@ namespace PotatoVillage
             // Game Mode
             var shenLangGongWu1Btn = CreateRoleButton(localization.GetString("ShenLangGongWu1", "ShenLangGongWu1"), "ShenLangGongWu1", () => selectedShenLangGongWu1, v => selectedShenLangGongWu1 = v);
             mainStack.Children.Add(new HorizontalStackLayout { Spacing = 4, Children = { shenLangGongWu1Btn } });
+            mainStack.Children.Add(CreateCategorySeparator());
 
             // LangRen row
             var langRenBtns = new HorizontalStackLayout { Spacing = 4 };
@@ -515,6 +526,7 @@ namespace PotatoVillage
                 langRenBtns.Children.Add(CreateMultiRoleButton(localization.GetString("LangRen", "LangRen"), id, selectedLangRen));
             }
             mainStack.Children.Add(langRenBtns);
+            mainStack.Children.Add(CreateCategorySeparator());
 
             // Special LangRen row
             var specialLangRenBtns1 = new HorizontalStackLayout { Spacing = 4 };
@@ -530,6 +542,7 @@ namespace PotatoVillage
             specialLangRenBtns2.Children.Add(CreateRoleButton(localization.GetString("TuFu", "TuFu"), "TuFu", () => selectedTuFu, v => selectedTuFu = v));
             specialLangRenBtns2.Children.Add(CreateRoleButton(localization.GetString("AwkShiXiangGui", "AwkShiXiangGui"), "AwkShiXiangGui", () => selectedAwkShiXiangGui, v => selectedAwkShiXiangGui = v));
             mainStack.Children.Add(specialLangRenBtns2);
+            mainStack.Children.Add(CreateCategorySeparator());
 
             // God row 1
             var godBtns1 = new HorizontalStackLayout { Spacing = 4 };
@@ -562,6 +575,7 @@ namespace PotatoVillage
             var godBtns4 = new HorizontalStackLayout { Spacing = 4 };
             godBtns4.Children.Add(CreateRoleButton(localization.GetString("AwkSheMengRen", "AwkSheMengRen"), "AwkSheMengRen", () => selectedAwkSheMengRen, v => selectedAwkSheMengRen = v));
             mainStack.Children.Add(godBtns4);
+            mainStack.Children.Add(CreateCategorySeparator());
 
             // Third party row
             var thirdPartyBtns = new HorizontalStackLayout { Spacing = 4 };
@@ -570,6 +584,7 @@ namespace PotatoVillage
             thirdPartyBtns.Children.Add(CreateRoleButton(localization.GetString("HunZi", "HunZi"), "HunZi", () => selectedHunZi, v => selectedHunZi = v));
             thirdPartyBtns.Children.Add(CreateRoleButton(localization.GetString("GhostBride", "GhostBride"), "GhostBride", () => selectedGhostBride, v => selectedGhostBride = v));
             mainStack.Children.Add(thirdPartyBtns);
+            mainStack.Children.Add(CreateCategorySeparator());
 
             // PingMin row
             var pingMinBtns = new HorizontalStackLayout { Spacing = 4 };
@@ -674,6 +689,8 @@ namespace PotatoVillage
 
         private HorizontalStackLayout CreateHorizontalSwitch(Switch sw, string label)
         {
+            sw.OnColor = SwitchOnColor;
+            sw.ThumbColor = Colors.White;
             return new HorizontalStackLayout
             {
                 Spacing = 8,
@@ -682,12 +699,24 @@ namespace PotatoVillage
             };
         }
 
+        private BoxView CreateCategorySeparator()
+        {
+            return new BoxView
+            {
+                HeightRequest = 1,
+                Color = Colors.Gray,
+                Margin = new Thickness(0, 8, 0, 8),
+                HorizontalOptions = LayoutOptions.Fill
+            };
+        }
+
         private Button CreateRoleButton(string text, string roleName, Func<bool> getSelected, Action<bool> setSelected)
         {
             var btn = new Button
             {
                 Text = text,
-                BackgroundColor = Colors.LightGray
+                BackgroundColor = ButtonDefaultColor,
+                TextColor = Colors.White
             };
             roleButtons[roleName] = btn;
             btn.Clicked += (s, e) =>
@@ -702,7 +731,7 @@ namespace PotatoVillage
                 else
                 {
                     setSelected(newValue);
-                    btn.BackgroundColor = newValue ? Colors.Green : Colors.LightGray;
+                    btn.BackgroundColor = newValue ? ButtonSelectedColor : ButtonDefaultColor;
                 }
             };
             return btn;
@@ -713,7 +742,8 @@ namespace PotatoVillage
             var btn = new Button
             {
                 Text = text,
-                BackgroundColor = Colors.LightGray
+                BackgroundColor = ButtonDefaultColor,
+                TextColor = Colors.White
             };
             roleButtons[id] = btn;
             btn.Clicked += (s, e) =>
@@ -721,12 +751,12 @@ namespace PotatoVillage
                 if (selectedSet.Contains(id))
                 {
                     selectedSet.Remove(id);
-                    btn.BackgroundColor = Colors.LightGray;
+                    btn.BackgroundColor = ButtonDefaultColor;
                 }
                 else
                 {
                     selectedSet.Add(id);
-                    btn.BackgroundColor = Colors.Green;
+                    btn.BackgroundColor = ButtonSelectedColor;
                 }
             };
             return btn;
@@ -738,7 +768,7 @@ namespace PotatoVillage
             SelectRoleByName(triggerRole, true);
             if (roleButtons.TryGetValue(triggerRole, out var triggerBtn))
             {
-                triggerBtn.BackgroundColor = Colors.Green;
+                triggerBtn.BackgroundColor = ButtonSelectedColor;
             }
 
             // Then apply all roles in the template
@@ -752,7 +782,7 @@ namespace PotatoVillage
                         selectedLangRen.Add(id);
                         if (roleButtons.TryGetValue(id, out var langRenBtn))
                         {
-                            langRenBtn.BackgroundColor = Colors.Green;
+                            langRenBtn.BackgroundColor = ButtonSelectedColor;
                         }
                     }
                 }
@@ -764,7 +794,7 @@ namespace PotatoVillage
                         selectedPingMin.Add(id);
                         if (roleButtons.TryGetValue(id, out var pingMinBtn))
                         {
-                            pingMinBtn.BackgroundColor = Colors.Green;
+                            pingMinBtn.BackgroundColor = ButtonSelectedColor;
                         }
                     }
                 }
@@ -773,7 +803,7 @@ namespace PotatoVillage
                     SelectRoleByName(role, true);
                     if (roleButtons.TryGetValue(role, out var roleBtn))
                     {
-                        roleBtn.BackgroundColor = Colors.Green;
+                        roleBtn.BackgroundColor = ButtonSelectedColor;
                     }
                 }
             }

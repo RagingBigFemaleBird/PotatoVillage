@@ -50,6 +50,7 @@ namespace PotatoVillage.Services
             { "盗宝大师", "daobaodashi" },
             { "混子", "hunzi" },
             { "机械狼", "jixielang" },
+            { "装甲狼", "zhuangjialang" },
             { "鬼魂新娘", "guihunxinniang" },
             { "鬼魂新郎", "guihunxinlang" },
             { "证婚人", "zhenghunren" },
@@ -59,6 +60,7 @@ namespace PotatoVillage.Services
             { "红太狼", "hongtailang" },
             { "猎魔人", "liemoren" },
             { "屠夫", "tufu" },
+            { "守墓人", "shoumuren" },
             
             // Common phrases
             { "请睁眼", "qing_zhengyan" },
@@ -83,6 +85,7 @@ namespace PotatoVillage.Services
             { "链接", "lianjie" },
             { "复仇", "fuchou" },
             { "成功", "chenggong" },
+            { "觉醒", "juexing" },
             
             // Numbers (for player references)
             { "一号", "yihao" },

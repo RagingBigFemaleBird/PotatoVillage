@@ -16,6 +16,7 @@ namespace PotatoVillage
         private bool isOwner;
         private HashSet<int> selectedTargets = new();
         private CancellationTokenSource? countdownCts;
+        private CancellationTokenSource? confirmBlinkCts; // For confirm button blinking animation
         private bool announcerEnabled = false; // Client-only setting, default off
         private bool warningBeepPlayed = false; // Track if 15-second warning beep was played
         private int serverTimeOffset = 0; // Offset between server and client clocks (server_time - client_time)
@@ -793,6 +794,10 @@ namespace PotatoVillage
             // Cancel any running countdown
             countdownCts?.Cancel();
             countdownCts = null;
+
+            // Cancel confirm button blinking
+            confirmBlinkCts?.Cancel();
+            confirmBlinkCts = null;
         }
 
         /// <summary>
@@ -1715,6 +1720,82 @@ namespace PotatoVillage
                 button.BackgroundColor = Colors.Green;
                 button.TextColor = Colors.White;
             }
+
+            // Update confirm button blinking based on selection state
+            UpdateConfirmButtonBlinking();
+        }
+
+        /// <summary>
+        /// Starts or stops the confirm button blinking based on whether targets are selected.
+        /// </summary>
+        private void UpdateConfirmButtonBlinking()
+        {
+            if (selectedTargets.Count > 0)
+            {
+                StartConfirmButtonBlinking();
+            }
+            else
+            {
+                StopConfirmButtonBlinking();
+            }
+        }
+
+        /// <summary>
+        /// Starts the confirm button blinking animation.
+        /// </summary>
+        private void StartConfirmButtonBlinking()
+        {
+            // Cancel any existing blink animation
+            confirmBlinkCts?.Cancel();
+            confirmBlinkCts = new CancellationTokenSource();
+            var ct = confirmBlinkCts.Token;
+
+            _ = Task.Run(async () =>
+            {
+                bool isLit = true;
+                while (!ct.IsCancellationRequested)
+                {
+                    await MainThread.InvokeOnMainThreadAsync(() =>
+                    {
+                        if (ct.IsCancellationRequested) return;
+
+                        if (isLit)
+                        {
+                            // Bright/lit state - green glow
+                            ConfirmButton.BackgroundColor = Color.FromArgb("#228B22"); // Forest green
+                            ConfirmButton.TextColor = Colors.White;
+                            ConfirmButton.Scale = 1.05;
+                        }
+                        else
+                        {
+                            // Dim state
+                            ConfirmButton.BackgroundColor = Color.FromArgb("#006400"); // Dark green
+                            ConfirmButton.TextColor = Colors.LightGreen;
+                            ConfirmButton.Scale = 1.0;
+                        }
+                    });
+
+                    isLit = !isLit;
+                    await Task.Delay(500, ct).ConfigureAwait(false); // Blink every 500ms
+                }
+            });
+        }
+
+        /// <summary>
+        /// Stops the confirm button blinking animation and resets to default state.
+        /// </summary>
+        private void StopConfirmButtonBlinking()
+        {
+            confirmBlinkCts?.Cancel();
+            confirmBlinkCts = null;
+
+            MainThread.BeginInvokeOnMainThread(() =>
+            {
+                // Reset to default state
+                ConfirmButton.BackgroundColor = Colors.Transparent;
+                ConfirmButton.TextColor = Colors.White;
+                ConfirmButton.Scale = 1.0;
+            });
         }
 
         private void StartCountdown(int deadline, CancellationToken ct)
@@ -1791,6 +1872,9 @@ namespace PotatoVillage
             countdownCts = null;
             selectedTargets.Clear();
 
+            // Stop confirm button blinking
+            StopConfirmButtonBlinking();
+
             MainThread.BeginInvokeOnMainThread(() =>
             {
                 TargetInstructionLabel.IsVisible = false;
@@ -1812,7 +1896,10 @@ namespace PotatoVillage
             var localization = LocalizationManager.Instance;
             try
             {
+                // Stop blinking and show confirmed state
+                StopConfirmButtonBlinking();
                 ConfirmButton.Text = "✓";
+                ConfirmButton.BackgroundColor = Color.FromArgb("#228B22"); // Forest green - confirmed
 
                 var targetsList = selectedTargets.ToList();
 
@@ -1829,6 +1916,7 @@ namespace PotatoVillage
                 // Re-enable on error
                 ConfirmButton.IsEnabled = true;
                 ConfirmButton.Text = localization.GetString("confirm");
+                ConfirmButton.BackgroundColor = Colors.Transparent;
 
                 await DisplayAlertAsync(
                     localization.GetString("error"),

@@ -162,9 +162,10 @@
                         BackgroundColor="#007AFF"
                         TextColor="White"
                         FontSize="11"
-                        Padding="8,0"
+                        Padding="24,0"
                         Margin="0,0,4,0"
                         HeightRequest="20"
+                        WidthRequest="120"
                         VerticalOptions="Center" />
 
                 <!-- Sheriff status label -->

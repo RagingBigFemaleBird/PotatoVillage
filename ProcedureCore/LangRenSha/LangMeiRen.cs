@@ -76,6 +76,15 @@ namespace ProcedureCore.LangRenSha
                 if (UserAction.EndUserAction(game, update))
                 {
                     LangRenSha.SetPlayerProperty(game, lmrPlayer, dictLangMeiRenLink, 0, update);
+                    // Timeout - only set skippedAct to true if not already acted (LangMeiRen is part of LangRen)
+                    if (lmrAlive.Count > 0)
+                    {
+                        var currentSkippedAct = LangRenSha.GetPlayerProperty(game, lmrPlayer, AwkSheMengRen.dictNightSkippedAct, 1);
+                        if (currentSkippedAct != 0)
+                        {
+                            AwkSheMengRen.SetSkippedAct(game, lmrPlayer, true, update);
+                        }
+                    }
                     LangRenSha.AdvanceAction(game, update);
                     return GameActionResult.Restart;
                 }
@@ -99,6 +108,8 @@ namespace ProcedureCore.LangRenSha
                             if (targets.Count > 0 && targets[0] > 0)
                             {
                                 LangRenSha.SetPlayerProperty(game, lmrPlayer, dictLangMeiRenLink, targets[0], update);
+                                // Set skippedAct (not skipped) - linking someone means acted
+                                AwkSheMengRen.SetSkippedAct(game, lmrPlayer, false, update);
 
                                 UserAction.EndUserAction(game, update, true);
                                 LangRenSha.AdvanceAction(game, update);
@@ -107,6 +118,13 @@ namespace ProcedureCore.LangRenSha
                             if (targets.Count > 0 && targets[0] == -100)
                             {
                                 LangRenSha.SetPlayerProperty(game, lmrPlayer, dictLangMeiRenLink, 0, update);
+                                // Only set skippedAct to true if not already acted (LangMeiRen is part of LangRen, 
+                                // so if they already participated in the kill, don't change to skipped)
+                                var currentSkippedAct = LangRenSha.GetPlayerProperty(game, lmrPlayer, AwkSheMengRen.dictNightSkippedAct, 1);
+                                if (currentSkippedAct != 0)
+                                {
+                                    AwkSheMengRen.SetSkippedAct(game, lmrPlayer, true, update);
+                                }
                                 UserAction.EndUserAction(game, update, true);
                                 LangRenSha.AdvanceAction(game, update);
                                 return GameActionResult.Restart;

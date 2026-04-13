@@ -99,6 +99,11 @@ namespace ProcedureCore.LangRenSha
                 }
                 if (UserAction.EndUserAction(game, update))
                 {
+                    // Timeout - set skippedAct to true (not acted)
+                    if (shouWeiAlive.Count > 0)
+                    {
+                        AwkSheMengRen.SetSkippedAct(game, shouWeiAlive[0], true, update);
+                    }
                     LangRenSha.AdvanceAction(game, update);
                     return GameActionResult.Restart;
                 }
@@ -142,6 +147,11 @@ namespace ProcedureCore.LangRenSha
                                     // Player chose to not use the skill, end action without storing target
                                     update[dictGuardTarget] = 0;
                                     update[dictLastGuardTarget] = 0; // Clear last target since skill was not used
+                                    // Set skippedAct for ShouWei
+                                    if (shouWeiAlive.Count > 0)
+                                    {
+                                        AwkSheMengRen.SetSkippedAct(game, shouWeiAlive[0], true, update);
+                                    }
                                     UserAction.EndUserAction(game, update, true);
                                     LangRenSha.AdvanceAction(game, update);
                                     return GameActionResult.Restart;
@@ -151,7 +161,11 @@ namespace ProcedureCore.LangRenSha
                                     // Store the guard target
                                     update[dictGuardTarget] = targets[0];
                                     update[dictLastGuardTarget] = targets[0];
-
+                                    // Set skippedAct for ShouWei (not skipped)
+                                    if (shouWeiAlive.Count > 0)
+                                    {
+                                        AwkSheMengRen.SetSkippedAct(game, shouWeiAlive[0], false, update);
+                                    }
                                     UserAction.EndUserAction(game, update, true);
                                     LangRenSha.AdvanceAction(game, update);
                                     return GameActionResult.Restart;

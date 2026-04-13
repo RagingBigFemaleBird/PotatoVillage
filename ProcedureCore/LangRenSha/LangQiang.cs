@@ -185,25 +185,25 @@ namespace ProcedureCore.LangRenSha
                                 return GameActionResult.Restart;
                             }
                             var targets = UserAction.TallyUserInput(input, 0, UserAction.UserInputMode.VoteMost, -1);
-                            if (targets.Count == 0)
-                            {
-                                return GameActionResult.NotExecuted;
-                            }
-                            if (targets[0] > 0)
-                            {
-                                var laoShu = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == "LaoShu");
-                                var laoShuPlayer = laoShu.Count > 0 ? laoShu[0] : -1;
-
-                                if (targets[0] != laoShuPlayer)
+                                if (targets.Count == 0)
                                 {
-
-                                    LangRenSha.MarkPlayerAboutToDie(game, targets[0], update);
+                                    return GameActionResult.NotExecuted;
                                 }
-                                LangRenSha.SetPlayerProperty(game, lieRenPlayer, LieRen.dictHuntingDisabled, 1, update);
-                            }
-                            UserAction.EndUserAction(game, update, true);
-                            LangRenSha.AdvanceAction(game, update);
-                            return GameActionResult.Restart;
+                                if (targets[0] > 0)
+                                {
+                                    var laoShu = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == "LaoShu");
+                                    var laoShuPlayer = laoShu.Count > 0 ? laoShu[0] : -1;
+
+                                    if (targets[0] != laoShuPlayer)
+                                    {
+
+                                        LangRenSha.MarkPlayerAboutToDie(game, targets[0], update);
+                                    }
+                                    LangRenSha.SetPlayerProperty(game, lieRenPlayer, LieRen.dictHuntingDisabled, 1, update);
+                                }
+                                UserAction.EndUserAction(game, update, true);
+                                LangRenSha.AdvanceAction(game, update);
+                                return GameActionResult.Restart;
                         }
                     }
                 }
@@ -229,7 +229,7 @@ namespace ProcedureCore.LangRenSha
             if (UserAction.EndUserAction(game, update))
             {
                 // No valid target selected, just mark as processed and continue
-                return (true, GameActionResult.Restart);
+                return (false, GameActionResult.Restart);
             }
             else
             {

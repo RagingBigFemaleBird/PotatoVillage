@@ -72,12 +72,27 @@ namespace ProcedureCore.LangRenSha
             var miceTag = Game.GetGameDictionaryProperty(game, LaoShu.dictMiceTag, 0);
             var miceTagged = miceTag == source;
 
-            // SuperGuard: blocks poison and reflects it back to NvWu
+            // SuperGuard from JiXieLang: blocks poison and reflects it back to NvWu (unless ZhuangJiaLang present)
             var superGuardTarget = Game.GetGameDictionaryProperty(game, JiXieLang.dictSuperGuardTarget, 0);
             if (target == superGuardTarget && superGuardTarget > 0)
             {
-                LangRenSha.ChainKill(game, source, source, aboutToDie, update);
-                update[LangRenSha.dictAboutToDie] = aboutToDie;
+                // When ZhuangJiaLang is present, SuperGuard only protects (no reflection)
+                if (!ZhuangJiaLang.IsPresent(game))
+                {
+                    LangRenSha.ChainKill(game, source, source, aboutToDie, update);
+                    update[LangRenSha.dictAboutToDie] = aboutToDie;
+                }
+                if (!miceTagged)
+                {
+                    LangRenSha.SetPlayerProperty(game, source, dictPoisonUsed, 1, update);
+                }
+                return;
+            }
+
+            // SuperGuard from ZhuangJiaLang: blocks poison but does NOT reflect
+            var zjlSuperGuardTarget = Game.GetGameDictionaryProperty(game, ZhuangJiaLang.dictSuperGuardTarget, 0);
+            if (target == zjlSuperGuardTarget && zjlSuperGuardTarget > 0)
+            {
                 if (!miceTagged)
                 {
                     LangRenSha.SetPlayerProperty(game, source, dictPoisonUsed, 1, update);
@@ -173,22 +188,35 @@ namespace ProcedureCore.LangRenSha
                     if (inputValid)
                     {
                         var targets = UserAction.TallyUserInput(input, 0, UserAction.UserInputMode.VoteMost, -1);
+                        bool skippedAct = targets.Count == 0 || targets[0] == -100;
                         if (targets.Count > 0)
                         {
                             if (targets[0] > 0)
                             {
                                 Poison(game, nvWuAlive[0], targets[0], update);
+                                skippedAct = false;
                             }
                             else if (targets[0] == 0)
                             {
                                 Save(game, update);
+                                skippedAct = false;
                             }
+                        }
+                        // Set skippedAct for NvWu
+                        if (nvWuAlive.Count > 0)
+                        {
+                            AwkSheMengRen.SetSkippedAct(game, nvWuAlive[0], skippedAct, update);
                         }
                         UserAction.EndUserAction(game, update, true);
                         LangRenSha.AdvanceAction(game, update);
                         return GameActionResult.Restart;
                     }
 
+                    // Timeout without input - set skippedAct to true
+                    if (nvWuAlive.Count > 0)
+                    {
+                        AwkSheMengRen.SetSkippedAct(game, nvWuAlive[0], true, update);
+                    }
                     LangRenSha.AdvanceAction(game, update);
                     return GameActionResult.Restart;
                 }
@@ -245,13 +273,21 @@ namespace ProcedureCore.LangRenSha
                                 {
                                     return GameActionResult.NotExecuted;
                                 }
+                                bool skippedAct = targets[0] == -100;
                                 if (targets[0] > 0)
                                 {
                                     Poison(game, nvWuAlive[0], targets[0], update);
+                                    skippedAct = false;
                                 }
                                 else if (targets[0] == 0)
                                 {
                                     Save(game, update);
+                                    skippedAct = false;
+                                }
+                                // Set skippedAct for NvWu
+                                if (nvWuAlive.Count > 0)
+                                {
+                                    AwkSheMengRen.SetSkippedAct(game, nvWuAlive[0], skippedAct, update);
                                 }
                                 UserAction.EndUserAction(game, update, true);
                                 LangRenSha.AdvanceAction(game, update);

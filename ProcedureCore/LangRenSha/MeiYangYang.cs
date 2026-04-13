@@ -137,6 +137,7 @@ namespace ProcedureCore.LangRenSha
             if (UserAction.EndUserAction(game, update))
             {
                 (var inputValid, var input, var input_others) = UserAction.GetUserResponse(game, true, meiYangYangAlive, update);
+                bool skippedAct = true;
                 if (inputValid && meiYangYangAlive.Count > 0)
                 {
                     var targets = UserAction.TallyUserInput(input, 0, UserAction.UserInputMode.VoteMost, -1);
@@ -151,12 +152,18 @@ namespace ProcedureCore.LangRenSha
                         {
                             // Store the sacrifice target
                             update[dictSacrificeTarget] = target;
+                            skippedAct = false;
                         }
                     }
                 }
                 else
                 {
                     update[dictSacrificeTarget] = 0;
+                }
+                // Set skippedAct for MeiYangYang
+                if (meiYangYangAlive.Count > 0)
+                {
+                    AwkSheMengRen.SetSkippedAct(game, meiYangYangAlive[0], skippedAct, update);
                 }
                 LangRenSha.AdvanceAction(game, update);
                 return GameActionResult.Restart;
@@ -184,6 +191,7 @@ namespace ProcedureCore.LangRenSha
                 if (targets.Count > 0 && meiYangYangAlive.Count > 0)
                 {
                     var target = targets[0];
+                    bool skippedAct = target == -100 || target <= 0;
                     if (target > 0)
                     {
                         var meiYangYangPlayer = meiYangYangAlive[0];
@@ -193,12 +201,15 @@ namespace ProcedureCore.LangRenSha
                         if ((targetFaction & (int)LangRenSha.PlayerFaction.Civilian) != 0)
                         {
                             update[dictSacrificeTarget] = target;
+                            skippedAct = false;
                         }
                     }
                     else
                     {
                         update[dictSacrificeTarget] = 0;
                     }
+                    // Set skippedAct for MeiYangYang
+                    AwkSheMengRen.SetSkippedAct(game, meiYangYangAlive[0], skippedAct, update);
 
                     UserAction.EndUserAction(game, update, true);
                     LangRenSha.AdvanceAction(game, update);

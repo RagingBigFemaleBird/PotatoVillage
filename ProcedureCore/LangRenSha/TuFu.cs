@@ -135,6 +135,11 @@ namespace ProcedureCore.LangRenSha
 
             if (UserAction.EndUserAction(game, update))
             {
+                // Timeout - set skippedAct to true (not acted)
+                if (tuFuAlive.Count > 0)
+                {
+                    AwkSheMengRen.SetSkippedAct(game, tuFuAlive[0], true, update);
+                }
                 LangRenSha.AdvanceAction(game, update);
                 return GameActionResult.Restart;
             }
@@ -168,7 +173,11 @@ namespace ProcedureCore.LangRenSha
                         {
                             if (targets[0] == -100)
                             {
-                                // Player chose to skip
+                                // Player chose to skip - set skippedAct
+                                if (tuFuAlive.Count > 0)
+                                {
+                                    AwkSheMengRen.SetSkippedAct(game, tuFuAlive[0], true, update);
+                                }
                                 UserAction.EndUserAction(game, update, true);
                                 LangRenSha.AdvanceAction(game, update);
                                 return GameActionResult.Restart;
@@ -182,6 +191,11 @@ namespace ProcedureCore.LangRenSha
                                     attackTarget.Add(targets[0]);
                                 }
                                 update[LangRen.dictAttackTarget] = attackTarget;
+                                // Set skippedAct (not skipped)
+                                if (tuFuAlive.Count > 0)
+                                {
+                                    AwkSheMengRen.SetSkippedAct(game, tuFuAlive[0], false, update);
+                                }
 
                                 UserAction.EndUserAction(game, update, true);
                                 LangRenSha.AdvanceAction(game, update);

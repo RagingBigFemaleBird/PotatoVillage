@@ -86,7 +86,7 @@ namespace ProcedureCore.LangRenSha
                         update[LangRenSha.dictInterrupt] = interrupted;
                         UserAction.EndUserAction(game, update, true);
                         return GameActionResult.Restart;
-                    }    
+                    }
                 }
             }
             return GameActionResult.NotExecuted;
@@ -95,10 +95,30 @@ namespace ProcedureCore.LangRenSha
         public void Sha(Game game, List<int> targets, Dictionary<string, object> update)
         {
             var aboutToDie = Game.GetGameDictionaryProperty(game, LangRenSha.dictAboutToDie, new List<int>());
+
+            // Count occurrences of each target to detect double attacks
+            var targetCounts = new Dictionary<int, int>();
             foreach (var target in targets)
             {
+                if (target > 0)
+                {
+                    if (!targetCounts.ContainsKey(target))
+                        targetCounts[target] = 0;
+                    targetCounts[target]++;
+                }
+            }
+
+            // Process unique targets
+            var processedTargets = new HashSet<int>();
+            foreach (var target in targets)
+            {
+                if (target <= 0 || processedTargets.Contains(target))
+                    continue;
+                processedTargets.Add(target);
+
                 var guardTarget = Game.GetGameDictionaryProperty(game, ShouWei.dictGuardTarget, 0);
                 var superGuardTarget = Game.GetGameDictionaryProperty(game, JiXieLang.dictSuperGuardTarget, 0);
+                var zjlSuperGuardTarget = Game.GetGameDictionaryProperty(game, ZhuangJiaLang.dictSuperGuardTarget, 0);
                 var wuZhe = Game.GetGameDictionaryProperty(game, WuZhe.dictDanced, new List<int>());
 
                 // Check AwkSheMengRen protection - target is immune to ALL deaths
@@ -107,10 +127,17 @@ namespace ProcedureCore.LangRenSha
                     continue;
                 }
 
-                if (guardTarget == target || superGuardTarget == target || wuZhe.Contains(target))
+                // Double attack bypasses guard (ShouWei, JiXieLang SuperGuard, ZhuangJiaLang SuperGuard)
+                bool isDoubleAttack = targetCounts.ContainsKey(target) && targetCounts[target] >= 2;
+
+                if (!isDoubleAttack)
                 {
-                    continue;
+                    if (guardTarget == target || superGuardTarget == target || zjlSuperGuardTarget == target || wuZhe.Contains(target))
+                    {
+                        continue;
+                    }
                 }
+
                 LangRenSha.ChainKill(game, 0, target, aboutToDie, update);
             }
             update[LangRenSha.dictAboutToDie] = aboutToDie;
@@ -179,6 +206,7 @@ namespace ProcedureCore.LangRenSha
                         var currentAttack = Game.GetGameDictionaryProperty(game, dictAttackTarget, new List<int>());
                         var targets = UserAction.TallyUserInput(input, 0, thirdPartyPresent ? UserAction.UserInputMode.UniaminousVote : UserAction.UserInputMode.VoteMost, -1);
                         var choose = new List<int>();
+                        bool skippedAct = targets.Count == 0 || targets[0] == -100 || targets[0] <= 0;
                         if (targets.Count > 0 && targets[0] > 0)
                         {
                             choose.Add(targets[0]);
@@ -186,6 +214,8 @@ namespace ProcedureCore.LangRenSha
                         update[dictAttackTargetSelected] = new List<int>(choose);
                         choose.AddRange(currentAttack);
                         update[dictAttackTarget] = choose;
+                        // Set skippedAct for all LangRen (including succession)
+                        AwkSheMengRen.SetSkippedActForAll(game, langRen, skippedAct, update);
                     }
                     LangRenSha.AdvanceAction(game, update);
                     return GameActionResult.Restart;
@@ -224,6 +254,7 @@ namespace ProcedureCore.LangRenSha
                                 var targets = UserAction.TallyUserInput(input, 0, thirdPartyPresent ? UserAction.UserInputMode.UniaminousVote : UserAction.UserInputMode.VoteMost, -1);
                                 var choose = new List<int>();
                                 var currentAttack = Game.GetGameDictionaryProperty(game, dictAttackTarget, new List<int>());
+                                bool skippedAct = targets.Count == 0 || targets[0] == -100 || targets[0] <= 0;
                                 if (targets.Count > 0 && targets[0] > 0)
                                 {
                                     choose.Add(targets[0]);
@@ -231,6 +262,8 @@ namespace ProcedureCore.LangRenSha
                                 update[dictAttackTargetSelected] = new List<int>(choose);
                                 choose.AddRange(currentAttack);
                                 update[dictAttackTarget] = choose;
+                                // Set skippedAct for all LangRen (including succession)
+                                AwkSheMengRen.SetSkippedActForAll(game, langRen, skippedAct, update);
                                 UserAction.EndUserAction(game, update, true);
                                 LangRenSha.AdvanceAction(game, update);
                                 return GameActionResult.Restart;

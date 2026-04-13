@@ -55,6 +55,7 @@ namespace PotatoVillage
         private bool selectedFuChouZhe = false;
         private bool selectedHunZi = false;
         private bool selectedJiXieLang = false;
+        private bool selectedZhuangJiaLang = false;
         private bool selectedLangMeiRen = false;
         private bool selectedAwkShiXiangGui = false;
         private bool selectedGhostBride = false;
@@ -64,6 +65,8 @@ namespace PotatoVillage
         private bool selectedTuFu = false;
         private bool selectedShouMuRen = false;
         private bool selectedAwkSheMengRen = false;
+        private bool selectedShiXiangGui = false;
+        private bool selectedXueYue = false;
         private HashSet<string> selectedPingMin = new();
 
         // Dictionary to store button references for template application
@@ -74,52 +77,158 @@ namespace PotatoVillage
         {
             ["AwkSheMengRen"] = new()
             {
-                ["LangRen"] = 1, ["LangQiang"] = 1, ["AwkShiXiangGui"] = 1,
-                ["YuYanJia"] = 1, ["NvWu"] = 1, ["LieRen"] = 1, ["ShouMuRen"] = 1,
+                ["LangRen"] = 1,
+                ["LangQiang"] = 1,
+                ["AwkShiXiangGui"] = 1,
+                ["YuYanJia"] = 1,
+                ["NvWu"] = 1,
+                ["LieRen"] = 1,
+                ["ShouMuRen"] = 1,
                 ["PingMin"] = 4
             },
             ["ShenLangGongWu1"] = new()
             {
-                ["LangRen"] = 2, ["LangQiang"] = 1,
-                ["YuYanJia"] = 1, ["NvWu"] = 1, ["LieRen"] = 1, ["SheMengRen"] = 1, ["Xiong"] = 1,
-                ["PingMin"] = 3
+                ["LangRen"] = 2,
+                ["LangQiang"] = 1,
+                ["YuYanJia"] = 1,
+                ["NvWu"] = 1,
+                ["LieRen"] = 1,
+                ["SheMengRen"] = 1,
+                ["Xiong"] = 1,
+                ["PingMin"] = 4
             },
             ["Thief"] = new()
             {
-                ["LangRen"] = 3, ["LangQiang"] = 1,
-                ["TongLingShi"] = 1, ["NvWu"] = 1, ["LieRen"] = 1, ["SheMengRen"] = 1, ["MengMianRen"] = 1,
+                ["LangRen"] = 3,
+                ["LangQiang"] = 1,
+                ["TongLingShi"] = 1,
+                ["NvWu"] = 1,
+                ["LieRen"] = 1,
+                ["SheMengRen"] = 1,
+                ["MengMianRen"] = 1,
                 ["PingMin"] = 4
             },
             ["JiXieLang"] = new()
             {
                 ["LangRen"] = 3,
-                ["TongLingShi"] = 1, ["NvWu"] = 1, ["LieRen"] = 1, ["ShouWei"] = 1,
+                ["TongLingShi"] = 1,
+                ["NvWu"] = 1,
+                ["LieRen"] = 1,
+                ["ShouWei"] = 1,
+                ["PingMin"] = 4
+            },
+            ["ZhuangJiaLang"] = new()
+            {
+                ["LangRen"] = 2,
+                ["JiXieLang"] = 1,
+                ["TongLingShi"] = 1,
+                ["NvWu"] = 1,
+                ["LieRen"] = 1,
+                ["ShouWei"] = 1,
                 ["PingMin"] = 4
             },
             ["YingZi"] = new()
             {
                 ["LangRen"] = 4,
-                ["YuYanJia"] = 1, ["NvWu"] = 1, ["LieRen"] = 1, ["ShouWei"] = 1, ["FuChouZhe"] = 1,
+                ["YuYanJia"] = 1,
+                ["NvWu"] = 1,
+                ["LieRen"] = 1,
+                ["ShouWei"] = 1,
+                ["FuChouZhe"] = 1,
                 ["PingMin"] = 4
             },
             ["FuChouZhe"] = new()
             {
                 ["LangRen"] = 4,
-                ["YuYanJia"] = 1, ["NvWu"] = 1, ["LieRen"] = 1, ["ShouWei"] = 1, ["YingZi"] = 1,
+                ["YuYanJia"] = 1,
+                ["NvWu"] = 1,
+                ["LieRen"] = 1,
+                ["ShouWei"] = 1,
+                ["YingZi"] = 1,
                 ["PingMin"] = 4
             },
             ["GhostBride"] = new()
             {
                 ["LangRen"] = 4,
-                ["YuYanJia"] = 1, ["NvWu"] = 1, ["LieRen"] = 1, ["ShouWei"] = 1,
+                ["YuYanJia"] = 1,
+                ["NvWu"] = 1,
+                ["LieRen"] = 1,
+                ["ShouWei"] = 1,
                 ["PingMin"] = 3
             },
             ["LaoShu"] = new()
             {
-                ["LangRen"] = 3, ["DaMao"] = 1,
-                ["YuYanJia"] = 1, ["NvWu"] = 1, ["LieRen"] = 1,
+                ["LangRen"] = 3,
+                ["DaMao"] = 1,
+                ["YuYanJia"] = 1,
+                ["NvWu"] = 1,
+                ["LieRen"] = 1,
                 ["PingMin"] = 4
-            }
+            },
+            ["DaMao"] = new()
+            {
+                ["LangRen"] = 3,
+                ["LaoShu"] = 1,
+                ["YuYanJia"] = 1,
+                ["NvWu"] = 1,
+                ["LieRen"] = 1,
+                ["PingMin"] = 4
+            },
+            ["MeiYangYang"] = new()
+            {
+                ["LangRen"] = 3,
+                ["HongTaiLang"] = 1,
+                ["YuYanJia"] = 1,
+                ["NvWu"] = 1,
+                ["LieRen"] = 1,
+                ["PingMin"] = 4
+            },
+            ["HongTaiLang"] = new()
+            {
+                ["LangRen"] = 3,
+                ["MeiYangYang"] = 1,
+                ["YuYanJia"] = 1,
+                ["NvWu"] = 1,
+                ["LieRen"] = 1,
+                ["PingMin"] = 4
+            },
+            ["JiaMian"] = new()
+            {
+                ["LangRen"] = 3,
+                ["YuYanJia"] = 1,
+                ["NvWu"] = 1,
+                ["WuZhe"] = 1,
+                ["BaiChi"] = 1,
+                ["PingMin"] = 4
+            },
+            ["XueYue"] = new()
+            {
+                ["LangRen"] = 3,
+                ["YuYanJia"] = 1,
+                ["NvWu"] = 1,
+                ["LieMoRen"] = 1,
+                ["BaiChi"] = 1,
+                ["PingMin"] = 4
+            },
+            ["ShiXiangGui"] = new()
+            {
+                ["LangRen"] = 3,
+                ["YuYanJia"] = 1,
+                ["NvWu"] = 1,
+                ["LieRen"] = 1,
+                ["ShouMuRen"] = 1,
+                ["PingMin"] = 4
+            },
+            ["AwkShiXiangGui"] = new()
+            {
+                ["LangRen"] = 2,
+                ["YuYanJia"] = 1,
+                ["NvWu"] = 1,
+                ["LieRen"] = 1,
+                ["ShouMuRen"] = 1,
+                ["ShouWei"] = 1,
+                ["PingMin"] = 4
+            },
         };
 
         // Server URL (discovered at startup, not persisted)
@@ -224,12 +333,12 @@ namespace PotatoVillage
 
         private bool HasRolesSelected()
         {
-            return selectedLangRen.Count > 0 || 
-                   selectedJiaMian || 
-                   selectedNvWu || 
-                   selectedYuYanJia || 
+            return selectedLangRen.Count > 0 ||
+                   selectedJiaMian ||
+                   selectedNvWu ||
+                   selectedYuYanJia ||
                    selectedTongLingShi ||
-                   selectedWuZhe || 
+                   selectedWuZhe ||
                    selectedLieRen ||
                    selectedLangQiang ||
                    selectedDaMao ||
@@ -245,12 +354,14 @@ namespace PotatoVillage
                    selectedFuChouZhe ||
                    selectedHunZi ||
                    selectedJiXieLang ||
+                   selectedZhuangJiaLang ||
                    selectedLangMeiRen ||
                    selectedAwkShiXiangGui ||
                    selectedGhostBride ||
                    selectedMeiYangYang ||
                    selectedShouMuRen ||
                    selectedAwkSheMengRen ||
+                   selectedShiXiangGui ||
                    selectedPingMin.Count > 0;
         }
 
@@ -259,8 +370,8 @@ namespace PotatoVillage
             var localization = Services.LocalizationManager.Instance;
 
             // Create popup content with session-remembered values
-            var roomEntry = new Entry 
-            { 
+            var roomEntry = new Entry
+            {
                 Placeholder = localization.GetString("room_number", "Room Number"),
                 Text = sessionRoomNumber,
                 Keyboard = Keyboard.Numeric,
@@ -268,8 +379,8 @@ namespace PotatoVillage
                 HorizontalOptions = LayoutOptions.Fill
             };
 
-            var seatEntry = new Entry 
-            { 
+            var seatEntry = new Entry
+            {
                 Placeholder = localization.GetString("seat_number", "Seat Number"),
                 Text = sessionSeatNumber,
                 Keyboard = Keyboard.Numeric,
@@ -457,6 +568,7 @@ namespace PotatoVillage
             selectedFuChouZhe = false;
             selectedHunZi = false;
             selectedJiXieLang = false;
+            selectedZhuangJiaLang = false;
             selectedLangMeiRen = false;
             selectedAwkShiXiangGui = false;
             selectedGhostBride = false;
@@ -466,6 +578,8 @@ namespace PotatoVillage
             selectedTuFu = false;
             selectedShouMuRen = false;
             selectedAwkSheMengRen = false;
+            selectedShiXiangGui = false;
+            selectedXueYue = false;
             selectedPingMin.Clear();
             roleButtons.Clear();
         }
@@ -476,10 +590,10 @@ namespace PotatoVillage
             var mainStack = new VerticalStackLayout { Padding = 20, Spacing = 12 };
 
             // Title
-            mainStack.Children.Add(new Label 
-            { 
-                Text = localization.GetString("create_game", "Create Game"), 
-                FontSize = 20, 
+            mainStack.Children.Add(new Label
+            {
+                Text = localization.GetString("create_game", "Create Game"),
+                FontSize = 20,
                 FontAttributes = FontAttributes.Bold,
                 TextColor = PopupTextColor
             });
@@ -531,17 +645,23 @@ namespace PotatoVillage
             // Special LangRen row
             var specialLangRenBtns1 = new HorizontalStackLayout { Spacing = 4 };
             specialLangRenBtns1.Children.Add(CreateRoleButton(localization.GetString("LangQiang", "LangQiang"), "LangQiang", () => selectedLangQiang, v => selectedLangQiang = v));
-            specialLangRenBtns1.Children.Add(CreateRoleButton(localization.GetString("JiaMian", "JiaMian"), "JiaMian", () => selectedJiaMian, v => selectedJiaMian = v));
+            specialLangRenBtns1.Children.Add(CreateRoleButton(localization.GetString("LangMeiRen", "LangMeiRen"), "LangMeiRen", () => selectedLangMeiRen, v => selectedLangMeiRen = v));
             specialLangRenBtns1.Children.Add(CreateRoleButton(localization.GetString("DaMao", "DaMao"), "DaMao", () => selectedDaMao, v => selectedDaMao = v));
             specialLangRenBtns1.Children.Add(CreateRoleButton(localization.GetString("JiXieLang", "JiXieLang"), "JiXieLang", () => selectedJiXieLang, v => selectedJiXieLang = v));
-            specialLangRenBtns1.Children.Add(CreateRoleButton(localization.GetString("LangMeiRen", "LangMeiRen"), "LangMeiRen", () => selectedLangMeiRen, v => selectedLangMeiRen = v));
+            specialLangRenBtns1.Children.Add(CreateRoleButton(localization.GetString("ZhuangJiaLang", "ZhuangJiaLang"), "ZhuangJiaLang", () => selectedZhuangJiaLang, v => selectedZhuangJiaLang = v));
             mainStack.Children.Add(specialLangRenBtns1);
 
             var specialLangRenBtns2 = new HorizontalStackLayout { Spacing = 4 };
             specialLangRenBtns2.Children.Add(CreateRoleButton(localization.GetString("HongTaiLang", "HongTaiLang"), "HongTaiLang", () => selectedHongTaiLang, v => selectedHongTaiLang = v));
             specialLangRenBtns2.Children.Add(CreateRoleButton(localization.GetString("TuFu", "TuFu"), "TuFu", () => selectedTuFu, v => selectedTuFu = v));
             specialLangRenBtns2.Children.Add(CreateRoleButton(localization.GetString("AwkShiXiangGui", "AwkShiXiangGui"), "AwkShiXiangGui", () => selectedAwkShiXiangGui, v => selectedAwkShiXiangGui = v));
+            specialLangRenBtns2.Children.Add(CreateRoleButton(localization.GetString("ShiXiangGui", "ShiXiangGui"), "ShiXiangGui", () => selectedShiXiangGui, v => selectedShiXiangGui = v));
+            specialLangRenBtns2.Children.Add(CreateRoleButton(localization.GetString("XueYue", "XueYue"), "XueYue", () => selectedXueYue, v => selectedXueYue = v));
             mainStack.Children.Add(specialLangRenBtns2);
+
+            var specialLangRenBtns3 = new HorizontalStackLayout { Spacing = 4 };
+            specialLangRenBtns3.Children.Add(CreateRoleButton(localization.GetString("JiaMian", "JiaMian"), "JiaMian", () => selectedJiaMian, v => selectedJiaMian = v));
+            mainStack.Children.Add(specialLangRenBtns3);
             mainStack.Children.Add(CreateCategorySeparator());
 
             // God row 1
@@ -558,8 +678,8 @@ namespace PotatoVillage
             godBtns2.Children.Add(CreateRoleButton(localization.GetString("LaoShu", "LaoShu"), "LaoShu", () => selectedLaoShu, v => selectedLaoShu = v));
             godBtns2.Children.Add(CreateRoleButton(localization.GetString("BaiChi", "BaiChi"), "BaiChi", () => selectedBaiChi, v => selectedBaiChi = v));
             godBtns2.Children.Add(CreateRoleButton(localization.GetString("SheMengRen", "SheMengRen"), "SheMengRen", () => selectedSheMengRen, v => selectedSheMengRen = v));
-            godBtns2.Children.Add(CreateRoleButton(localization.GetString("Xiong", "Xiong"), "Xiong", () => selectedXiong, v => selectedXiong = v));
             godBtns2.Children.Add(CreateRoleButton(localization.GetString("Thief", "Thief"), "Thief", () => selectedThief, v => selectedThief = v));
+            godBtns2.Children.Add(CreateRoleButton(localization.GetString("ShouMuRen", "ShouMuRen"), "ShouMuRen", () => selectedShouMuRen, v => selectedShouMuRen = v));
             mainStack.Children.Add(godBtns2);
 
             // God row 3
@@ -568,7 +688,7 @@ namespace PotatoVillage
             godBtns3.Children.Add(CreateRoleButton(localization.GetString("ShouWei", "ShouWei"), "ShouWei", () => selectedShouWei, v => selectedShouWei = v));
             godBtns3.Children.Add(CreateRoleButton(localization.GetString("MeiYangYang", "MeiYangYang"), "MeiYangYang", () => selectedMeiYangYang, v => selectedMeiYangYang = v));
             godBtns3.Children.Add(CreateRoleButton(localization.GetString("LieMoRen", "LieMoRen"), "LieMoRen", () => selectedLieMoRen, v => selectedLieMoRen = v));
-            godBtns3.Children.Add(CreateRoleButton(localization.GetString("ShouMuRen", "ShouMuRen"), "ShouMuRen", () => selectedShouMuRen, v => selectedShouMuRen = v));
+            godBtns3.Children.Add(CreateRoleButton(localization.GetString("Xiong", "Xiong"), "Xiong", () => selectedXiong, v => selectedXiong = v));
             mainStack.Children.Add(godBtns3);
 
             // God row 4
@@ -833,6 +953,7 @@ namespace PotatoVillage
                 case "FuChouZhe": selectedFuChouZhe = selected; break;
                 case "HunZi": selectedHunZi = selected; break;
                 case "JiXieLang": selectedJiXieLang = selected; break;
+                case "ZhuangJiaLang": selectedZhuangJiaLang = selected; break;
                 case "LangMeiRen": selectedLangMeiRen = selected; break;
                 case "AwkShiXiangGui": selectedAwkShiXiangGui = selected; break;
                 case "GhostBride": selectedGhostBride = selected; break;
@@ -842,6 +963,8 @@ namespace PotatoVillage
                 case "TuFu": selectedTuFu = selected; break;
                 case "ShouMuRen": selectedShouMuRen = selected; break;
                 case "AwkSheMengRen": selectedAwkSheMengRen = selected; break;
+                case "ShiXiangGui": selectedShiXiangGui = selected; break;
+                case "XueYue": selectedXueYue = selected; break;
             }
         }
 
@@ -945,6 +1068,7 @@ namespace PotatoVillage
             if (selectedFuChouZhe) roleDict["FuChouZhe"] = 1;
             if (selectedHunZi) roleDict["HunZi"] = 1;
             if (selectedJiXieLang) roleDict["JiXieLang"] = 1;
+            if (selectedZhuangJiaLang) roleDict["ZhuangJiaLang"] = 1;
             if (selectedLangMeiRen) roleDict["LangMeiRen"] = 1;
             if (selectedAwkShiXiangGui) roleDict["AwkShiXiangGui"] = 1;
             if (selectedGhostBride) roleDict["GhostBride"] = 1;
@@ -954,6 +1078,8 @@ namespace PotatoVillage
             if (selectedTuFu) roleDict["TuFu"] = 1;
             if (selectedShouMuRen) roleDict["ShouMuRen"] = 1;
             if (selectedAwkSheMengRen) roleDict["AwkSheMengRen"] = 1;
+            if (selectedShiXiangGui) roleDict["ShiXiangGui"] = 1;
+            if (selectedXueYue) roleDict["XueYue"] = 1;
             if (selectedPingMin.Count > 0) roleDict["PingMin"] = selectedPingMin.Count;
 
             return roleDict;

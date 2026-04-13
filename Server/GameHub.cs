@@ -43,7 +43,7 @@ namespace Server
         private async Task RemoveClientFromGame(string clientId)
         {
             // Remove client from game
-            if (ClientIdToGame.TryRemove(clientId, out var game) && 
+            if (ClientIdToGame.TryRemove(clientId, out var game) &&
                 ClientIdToGameId.TryRemove(clientId, out var gameId))
             {
                 // Only clean up if game hasn't started yet
@@ -134,6 +134,7 @@ namespace Server
                 { "FuChouZhe",  new FuChouZhe() },
                 { "HunZi", new HunZi() },
                 { "JiXieLang", new JiXieLang() },
+                { "ZhuangJiaLang", new ZhuangJiaLang() },
                 { "LangMeiRen", new LangMeiRen() },
                 { "AwkShiXiangGui", new AwkShiXiangGui() },
                 { "GhostBride", new GhostBride() },
@@ -143,6 +144,8 @@ namespace Server
                 { "TuFu", new TuFu() },
                 { "ShouMuRen", new ShouMuRen() },
                 { "AwkSheMengRen", new AwkSheMengRen() },
+                { "ShiXiangGui", new ShiXiangGui() },
+                { "XueYue", new XueYue() },
             };
 
             if (!roleDict.ContainsKey("LangRen"))
@@ -370,7 +373,7 @@ namespace Server
             // Notify all clients that game has started
             await Clients.Group($"game-{gameId}").SendAsync("GameStarted");
 
-            var gameThread = new Thread(() => 
+            var gameThread = new Thread(() =>
             {
                 try
                 {

@@ -86,6 +86,7 @@ namespace PotatoVillage
             { 10, ThiefPickRoleHandler },
             { 12, LangRenSuccessionHandler },
             { 14, TongLingShiResultHandler },
+            { 29, ShiXiangGuiChaYanHandler },
             { 62, LangRenSuccessionHandler },
             { 6, JiaMianInfoHandler },
             { 7, YuYanJiaInfoHandler },
@@ -108,6 +109,7 @@ namespace PotatoVillage
             { 24, MeiYangYangSacrificeSelfHandler },
             { 25, MeiYangYangCivilianMayActHandler },
             { 26, MeiYangYangCivilianSacrificeHandler },
+            { 30, ShiXiangGuiResultHandler },
             { 104, SheriffSpeechHandler },
             { 105, SheriffPKHandler },
             { 151, LieRenInfoHandler },
@@ -153,7 +155,7 @@ namespace PotatoVillage
             var result = parts[3];
 
             // Parse result: "0" = Failed, "1" = Succeeded
-            var resultText = result == "1" 
+            var resultText = result == "1"
                 ? LocalizationManager.Instance.GetString("skill_succeeded", "Succeeded")
                 : LocalizationManager.Instance.GetString("skill_failed", "Failed");
 
@@ -206,6 +208,22 @@ namespace PotatoVillage
             // userInfo contains the role name - translate it
             var roleName = LocalizationManager.Instance.GetString(userInfo, userInfo);
             var txt = LocalizationManager.Instance.GetString("tonglingshi_result_info", "Prophet result: {0}");
+            return txt.Replace("{0}", roleName);
+        }
+
+        private static string ShiXiangGuiChaYanHandler(string userInfo, string userInfo2)
+        {
+            // userInfo is "Succession" if can attack, empty otherwise
+            if (userInfo == "Succession")
+                return LocalizationManager.Instance.GetString("langren_succession_yes", "Can attack.");
+            return LocalizationManager.Instance.GetString("langren_succession_no", "Cannot attack yet.");
+        }
+
+        private static string ShiXiangGuiResultHandler(string userInfo, string userInfo2)
+        {
+            // userInfo contains the role name - translate it
+            var roleName = LocalizationManager.Instance.GetString(userInfo, userInfo);
+            var txt = LocalizationManager.Instance.GetString("shixianggui_result_info", "ShiXiangGui result: {0}");
             return txt.Replace("{0}", roleName);
         }
 
@@ -941,43 +959,43 @@ namespace PotatoVillage
         private int? GetInt32Value(object? obj)
         {
             if (obj == null) return null;
-            
+
             if (obj is int intValue)
                 return intValue;
-            
+
             if (obj is JsonElement je)
             {
                 return je.ValueKind == JsonValueKind.Number ? je.GetInt32() : null;
             }
-            
+
             return null;
         }
 
         private string? GetStringValue(object? obj)
         {
             if (obj == null) return null;
-            
+
             if (obj is string str)
                 return str;
-            
+
             if (obj is JsonElement je && je.ValueKind == JsonValueKind.String)
                 return je.GetString();
-            
+
             return null;
         }
 
         private List<int> GetInt32List(object? obj)
         {
             if (obj == null) return new();
-            
+
             if (obj is List<int> intList)
                 return intList;
-            
+
             if (obj is JsonElement je && je.ValueKind == JsonValueKind.Array)
             {
                 return je.EnumerateArray().Select(e => e.GetInt32()).ToList();
             }
-            
+
             return new();
         }
 
@@ -1011,6 +1029,8 @@ namespace PotatoVillage
                 24 => "meiyangyang_info",
                 25 => "meiyangyang_info",
                 26 => "meiyangyang_info",
+                29 => "shixianggui_chayan",
+                30 => "shixianggui_result",
                 50 => "open_eyes",
                 51 => "close_eyes",
                 52 => "lucky_one_open_eyes",
@@ -1168,7 +1188,7 @@ namespace PotatoVillage
                 }
                 return result;
             }
-            
+
             return new();
         }
 
@@ -1183,8 +1203,8 @@ namespace PotatoVillage
 
                 // Update game status (phase, etc.)
                 var phaseValue = GetInt32Value(gameDict.TryGetValue("phase", out var phaseObj) ? phaseObj : null);
-                var phaseStr = phaseValue == 0 ? localization.GetString("phase_night") : 
-                              phaseValue == 1 ? localization.GetString("phase_day") : 
+                var phaseStr = phaseValue == 0 ? localization.GetString("phase_night") :
+                              phaseValue == 1 ? localization.GetString("phase_day") :
                               localization.GetString("phase_unknown");
                 var dayNum = gameDict.TryGetValue("day", out var dayNum2) ? GetInt32Value(dayNum2)?.ToString() ?? "?" : "?";
                 var dayString = localization.GetString("day").Replace("{0}", dayNum);
@@ -1385,7 +1405,7 @@ namespace PotatoVillage
         {
             // Check if we're already displaying the same target selection
             // Only compare deadline and hint - don't rely on UI visibility state which can have race conditions
-            if (currentDisplayedDeadline == userActionDeadline && 
+            if (currentDisplayedDeadline == userActionDeadline &&
                 currentDisplayedHint == hintIndex)
             {
                 // Already displaying this state, no need to rebuild
@@ -1433,7 +1453,7 @@ namespace PotatoVillage
             else
             {
                 // Fallback to instruction if no hint available
-                instructionText = maxTargetCount == -1 
+                instructionText = maxTargetCount == -1
                     ? localization.GetString("select_any_targets")
                     : localization.GetString("select_up_to_targets").Replace("{0}", maxTargetCount.ToString());
             }
@@ -1841,6 +1861,14 @@ namespace PotatoVillage
                         MainThread.BeginInvokeOnMainThread(() => PlayWarningBeep());
                     }
 
+                    // Special beeping for LangRen_Kill (hint index 1): beep from 15 seconds to 5 seconds each second
+                    // Use the global hint from game dictionary so all players hear the beep, not just LangRen
+                    var globalHint = GetInt32Value(gameDict.TryGetValue(DictUserActionTargetsHint, out var hintObj) ? hintObj : null) ?? 0;
+                    if (!isPaused && globalHint == 1 && timeRemaining >= 5 && timeRemaining <= 15 && IsAnnouncerEnabled)
+                    {
+                        MainThread.BeginInvokeOnMainThread(() => PlayWarningBeep());
+                    }
+
                     MainThread.BeginInvokeOnMainThread(() =>
                     {
                         if (isPaused)
@@ -2057,8 +2085,8 @@ namespace PotatoVillage
 
             var localization = LocalizationManager.Instance;
             var timestamp = DateTime.Now.ToString("HH:mm:ss");
-            var actionText = isConfirmed 
-                ? localization.GetString("action_confirmed", "Confirmed") 
+            var actionText = isConfirmed
+                ? localization.GetString("action_confirmed", "Confirmed")
                 : localization.GetString("action_selected", "Selected");
 
             foreach (var target in targets)

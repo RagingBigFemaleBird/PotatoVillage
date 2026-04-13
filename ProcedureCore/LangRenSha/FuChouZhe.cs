@@ -128,6 +128,11 @@ namespace ProcedureCore.LangRenSha
 
             if (UserAction.EndUserAction(game, update))
             {
+                // Timeout - set skippedAct to true (not acted)
+                if (fuChouZheAlive.Count > 0)
+                {
+                    AwkSheMengRen.SetSkippedAct(game, fuChouZhePlayer, true, update);
+                }
                 LangRenSha.AdvanceAction(game, update);
                 return GameActionResult.Restart;
             }
@@ -168,6 +173,8 @@ namespace ProcedureCore.LangRenSha
                                 LangRenSha.MarkPlayerAboutToDie(game, targets[0], update);
                             }
                             LangRenSha.SetPlayerProperty(game, fuChouZhePlayer, dictRevengeUsed, 1, update);
+                            // Set skippedAct for FuChouZhe (not skipped)
+                            AwkSheMengRen.SetSkippedAct(game, fuChouZhePlayer, false, update);
 
                             UserAction.EndUserAction(game, update, true);
                             LangRenSha.AdvanceAction(game, update);
@@ -175,7 +182,8 @@ namespace ProcedureCore.LangRenSha
                         }
                         else if (targets.Count == 1 && targets[0] == -100)
                         {
-                            // Chose not to shoot
+                            // Chose not to shoot - set skippedAct for FuChouZhe
+                            AwkSheMengRen.SetSkippedAct(game, fuChouZhePlayer, true, update);
                             UserAction.EndUserAction(game, update, true);
                             LangRenSha.AdvanceAction(game, update);
                             return GameActionResult.Restart;
@@ -202,7 +210,7 @@ namespace ProcedureCore.LangRenSha
             if (UserAction.EndUserAction(game, update))
             {
                 // No valid target selected, just mark as processed and continue
-                return (true, GameActionResult.Restart);
+                return (false, GameActionResult.Restart);
             }
             else
             {

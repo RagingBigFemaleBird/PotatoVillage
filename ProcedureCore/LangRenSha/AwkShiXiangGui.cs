@@ -28,9 +28,9 @@ namespace ProcedureCore.LangRenSha
 
         private static List<int> actionOrders = new()
         {
-            (int)ActionConstant.AwkShiXiangGui_ConvertedOpenEyes,      // 0: 13 - Day 1+ converted check
-            (int)ActionConstant.AwkShiXiangGui_ConvertedCheckAttack,   // 1: 14
-            (int)ActionConstant.AwkShiXiangGui_ConvertedCloseEyes,     // 2: 15
+            (int)ActionConstant.AwkShiXiangGui_ConvertedOpenEyes,      // 0: 16 - Day 1+ converted check
+            (int)ActionConstant.AwkShiXiangGui_ConvertedCheckAttack,   // 1: 17
+            (int)ActionConstant.AwkShiXiangGui_ConvertedCloseEyes,     // 2: 18
             125,                                                       // 3: 125 - Day 0 selection (shares LangRen open/close eyes)
             (int)ActionConstant.AwkShiXiangGui_LuckyOneOpenEyes,       // 4: 305 - Day 0 lucky one check (very last)
             (int)ActionConstant.AwkShiXiangGui_CheckConversion,        // 5: 306 - Actual conversion happens here
@@ -203,6 +203,12 @@ namespace ProcedureCore.LangRenSha
 
                             // Only store the target here - actual conversion happens at end of night
                             update[dictSelectedTarget] = target;
+
+                            // Set skippedAct to false (acted) for AwkShiXiangGui on day 0
+                            if (awkPlayer > 0)
+                            {
+                                AwkSheMengRen.SetSkippedAct(game, awkPlayer, false, update);
+                            }
 
                             game.Log($"AwkShiXiangGui: Player {target} selected for conversion (will convert at end of night)");
 

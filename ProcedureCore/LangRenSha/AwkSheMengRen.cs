@@ -48,9 +48,10 @@ namespace ProcedureCore.LangRenSha
         public static string dictAwkSheMengTarget = "awkshemengren_target";
         public static string dictAwkSheMengLastTarget = "awkshemengren_last_target";
         public static string dictBeforeConversionFaction = "before_conversion_faction";
+        public static string dictNightSkippedAct = "night_skippedAct";
 
         // Whitelist of roles that don't count as "acted" even if God faction
-        private static readonly HashSet<string> NoActWhitelist = new() { "MengMianRen" , "BaiChi"};
+        private static readonly HashSet<string> NoActWhitelist = new() { "MengMianRen" , "BaiChi", "LieRen"};
 
         public GameActionResult GenerateStateDiff(Game game, Dictionary<string, object> update)
         {
@@ -249,11 +250,19 @@ namespace ProcedureCore.LangRenSha
 
         /// <summary>
         /// Determine if the target has "acted" during the night.
+        /// - If night_skippedAct is 1, return false (not acted) - overrides all other checks
         /// - God faction (or beforeConversionFaction is God): acted UNLESS whitelisted
         /// - Evil faction: NOT acted UNLESS able to attack during the night
         /// </summary>
         private bool DetermineIfTargetActed(Game game, int target)
         {
+            // Check night_skippedAct first - if 1, target chose not to act
+            var skippedAct = LangRenSha.GetPlayerProperty(game, target, dictNightSkippedAct, 0);
+            if (skippedAct == 1)
+            {
+                return false;
+            }
+
             var role = LangRenSha.GetPlayerProperty(game, target, LangRenSha.dictRole, "");
 
             // Get current faction
@@ -314,6 +323,27 @@ namespace ProcedureCore.LangRenSha
         {
             var target = Game.GetGameDictionaryProperty(game, dictAwkSheMengTarget, 0);
             return target == player && target > 0;
+        }
+
+        /// <summary>
+        /// Set the night_skippedAct flag for a player.
+        /// Call with skipped=true when player selects -100 (no act), false otherwise.
+        /// For LangRen, call this for all LangRen players.
+        /// </summary>
+        public static void SetSkippedAct(Game game, int player, bool skipped, Dictionary<string, object> update)
+        {
+            LangRenSha.SetPlayerProperty(game, player, dictNightSkippedAct, skipped ? 1 : 0, update);
+        }
+
+        /// <summary>
+        /// Set the night_skippedAct flag for all players in a list (used for LangRen).
+        /// </summary>
+        public static void SetSkippedActForAll(Game game, List<int> players, bool skipped, Dictionary<string, object> update)
+        {
+            foreach (var player in players)
+            {
+                LangRenSha.SetPlayerProperty(game, player, dictNightSkippedAct, skipped ? 1 : 0, update);
+            }
         }
     }
 }

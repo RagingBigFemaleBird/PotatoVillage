@@ -93,6 +93,7 @@
     "Witness": "witness",
     "shouwei_act": "Choose a player to guard tonight",
     "YingZi": "shadow",
+    "XueYue":  "bloodwolf",
     "HunZi": "follower",
     "hunzi_act": "Select a player to follow:",
     "JiXieLang": "mechanical wolf",
@@ -106,6 +107,7 @@
     "jixielang_tongling_result": "TongLing: [c:green]{0}[/c]",
     "jixielang_lieren_can_shoot": "Can shoot on death",
     "jixielang_lieren_cannot_shoot": "Cannot shoot on death",
+    "ZhuangJiaLang": "armored wolf",
     "yingzi_act": "Choose a player to shadow",
     "yingzi_info": "Current role info",
     "yingzi_role_changed": "Your current role is: [c:green]{0}[/c]",
@@ -271,7 +273,11 @@
     "awkshemengren_judge_not_acted": "Player [c:green]{0}[/c] did [c:green]not act[/c] during the night.",
     "awkshemengren_judge_act": "Kill the guarded player?",
     "Kill": "Kill",
-    "DoNotKill": "Do not kill"
+    "DoNotKill": "Do not kill",
+    "ShiXiangGui": "stone gargoyle",
+    "shixianggui_chayan": "Stone Gargoyle revelation",
+    "shixianggui_result": "Stone Gargoyle result",
+    "shixianggui_result_info": "Stone Gargoyle result: [c:green]{0}[/c]"
   },
   "zh": {
     "game_info": "游戏信息",
@@ -367,6 +373,7 @@
     "Witness": "证婚人",
     "shouwei_act": "选择今晚要守护的玩家",
     "YingZi": "影子",
+    "XueYue": "血月",
     "HunZi": "混子",
     "hunzi_act": "选择要跟随的玩家:",
     "JiXieLang": "机械狼",
@@ -380,6 +387,7 @@
     "jixielang_tongling_result": "通灵: [c:green]{0}[/c]",
     "jixielang_lieren_can_shoot": "死亡时可开枪",
     "jixielang_lieren_cannot_shoot": "死亡时不可开枪",
+    "ZhuangJiaLang": "装甲狼",
     "yingzi_act": "选择要跟随的玩家",
     "yingzi_info": "当前角色信息",
     "yingzi_role_changed": "你的当前角色是: [c:green]{0}[/c]",
@@ -545,6 +553,10 @@
     "awkshemengren_judge_not_acted": "玩家 [c:green]{0}[/c] 在夜间[c:green]没有行动[/c]。",
     "awkshemengren_judge_act": "是否击杀守护的玩家?",
     "Kill": "击杀",
-    "DoNotKill": "不击杀"
+    "DoNotKill": "不击杀",
+    "ShiXiangGui": "石像鬼",
+    "shixianggui_chayan": "石像鬼通灵",
+    "shixianggui_result": "石像鬼结果",
+    "shixianggui_result_info": "石像鬼结果: [c:green]{0}[/c]"
   }
 }

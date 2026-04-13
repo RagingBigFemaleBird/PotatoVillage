@@ -199,7 +199,7 @@ namespace ProcedureCore.LangRenSha
             if (UserAction.EndUserAction(game, update))
             {
                 // No valid target selected, just mark as processed and continue
-                return (true, GameActionResult.Restart);
+                return (false, GameActionResult.Restart);
             }
             else
             {

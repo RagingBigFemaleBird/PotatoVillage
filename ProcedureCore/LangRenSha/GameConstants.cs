@@ -18,26 +18,26 @@ namespace ProcedureCore.LangRenSha
         ShenLangGongWu1_Check = 11,
         ShenLangGongWu1_CloseEyes = 12,
 
-        // === AwkShiXiangGui Converted Check (13-15) - Day 1+ only, after ShenLangGongWu1 ===
-        AwkShiXiangGui_ConvertedOpenEyes = 13,
-        AwkShiXiangGui_ConvertedCheckAttack = 14,
-        AwkShiXiangGui_ConvertedCloseEyes = 15,
+        // === XueYue (13-15) - Only triggers after XueYue reveals during day ===
+        XueYue_OpenEyes = 13,
+        XueYue_SelectTarget = 14,
+        XueYue_CloseEyes = 15,
 
-        // === Thief (16-19) ===
-        Thief_OpenEyes = 16,
-        Thief_PickRole = 17,
-        Thief_ShowAttackStatus = 18,
-        Thief_CloseEyes = 19,
+        // === AwkShiXiangGui Converted Check (16-18) - Day 1+ only, after ShenLangGongWu1 ===
+        AwkShiXiangGui_ConvertedOpenEyes = 16,
+        AwkShiXiangGui_ConvertedCheckAttack = 17,
+        AwkShiXiangGui_ConvertedCloseEyes = 18,
 
-        // === HunZi (20-22) ===
-        HunZi_OpenEyes = 20,
-        HunZi_Act = 21,
-        HunZi_CloseEyes = 22,
+        // === Thief (19-22) ===
+        Thief_OpenEyes = 19,
+        Thief_PickRole = 20,
+        Thief_ShowAttackStatus = 21,
+        Thief_CloseEyes = 22,
 
-        // === AwkShiXiangGui (23-25) - Day 0 only for selection, wakes all LangRen ===
-        AwkShiXiangGui_OpenEyes = 23,
-        AwkShiXiangGui_Act = 24,
-        AwkShiXiangGui_CloseEyes = 25,
+        // === HunZi (23-25) ===
+        HunZi_OpenEyes = 23,
+        HunZi_Act = 24,
+        HunZi_CloseEyes = 25,
 
         // === GhostBride (29-43) ===
         GhostBride_OpenEyes = 29,
@@ -65,6 +65,16 @@ namespace ProcedureCore.LangRenSha
         JiXieLang_ActAgain = 134,
         JiXieLang_ActAgain_Info = 135,
         JiXieLang_ActAgain_CloseEyes = 136,
+
+        // === ZhuangJiaLang (48-51, 137-140) - Acts after JiXieLang ===
+        ZhuangJiaLang_OpenEyes = 48,
+        ZhuangJiaLang_Act = 49,
+        ZhuangJiaLang_Info = 50,
+        ZhuangJiaLang_CloseEyes = 51,
+        ZhuangJiaLang_ActAgain_OpenEyes = 137,
+        ZhuangJiaLang_ActAgain = 138,
+        ZhuangJiaLang_ActAgain_Info = 139,
+        ZhuangJiaLang_ActAgain_CloseEyes = 140,
 
         // === YingZi (60-63) ===
         YingZi_OpenEyes = 60,
@@ -102,6 +112,12 @@ namespace ProcedureCore.LangRenSha
         AwkSheMengRen_OpenEyes = 88,
         AwkSheMengRen_Act = 89,
         AwkSheMengRen_CloseEyes = 90,
+
+        // === ShiXiangGui (91-94) - Evil TongLingShi ===
+        ShiXiangGui_OpenEyes = 91,
+        ShiXiangGui_ChaYan = 92,
+        ShiXiangGui_Result = 93,
+        ShiXiangGui_CloseEyes = 94,
 
         // === WuZhe (99-101, 150) ===
         WuZhe_OpenEyes = 99,
@@ -281,6 +297,10 @@ namespace ProcedureCore.LangRenSha
         TongLingShi_ChaYan = 13,
         TongLingShi_Result = 14,
 
+        // === ShiXiangGui (29-30) - Evil TongLingShi ===
+        ShiXiangGui_ChaYan = 29,
+        ShiXiangGui_Result = 30,
+
         // === NvWu (3) ===
         NvWu_Act = 3,
 
@@ -351,6 +371,9 @@ namespace ProcedureCore.LangRenSha
         // === AwkShiXiangGui (64-65) ===
         AwkShiXiangGui_Act = 64,
         AwkShiXiangGui_CheckConversion = 65,
+
+        // === XueYue (66) ===
+        XueYue_SelectTarget = 66,
 
         // === LaoShu (72, 75-76) ===
         LaoShu_Tag = 72,

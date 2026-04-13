@@ -15,7 +15,7 @@ namespace ProcedureCore.LangRenSha
     {
         private List<(int, Role)> players;
         private static List<Func<Game, int, List<int>, Dictionary<string, object>, GameActionResult>> interruptHandlers = new()
-            { LangRen.RevealSelf, LangQiang.RevealSelf, AwkShiXiangGui.RevealSelf, LangRenSha.WithdrawSheriff, LangRenSha.OverrideDayVote, LangRenSha.OverrideSheriffVote };
+            { LangRen.RevealSelf, LangQiang.RevealSelf, AwkShiXiangGui.RevealSelf, XueYue.RevealSelf, LangRenSha.WithdrawSheriff, LangRenSha.OverrideDayVote, LangRenSha.OverrideSheriffVote };
         public static List<Func<Game, int, List<int>, Dictionary<string, object>, GameActionResult>> InterruptHandlers
         {
             get
@@ -75,6 +75,7 @@ namespace ProcedureCore.LangRenSha
             RegisterDeadPlayerHandler(LangMeiRen.HandleLangMeiRenDeathSkill);
             RegisterDeadPlayerHandler(FuChouZhe.HandleRevengerDeathSkill);
             RegisterDeadPlayerHandler(JiXieLang.HandleJiXieLangDeathSkill);
+            RegisterDeadPlayerHandler(ZhuangJiaLang.HandleZhuangJiaLangDeathSkill);
             RegisterDeadPlayerHandler(MengMianRen.HandleDeathSkill);
             RegisterAfterSpeakHandler(MengMianRen.HandleAfterSpeak);
             // Players will be initialized dynamically in GenerateStateDiff based on roleDict
@@ -105,6 +106,7 @@ namespace ProcedureCore.LangRenSha
                 "FuChouZhe" => new FuChouZhe(),
                 "HunZi" => new HunZi(),
                 "JiXieLang" => new JiXieLang(),
+                "ZhuangJiaLang" => new ZhuangJiaLang(),
                 "LangMeiRen" => new LangMeiRen(),
                 "GhostBride" => new GhostBride(),
                 "MeiYangYang" => new MeiYangYang(),
@@ -114,6 +116,8 @@ namespace ProcedureCore.LangRenSha
                 "AwkShiXiangGui" => new AwkShiXiangGui(),
                 "ShouMuRen" => new ShouMuRen(),
                 "AwkSheMengRen" => new AwkSheMengRen(),
+                "ShiXiangGui" => new ShiXiangGui(),
+                "XueYue" => new XueYue(),
                 _ => throw new ArgumentException($"Not a role: {roleName}")
             };
         }
@@ -124,6 +128,13 @@ namespace ProcedureCore.LangRenSha
             God = 2,
             Civilian = 4,
             ThirdParty = 8,
+        }
+
+        public enum SkillTransformation
+        {
+            None = 0,
+            Disabled = 1,
+            Enhanced = 2,
         }
 
         public static string dictPlayers = "players";
@@ -766,7 +777,10 @@ namespace ProcedureCore.LangRenSha
             {
                 var sheriffPlayers = Game.GetGameDictionaryProperty(game, dictSheriff, new List<int>());
                 var volunteersInfo = string.Join(", ", sheriffPlayers);
-                return HandleRoundTableSpeak(game, sheriffPlayers, sheriffPlayers[game.GetRandomNumber() % sheriffPlayers.Count], (game.GetRandomNumber() % 2) == 1, update, (int)SpeakConstant.WithdrawOrReveal, (int)HintConstant.SheriffSpeech, volunteersInfo);
+                var randomNumber = game.GetRandomNumber();
+                var startingPlayer = sheriffPlayers[randomNumber % sheriffPlayers.Count];
+                var direction = (startingPlayer % 2) == 1;
+                return HandleRoundTableSpeak(game, sheriffPlayers, startingPlayer, direction, update, (int)SpeakConstant.WithdrawOrReveal, (int)HintConstant.SheriffSpeech, volunteersInfo);
             }
             // WithdrawOrReveal phase (退水自爆) - Players can withdraw from sheriff or LangRen can reveal
             if (Game.GetGameDictionaryProperty(game, dictSpeak, 0) == (int)SpeakConstant.WithdrawOrReveal)

@@ -102,6 +102,11 @@ namespace ProcedureCore.LangRenSha
 
             if (UserAction.EndUserAction(game, update))
             {
+                // Timeout - set skippedAct to true (not acted)
+                if (hongTaiLangAlive.Count > 0)
+                {
+                    AwkSheMengRen.SetSkippedAct(game, hongTaiLangAlive[0], true, update);
+                }
                 LangRenSha.AdvanceAction(game, update);
                 return GameActionResult.Restart;
             }
@@ -132,6 +137,7 @@ namespace ProcedureCore.LangRenSha
                 if (targets.Count > 0 && hongTaiLangAlive.Count > 0)
                 {
                     var target = targets[0];
+                    bool skippedAct = target == -100 || target <= 0;
                     if (target > 0)
                     {
                         var hongTaiLangPlayer = hongTaiLangAlive[0];
@@ -139,6 +145,8 @@ namespace ProcedureCore.LangRenSha
                         update[dictDelayedPoisonTarget] = target;
                         LangRenSha.SetPlayerProperty(game, hongTaiLangPlayer, dictPoisonUsed, 1, update);
                     }
+                    // Set skippedAct for HongTaiLang
+                    AwkSheMengRen.SetSkippedAct(game, hongTaiLangAlive[0], skippedAct, update);
 
                     UserAction.EndUserAction(game, update, true);
                     LangRenSha.AdvanceAction(game, update);

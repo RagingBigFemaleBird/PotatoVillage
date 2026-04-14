@@ -73,6 +73,7 @@ namespace PotatoVillage
                 "Seat already taken" => localization.GetString("error_seat_taken"),
                 "Invalid seat number" => localization.GetString("error_invalid_seat"),
                 "Game has ended" => localization.GetString("error_game_has_ended"),
+                "No available seats" => localization.GetString("error_no_available_seats"),
                 _ => serverMessage // Return original message if no translation found
             };
         }
@@ -395,6 +396,34 @@ namespace PotatoVillage
             catch (Exception ex)
             {
                 return (false, $"Join game failed: {ex.Message}");
+            }
+        }
+
+        // DTO for pending games (matches server DTO)
+        public class PendingGameInfo
+        {
+            public int GameId { get; set; }
+            public string OwnerName { get; set; } = "";
+            public int TotalPlayers { get; set; }
+            public int JoinedPlayers { get; set; }
+        }
+
+        public async Task<List<PendingGameInfo>> GetPendingGamesAsync()
+        {
+            try
+            {
+                if (connection == null)
+                {
+                    return new List<PendingGameInfo>();
+                }
+
+                var result = await connection.InvokeAsync<List<PendingGameInfo>>("GetPendingGames");
+                return result ?? new List<PendingGameInfo>();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"GetPendingGames failed: {ex.Message}");
+                return new List<PendingGameInfo>();
             }
         }
 

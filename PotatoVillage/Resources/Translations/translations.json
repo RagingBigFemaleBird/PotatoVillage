@@ -280,7 +280,14 @@
     "shixianggui_result_info": "Stone Gargoyle result: [c:green]{0}[/c]",
     "MengYan": "nightmare",
     "mengyan_act": "Select a player to disable their skill tonight",
-    "skill_disabled": "Your skill has been disabled this night."
+    "skill_disabled": "Your skill has been disabled this night.",
+    "loading": "Loading...",
+    "available_games": "Available Games:",
+    "no_pending_games": "No games available. Create one!",
+    "failed_to_load_games": "Failed to load games",
+    "join_by_room_seat": "Or join by room and seat number:",
+    "refresh": "Refresh",
+    "error_no_available_seats": "No available seats"
   },
   "zh": {
     "game_info": "游戏信息",
@@ -563,6 +570,13 @@
     "shixianggui_result_info": "石像鬼结果: [c:green]{0}[/c]",
     "MengYan": "梦魇",
     "mengyan_act": "选择一个玩家，今晚禁用其技能",
-    "skill_disabled": "你的技能今晚被禁用了。"
+    "skill_disabled": "你的技能今晚被禁用了。",
+    "loading": "加载中...",
+    "available_games": "可加入的游戏:",
+    "no_pending_games": "没有可加入的游戏，请创建一个！",
+    "failed_to_load_games": "加载游戏列表失败",
+    "join_by_room_seat": "或通过房间号和座位号加入:",
+    "refresh": "刷新",
+    "error_no_available_seats": "没有可用的座位"
   }
 }

@@ -230,6 +230,15 @@ namespace PotatoVillage
                 ["ShouWei"] = 1,
                 ["PingMin"] = 4
             },
+            ["MengYan"] = new()
+            {
+                ["LangRen"] = 3,
+                ["YuYanJia"] = 1,
+                ["NvWu"] = 1,
+                ["LieRen"] = 1,
+                ["ShouWei"] = 1,
+                ["PingMin"] = 4
+            },
         };
 
         // Server URL (discovered at startup, not persisted)
@@ -370,7 +379,51 @@ namespace PotatoVillage
         {
             var localization = Services.LocalizationManager.Instance;
 
-            // Create popup content with session-remembered values
+            // Create a temporary connection to fetch pending games
+            if (string.IsNullOrEmpty(currentServerUrl))
+            {
+                await DisplayAlert(localization.GetString("error"), localization.GetString("server_url_required"), localization.GetString("yes"));
+                return;
+            }
+
+            var nickname = NicknameEntry.Text?.Trim() ?? "";
+            Preferences.Set(NicknamePreferenceKey, nickname);
+
+            HubConnectionManager? tempConnectionManager = null;
+
+            try
+            {
+                tempConnectionManager = new HubConnectionManager(nickname);
+
+                // Show loading indicator
+                var loadingLabel = new Label
+                {
+                    Text = localization.GetString("loading", "Loading..."),
+                    FontSize = 16,
+                    TextColor = PopupTextColor,
+                    HorizontalOptions = LayoutOptions.Center,
+                    VerticalOptions = LayoutOptions.Center
+                };
+
+                var pendingGamesContainer = new FlexLayout
+                {
+                    Wrap = Microsoft.Maui.Layouts.FlexWrap.Wrap,
+                    JustifyContent = Microsoft.Maui.Layouts.FlexJustify.Start,
+                    AlignContent = Microsoft.Maui.Layouts.FlexAlignContent.Start,
+                    Margin = new Thickness(0, 10, 0, 10)
+                };
+
+                var scrollView = new ScrollView { Content = pendingGamesContainer, HeightRequest = 300 };
+
+                // Manual join section (secondary option)
+                var manualJoinLabel = new Label
+                {
+                    Text = localization.GetString("join_by_room_seat", "Or join by room and seat number:"),
+                    FontSize = 14,
+                    TextColor = PopupTextColor,
+                    Margin = new Thickness(0, 20, 0, 10)
+            };
+
             var roomEntry = new Entry
             {
                 Placeholder = localization.GetString("room_number", "Room Number"),
@@ -389,12 +442,20 @@ namespace PotatoVillage
                 HorizontalOptions = LayoutOptions.Fill
             };
 
-            var confirmBtn = new Button
+            var manualJoinBtn = new Button
             {
                 Text = localization.GetString("join", "Join"),
                 BackgroundColor = Colors.Transparent,
                 TextColor = Colors.White,
-                Margin = new Thickness(0, 20, 0, 0)
+                Margin = new Thickness(0, 10, 0, 0)
+            };
+
+            var refreshBtn = new Button
+            {
+                Text = localization.GetString("refresh", "Refresh"),
+                BackgroundColor = Colors.Transparent,
+                TextColor = Colors.White,
+                Margin = new Thickness(0, 10, 0, 0)
             };
 
             var backBtn = new Button
@@ -403,6 +464,24 @@ namespace PotatoVillage
                 BackgroundColor = Colors.Transparent,
                 TextColor = Colors.White,
                 Margin = new Thickness(0, 10, 0, 0)
+            };
+
+            var mainStack = new VerticalStackLayout
+            {
+                Padding = 20,
+                Spacing = 10,
+                Children =
+                {
+                    new Label { Text = localization.GetString("join_existing_game", "Join Existing Game"), FontSize = 20, FontAttributes = FontAttributes.Bold, TextColor = PopupTextColor },
+                    new Label { Text = localization.GetString("available_games", "Available Games:"), FontSize = 14, TextColor = PopupTextColor },
+                    scrollView,
+                    refreshBtn,
+                    manualJoinLabel,
+                    roomEntry,
+                    seatEntry,
+                    manualJoinBtn,
+                    backBtn
+                }
             };
 
             var popup = new ContentPage
@@ -419,33 +498,88 @@ namespace PotatoVillage
                             HorizontalOptions = LayoutOptions.Fill,
                             VerticalOptions = LayoutOptions.Fill
                         },
-                        new VerticalStackLayout
-                        {
-                            Padding = 20,
-                            Spacing = 15,
-                            Children =
-                            {
-                                new Label { Text = localization.GetString("join_existing_game", "Join Existing Game"), FontSize = 20, FontAttributes = FontAttributes.Bold, TextColor = PopupTextColor },
-                                roomEntry,
-                                seatEntry,
-                                confirmBtn,
-                                backBtn
-                            }
-                        }
+                        new ScrollView { Content = mainStack }
                     }
                 }
             };
             NavigationPage.SetHasNavigationBar(popup, false);
+
+            // Function to load pending games
+            async Task LoadPendingGames()
+            {
+                pendingGamesContainer.Clear();
+                pendingGamesContainer.Children.Add(loadingLabel);
+
+                bool needsDisconnect = false;
+                try
+                {
+                    if (!tempConnectionManager.IsConnected)
+                    {
+                        needsDisconnect = await tempConnectionManager.ConnectAsync(currentServerUrl);
+                    }
+
+                    var pendingGames = await tempConnectionManager.GetPendingGamesAsync();
+
+                    pendingGamesContainer.Clear();
+
+                    if (pendingGames.Count == 0)
+                    {
+                        pendingGamesContainer.Children.Add(new Label
+                        {
+                            Text = localization.GetString("no_pending_games", "No games available. Create one!"),
+                            FontSize = 14,
+                            TextColor = PopupTextColor,
+                            HorizontalOptions = LayoutOptions.Center
+                        });
+                    }
+                    else
+                    {
+                        foreach (var game in pendingGames)
+                        {
+                            var gameBox = CreatePendingGameBox(game, localization, popup, tempConnectionManager);
+                            pendingGamesContainer.Children.Add(gameBox);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    pendingGamesContainer.Clear();
+                    pendingGamesContainer.Children.Add(new Label
+                    {
+                        Text = localization.GetString("failed_to_load_games", "Failed to load games"),
+                        FontSize = 14,
+                        TextColor = Colors.Red,
+                        HorizontalOptions = LayoutOptions.Center
+                    });
+                    System.Diagnostics.Debug.WriteLine($"Failed to load pending games: {ex.Message}");
+                }
+                finally
+                {
+                    if (needsDisconnect)
+                    {
+                        await tempConnectionManager.Disconnect();
+                    }
+                }
+            }
+
+            refreshBtn.Clicked += async (s, args) =>
+            {
+                await LoadPendingGames();
+            };
 
             backBtn.Clicked += async (s, args) =>
             {
                 // Remember values for session
                 sessionRoomNumber = roomEntry.Text ?? "";
                 sessionSeatNumber = seatEntry.Text ?? "";
+
+                // Disconnect temp connection
+                await tempConnectionManager.Disconnect();
+
                 await Navigation.PopModalAsync();
             };
 
-            confirmBtn.Clicked += async (s, args) =>
+            manualJoinBtn.Clicked += async (s, args) =>
             {
                 // Remember values for session
                 sessionRoomNumber = roomEntry.Text ?? "";
@@ -453,21 +587,123 @@ namespace PotatoVillage
 
                 if (!int.TryParse(roomEntry.Text, out int roomNumber) || roomNumber <= 0)
                 {
-                    await DisplayAlertAsync(localization.GetString("error"), localization.GetString("invalid_room_number"), localization.GetString("yes"));
+                    await DisplayAlert(localization.GetString("error"), localization.GetString("invalid_room_number"), localization.GetString("yes"));
                     return;
                 }
 
                 if (!int.TryParse(seatEntry.Text, out int seatNumber) || seatNumber <= 0)
                 {
-                    await DisplayAlertAsync(localization.GetString("error"), localization.GetString("invalid_seat_number"), localization.GetString("yes"));
+                    await DisplayAlert(localization.GetString("error"), localization.GetString("invalid_seat_number"), localization.GetString("yes"));
                     return;
                 }
+
+                // Disconnect temp connection
+                await tempConnectionManager.Disconnect();
 
                 await Navigation.PopModalAsync();
                 await JoinGameAsync(roomNumber, seatNumber);
             };
 
             await Navigation.PushModalAsync(new NavigationPage(popup));
+
+            // Load pending games after popup is shown
+            await LoadPendingGames();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"OnJoinGameClicked error: {ex.Message}");
+
+                // Clean up temp connection if it exists
+                if (tempConnectionManager != null)
+                {
+                    try
+                    {
+                        await tempConnectionManager.Disconnect();
+                    }
+                    catch { /* Ignore cleanup errors */ }
+                }
+
+                // Show error and return to main page
+                await DisplayAlert(localization.GetString("error"), localization.GetString("failed_to_load_games", "Failed to load games"), localization.GetString("yes"));
+            }
+        }
+
+        private Border CreatePendingGameBox(HubConnectionManager.PendingGameInfo game, LocalizationManager localization, ContentPage popup, HubConnectionManager tempConnectionManager)
+        {
+            var border = new Border
+            {
+                Padding = new Thickness(12),
+                StrokeShape = new Microsoft.Maui.Controls.Shapes.RoundRectangle { CornerRadius = 10 },
+                BackgroundColor = Color.FromArgb("#3D3D3D"),
+                Stroke = Colors.Gray,
+                StrokeThickness = 1,
+                WidthRequest = 150,
+                HeightRequest = 90,
+                Margin = new Thickness(5),
+            };
+
+            var stack = new VerticalStackLayout
+            {
+                Spacing = 4,
+                HorizontalOptions = LayoutOptions.Center,
+                VerticalOptions = LayoutOptions.Center
+            };
+
+            // Room number (large, centered)
+            var roomLabel = new Label
+            {
+                Text = $"{localization.GetString("room_number_label", "Room:")} {game.GameId}",
+                FontAttributes = FontAttributes.Bold,
+                FontSize = 18,
+                HorizontalOptions = LayoutOptions.Center,
+                HorizontalTextAlignment = TextAlignment.Center,
+                TextColor = PopupTextColor
+            };
+            stack.Add(roomLabel);
+
+            // Owner name (smaller, centered)
+            var ownerName = string.IsNullOrEmpty(game.OwnerName) ? "-" : game.OwnerName;
+            if (ownerName.Length > 10) ownerName = ownerName.Substring(0, 10) + "..";
+
+            var ownerLabel = new Label
+            {
+                Text = ownerName,
+                FontSize = 13,
+                HorizontalOptions = LayoutOptions.Center,
+                HorizontalTextAlignment = TextAlignment.Center,
+                TextColor = PopupTextColor,
+                LineBreakMode = LineBreakMode.TailTruncation,
+                MaxLines = 1
+            };
+            stack.Add(ownerLabel);
+
+            // Player count
+            var countLabel = new Label
+            {
+                Text = $"{game.JoinedPlayers}/{game.TotalPlayers}",
+                FontSize = 12,
+                HorizontalOptions = LayoutOptions.Center,
+                HorizontalTextAlignment = TextAlignment.Center,
+                TextColor = Colors.LightGray
+            };
+            stack.Add(countLabel);
+
+            border.Content = stack;
+
+            // Add tap gesture to join this game
+            var tapGesture = new TapGestureRecognizer();
+            tapGesture.Tapped += async (s, e) =>
+            {
+                // Disconnect temp connection before joining
+                await tempConnectionManager.Disconnect();
+
+                await Navigation.PopModalAsync();
+                // Join with seat number 0 for auto-assignment
+                await JoinGameAsync(game.GameId, 0);
+            };
+            border.GestureRecognizers.Add(tapGesture);
+
+            return border;
         }
 
         private async Task JoinGameAsync(int roomNumber, int seatNumber)

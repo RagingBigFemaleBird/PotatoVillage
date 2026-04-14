@@ -61,6 +61,8 @@ namespace PotatoVillage.Services
             { "猎魔人", "liemoren" },
             { "屠夫", "tufu" },
             { "守墓人", "shoumuren" },
+            { "梦魇", "mengyan" },
+            { "石像鬼", "shixianggui" },
             
             // Common phrases
             { "请睁眼", "qing_zhengyan" },

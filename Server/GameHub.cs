@@ -22,6 +22,15 @@ namespace Server
         public static int GetActiveGamesCount() => games.Values.Count(g => g.GameStarted);
         public static int GetWaitingGamesCount() => games.Values.Count(g => !g.GameStarted);
 
+        // DTO for pending games list
+        public class PendingGameDto
+        {
+            public int GameId { get; set; }
+            public string OwnerName { get; set; } = "";
+            public int TotalPlayers { get; set; }
+            public int JoinedPlayers { get; set; }
+        }
+
         // Simple DTO returned to clients when asking for targets
         public class TargetsDto
         {
@@ -256,6 +265,29 @@ namespace Server
             {
                 // Game not started - normal join logic
 
+                // If playerId is 0, auto-assign to the first available seat
+                if (playerId == 0)
+                {
+                    playerId = -1; // Mark as not assigned
+                    for (int i = 1; i <= game.TotalPlayers; i++)
+                    {
+                        if (!game.IdToPlayer.ContainsKey(i))
+                        {
+                            playerId = i;
+                            break;
+                        }
+                    }
+
+                    if (playerId == -1)
+                    {
+                        Console.WriteLine($"No available seats in Game {gameId}");
+                        await Clients.Caller.SendAsync("JoinFailed", "No available seats");
+                        return;
+                    }
+
+                    Console.WriteLine($"Auto-assigned seat {playerId} for Client {clientId} in Game {gameId}");
+                }
+
                 // Check if player ID is already taken by someone else
                 if (game.IdToPlayer.ContainsKey(playerId) && game.IdToPlayer[playerId] != clientId)
                 {
@@ -295,6 +327,49 @@ namespace Server
             {
                 await Clients.Group($"game-{gameId}").SendAsync("RoomStateUpdate", roomState);
             }
+        }
+
+        // Get all pending (not started) games
+        public Task<List<PendingGameDto>> GetPendingGames()
+        {
+            var pendingGames = new List<PendingGameDto>();
+
+            foreach (var kvp in games)
+            {
+                var gameId = kvp.Key;
+                var game = kvp.Value;
+
+                // Only include games that haven't started yet
+                if (game.GameStarted)
+                    continue;
+
+                // Get owner name
+                string ownerName = "";
+                if (gameOwners.TryGetValue(gameId, out var ownerId))
+                {
+                    if (game.PlayerToId.TryGetValue(ownerId, out var ownerPlayerId))
+                    {
+                        if (game.PlayerNicknames.TryGetValue(ownerPlayerId, out var name))
+                        {
+                            ownerName = name;
+                        }
+                    }
+                }
+
+                pendingGames.Add(new PendingGameDto
+                {
+                    GameId = gameId,
+                    OwnerName = ownerName,
+                    TotalPlayers = game.TotalPlayers,
+                    JoinedPlayers = game.IdToPlayer.Count
+                });
+            }
+
+            // Sort by game ID (most recent first)
+            pendingGames = pendingGames.OrderByDescending(g => g.GameId).ToList();
+
+            Console.WriteLine($"GetPendingGames: Returning {pendingGames.Count} pending games");
+            return Task.FromResult(pendingGames);
         }
 
         public void GameActionCallback(Game game, Dictionary<string, object> stateDiff)

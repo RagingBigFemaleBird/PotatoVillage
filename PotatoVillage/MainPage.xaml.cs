@@ -67,6 +67,7 @@ namespace PotatoVillage
         private bool selectedAwkSheMengRen = false;
         private bool selectedShiXiangGui = false;
         private bool selectedXueYue = false;
+        private bool selectedMengYan = false;
         private HashSet<string> selectedPingMin = new();
 
         // Dictionary to store button references for template application
@@ -660,6 +661,7 @@ namespace PotatoVillage
             mainStack.Children.Add(specialLangRenBtns2);
 
             var specialLangRenBtns3 = new HorizontalStackLayout { Spacing = 4 };
+            specialLangRenBtns3.Children.Add(CreateRoleButton(localization.GetString("MengYan", "MengYan"), "MengYan", () => selectedMengYan, v => selectedMengYan = v));
             specialLangRenBtns3.Children.Add(CreateRoleButton(localization.GetString("JiaMian", "JiaMian"), "JiaMian", () => selectedJiaMian, v => selectedJiaMian = v));
             mainStack.Children.Add(specialLangRenBtns3);
             mainStack.Children.Add(CreateCategorySeparator());
@@ -1080,6 +1082,7 @@ namespace PotatoVillage
             if (selectedAwkSheMengRen) roleDict["AwkSheMengRen"] = 1;
             if (selectedShiXiangGui) roleDict["ShiXiangGui"] = 1;
             if (selectedXueYue) roleDict["XueYue"] = 1;
+            if (selectedMengYan) roleDict["MengYan"] = 1;
             if (selectedPingMin.Count > 0) roleDict["PingMin"] = selectedPingMin.Count;
 
             return roleDict;

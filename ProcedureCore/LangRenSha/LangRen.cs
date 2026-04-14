@@ -196,6 +196,14 @@ namespace ProcedureCore.LangRenSha
                 {
                     alivePlayers.Clear();
                 }
+
+                // Check if any alive LangRen has skill disabled by MengYan
+                var anySkillDisabled = langRenAlive.Any(lr => LangRenSha.GetPlayerProperty(game, lr, LangRenSha.dictSkillTransformation, 0) == (int)LangRenSha.SkillTransformation.Disabled);
+                if (anySkillDisabled)
+                {
+                    alivePlayers.Clear();
+                }
+
                 alivePlayers.Add(-100);
 
                 if (UserAction.EndUserAction(game, update))
@@ -217,6 +225,11 @@ namespace ProcedureCore.LangRenSha
                         // Set skippedAct for all LangRen (including succession)
                         AwkSheMengRen.SetSkippedActForAll(game, langRen, skippedAct, update);
                     }
+                    // Reset skill transformation for all LangRen after action completes
+                    foreach (var lr in langRenAlive)
+                    {
+                        LangRenSha.SetPlayerProperty(game, lr, LangRenSha.dictSkillTransformation, (int)LangRenSha.SkillTransformation.None, update);
+                    }
                     LangRenSha.AdvanceAction(game, update);
                     return GameActionResult.Restart;
                 }
@@ -232,6 +245,10 @@ namespace ProcedureCore.LangRenSha
                         update[UserAction.dictUserActionTargetsHint] = (int)HintConstant.LangRen_Kill;
                         update[UserAction.dictUserActionRole] = Name;
                         update[UserAction.dictUserActionInfo] = string.Join(", ", teammates);
+                        if (anySkillDisabled)
+                        {
+                            update[UserAction.dictUserActionInfo3] = "1"; // Indicate skill is disabled
+                        }
                         return GameActionResult.Restart;
                     }
                     else
@@ -264,6 +281,11 @@ namespace ProcedureCore.LangRenSha
                                 update[dictAttackTarget] = choose;
                                 // Set skippedAct for all LangRen (including succession)
                                 AwkSheMengRen.SetSkippedActForAll(game, langRen, skippedAct, update);
+                                // Reset skill transformation for all LangRen after action completes
+                                foreach (var lr in langRenAlive)
+                                {
+                                    LangRenSha.SetPlayerProperty(game, lr, LangRenSha.dictSkillTransformation, (int)LangRenSha.SkillTransformation.None, update);
+                                }
                                 UserAction.EndUserAction(game, update, true);
                                 LangRenSha.AdvanceAction(game, update);
                                 return GameActionResult.Restart;

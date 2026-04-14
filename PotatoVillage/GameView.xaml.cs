@@ -39,6 +39,7 @@ namespace PotatoVillage
         private const string DictUserActionRole = "user_role";
         private const string DictUserActionInfo = "user_info";
         private const string DictUserActionInfo2 = "user_info2";
+        private const string DictUserActionInfo3 = "user_info3";
         private const string DictUserActionResponse = "user_response";
         private const string DictUserActionPauseStart = "user_pause_start";
         private const string DictServerTime = "server_time";
@@ -61,6 +62,7 @@ namespace PotatoVillage
             { 27, new Dictionary<int, string> { { -100, "DoNotUse"} } },
             { 63, new Dictionary<int, string> { { -100, "DoNotUse"} } },
             { 70, new Dictionary<int, string> { { -100, "DoNotUse"} } },
+            { 71, new Dictionary<int, string> { { -100, "DoNotUse"} } },
             { 80, new Dictionary<int, string> { { -100, "DoNotUse"} } },
             { 81, new Dictionary<int, string> { { -100, "DoNotUse"} } },
             { 82, new Dictionary<int, string> { { -100, "confirm"} } },
@@ -1041,6 +1043,7 @@ namespace PotatoVillage
                 64 => "awkshixianggui_act",
                 65 => "awkshixianggui_check_conversion",
                 70 => "shouwei_act",
+                71 => "mengyan_act",
                 75 => "check_mice",
                 77 => "mengmianren_death",
                 78 => "yingzi_act",
@@ -1226,6 +1229,7 @@ namespace PotatoVillage
                 var userRole = GetStringValue(gameDict.TryGetValue(DictUserActionRole, out var uroleObj) ? uroleObj : null) ?? "";
                 var userInfo = GetStringValue(gameDict.TryGetValue(DictUserActionInfo, out var uiObj) ? uiObj : null) ?? "";
                 var userInfo2 = GetStringValue(gameDict.TryGetValue(DictUserActionInfo2, out var ui2Obj) ? ui2Obj : null) ?? "";
+                var userInfo3 = GetStringValue(gameDict.TryGetValue(DictUserActionInfo3, out var ui3Obj) ? ui3Obj : null) ?? "";
                 var userResponse = GetDictionaryValue(gameDict.TryGetValue(DictUserActionResponse, out var urObj) ? urObj : null);
 
                 // Track user response changes for action history
@@ -1248,7 +1252,7 @@ namespace PotatoVillage
 
                 if (isSelfActable)
                 {
-                    DisplayTargetSelection(userAction, userTargets, userTargetsCount, userTargetsHint, userInfo, userInfo2, phaseValue == 0 ? userResponse : null);
+                    DisplayTargetSelection(userAction, userTargets, userTargetsCount, userTargetsHint, userInfo, userInfo2, userInfo3, phaseValue == 0 ? userResponse : null);
                 }
                 else
                 {
@@ -1401,7 +1405,7 @@ namespace PotatoVillage
             }
         }
 
-        private void DisplayTargetSelection(int userActionDeadline, List<int> availableTargets, int maxTargetCount, int hintIndex, string userInfo = "", string userInfo2 = "", Dictionary<string, object>? userResponse = null)
+        private void DisplayTargetSelection(int userActionDeadline, List<int> availableTargets, int maxTargetCount, int hintIndex, string userInfo = "", string userInfo2 = "", string userInfo3 = "", Dictionary<string, object>? userResponse = null)
         {
             // Check if we're already displaying the same target selection
             // Only compare deadline and hint - don't rely on UI visibility state which can have race conditions
@@ -1521,8 +1525,17 @@ namespace PotatoVillage
             }
             var ui = UserInfoHints.TryGetValue(hintIndex, out var handler) ? handler(userInfo, userInfo2) : userInfo;
 
-            // Set the full instruction text with color support
-            SetTargetInstructionText($"{instructionText}\n{ui}");
+            // Check if skill is disabled (userInfo3 == "1")
+            if (userInfo3 == "1")
+            {
+                var skillDisabledText = localization.GetString("skill_disabled", "Your skill has been disabled this night.");
+                SetTargetInstructionText($"{instructionText}\n[c:Red]{skillDisabledText}[/c]");
+            }
+            else
+            {
+                // Set the full instruction text with color support
+                SetTargetInstructionText($"{instructionText}\n{ui}");
+            }
 
             // Get all players from game dictionary
             var gameDict = connectionManager?.GetGameDictionary() ?? new();

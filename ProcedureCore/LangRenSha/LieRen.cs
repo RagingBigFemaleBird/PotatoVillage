@@ -95,6 +95,10 @@ namespace ProcedureCore.LangRenSha
                 var lieRenPlayer = lieRenAlive.Count == 0 ? 0 : lieRenAlive[0];
                 var isTagged = lieRenAlive.Count > 0 && miceTag == lieRenPlayer;
                 var nightShootUsed = lieRenAlive.Count == 0 || LangRenSha.GetPlayerProperty(game, lieRenPlayer, dictHuntingDisabled, 0) == 1;
+
+                // Check if skill is disabled by MengYan
+                var skillDisabled = lieRenPlayer > 0 && LangRenSha.GetPlayerProperty(game, lieRenPlayer, LangRenSha.dictSkillTransformation, 0) == (int)LangRenSha.SkillTransformation.Disabled;
+
                 var actionDuration = Game.GetGameDictionaryProperty(game, LangRenSha.dictDurationPlayerReact, ActionDuration);
                 if (lieRenAlive.Count == 0 || !isTagged || nightShootUsed)
                 {
@@ -125,6 +129,16 @@ namespace ProcedureCore.LangRenSha
                             LangRenSha.SetPlayerProperty(game, lieRenPlayer, dictHuntingDisabled, 1, update);
                         }
                     }
+                    // On action completion: if aboutToDie and marked by MengYan, set huntingDisabled; otherwise reset skillDisabled
+                    if (lieRenPlayer > 0 && skillDisabled)
+                    {
+                        var aboutToDie = Game.GetGameDictionaryProperty(game, LangRenSha.dictAboutToDie, new List<int>());
+                        if (aboutToDie.Contains(lieRenPlayer))
+                        {
+                            LangRenSha.SetPlayerProperty(game, lieRenPlayer, dictHuntingDisabled, 1, update);
+                        }
+                        LangRenSha.SetPlayerProperty(game, lieRenPlayer, LangRenSha.dictSkillTransformation, (int)LangRenSha.SkillTransformation.None, update);
+                    }
                     LangRenSha.AdvanceAction(game, update);
                     return GameActionResult.Restart;
                 }
@@ -134,12 +148,21 @@ namespace ProcedureCore.LangRenSha
                     if (UserAction.StartUserAction(game, actionDuration, update))
                     {
                         // Action just started - setup targets and users
-                        update[UserAction.dictUserActionTargets] = (isTagged && !nightShootUsed) ? alivePlayers : new List<int>();
+                        if (skillDisabled)
+                        {
+                            // Skill disabled by MengYan - show "Unable to shoot" message
+                            update[UserAction.dictUserActionTargets] = new List<int>();
+                            update[UserAction.dictUserActionInfo3] = "1"; // Indicate skill is disabled
+                        }
+                        else
+                        {
+                            update[UserAction.dictUserActionTargets] = (isTagged && !nightShootUsed) ? alivePlayers : new List<int>();
+                        }
                         update[UserAction.dictUserActionUsers] = lieRen;
                         update[UserAction.dictUserActionTargetsCount] = 1;
                         update[UserAction.dictUserActionTargetsHint] = (int)HintConstant.HunterKill;
                         update[UserAction.dictUserActionRole] = Name;
-                        update[UserAction.dictUserActionInfo] = nightShootUsed ? "0" : "1";
+                        update[UserAction.dictUserActionInfo] = (nightShootUsed || skillDisabled) ? "0" : "1";
                         return GameActionResult.Restart;
                     }
                     else
@@ -170,6 +193,16 @@ namespace ProcedureCore.LangRenSha
                                     LangRenSha.MarkPlayerAboutToDie(game, targets[0], update);
                                 }
                                 LangRenSha.SetPlayerProperty(game, lieRenPlayer, dictHuntingDisabled, 1, update);
+                            }
+                            // On action completion: if aboutToDie and marked by MengYan, set huntingDisabled; otherwise reset skillDisabled
+                            if (lieRenPlayer > 0 && skillDisabled)
+                            {
+                                var aboutToDie = Game.GetGameDictionaryProperty(game, LangRenSha.dictAboutToDie, new List<int>());
+                                if (aboutToDie.Contains(lieRenPlayer))
+                                {
+                                    LangRenSha.SetPlayerProperty(game, lieRenPlayer, dictHuntingDisabled, 1, update);
+                                }
+                                LangRenSha.SetPlayerProperty(game, lieRenPlayer, LangRenSha.dictSkillTransformation, (int)LangRenSha.SkillTransformation.None, update);
                             }
                             UserAction.EndUserAction(game, update, true);
                             LangRenSha.AdvanceAction(game, update);

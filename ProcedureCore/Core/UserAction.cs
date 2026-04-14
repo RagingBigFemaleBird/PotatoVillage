@@ -30,6 +30,7 @@ namespace ProcedureCore.Core
         public static string dictUserActionRole = "user_role"; // Role name currently acting (for client display)
         public static string dictUserActionInfo = "user_info";
         public static string dictUserActionInfo2 = "user_info2"; // Secondary info (e.g., poisoned player for MeiYangYang civilians)
+        public static string dictUserActionInfo3 = "user_info3"; // Tertiary info (e.g., skill disabled indicator)
         public static string dictUserActionResponse = "user_response";
         public static string dictUserActionSelects = "user_selects";
         public static string dictUserActionSelectsUpdate = "user_selects_update";
@@ -125,6 +126,7 @@ namespace ProcedureCore.Core
             {
                 update[dictUserActionInfo] = null;
                 update[dictUserActionInfo2] = null;
+                update[dictUserActionInfo3] = null;
                 update[dictUserActionRole] = null;
                 update[dictUserAction] = 0;
                 update[dictUserActionPauseStart] = null;

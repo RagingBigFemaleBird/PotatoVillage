@@ -277,7 +277,10 @@
     "ShiXiangGui": "stone gargoyle",
     "shixianggui_chayan": "Stone Gargoyle revelation",
     "shixianggui_result": "Stone Gargoyle result",
-    "shixianggui_result_info": "Stone Gargoyle result: [c:green]{0}[/c]"
+    "shixianggui_result_info": "Stone Gargoyle result: [c:green]{0}[/c]",
+    "MengYan": "nightmare",
+    "mengyan_act": "Select a player to disable their skill tonight",
+    "skill_disabled": "Your skill has been disabled this night."
   },
   "zh": {
     "game_info": "游戏信息",
@@ -557,6 +560,9 @@
     "ShiXiangGui": "石像鬼",
     "shixianggui_chayan": "石像鬼通灵",
     "shixianggui_result": "石像鬼结果",
-    "shixianggui_result_info": "石像鬼结果: [c:green]{0}[/c]"
+    "shixianggui_result_info": "石像鬼结果: [c:green]{0}[/c]",
+    "MengYan": "梦魇",
+    "mengyan_act": "选择一个玩家，今晚禁用其技能",
+    "skill_disabled": "你的技能今晚被禁用了。"
   }
 }

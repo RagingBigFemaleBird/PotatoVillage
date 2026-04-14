@@ -82,6 +82,11 @@ namespace ProcedureCore.LangRenSha
         YingZi_Info = 62,
         YingZi_CloseEyes = 63,
 
+        // === MengYan (56-58) - Acts after YingZi ===
+        MengYan_OpenEyes = 56,
+        MengYan_Act = 57,
+        MengYan_CloseEyes = 58,
+
         // === DaMao (65-67) ===
         DaMao_OpenEyes = 65,
         DaMao_Act = 66,
@@ -313,6 +318,10 @@ namespace ProcedureCore.LangRenSha
 
         // === ShouWei (70) ===
         ShouWei_Act = 70,
+
+        // === MengYan (71) ===
+        MengYan_Act = 71,
+        SkillDisabled = 99, // Indicates skill is disabled for this action
 
         // === YingZi (78-79) ===
         YingZi_Act = 78,

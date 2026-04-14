@@ -146,6 +146,7 @@ namespace Server
                 { "AwkSheMengRen", new AwkSheMengRen() },
                 { "ShiXiangGui", new ShiXiangGui() },
                 { "XueYue", new XueYue() },
+                { "MengYan", new MengYan() },
             };
 
             if (!roleDict.ContainsKey("LangRen"))

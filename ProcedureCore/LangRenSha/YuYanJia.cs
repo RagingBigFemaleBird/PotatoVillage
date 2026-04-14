@@ -108,13 +108,23 @@ namespace ProcedureCore.LangRenSha
                 var miceTagged = yuYanJiaAlive.Count > 0 ? (yuYanJiaAlive[0] == Game.GetGameDictionaryProperty(game, LaoShu.dictMiceTag, 0)) : false;
                 var isEvil = yuYanJiaAlive.Count > 0 ? (LangRenSha.GetPlayerProperty(game, yuYanJiaAlive[0], LangRenSha.dictPlayerAlliance, 0) == 2) : false;
                 var actionDuration = Game.GetGameDictionaryProperty(game, LangRenSha.dictDurationPlayerReact, ActionDuration);
-                if (yuYanJiaAlive.Count == 0)
+                // Check if skill is disabled by MengYan
+                var yuYanJiaPlayer = yuYanJia.Count > 0 ? yuYanJia[0] : 0;
+                var skillDisabled = yuYanJiaPlayer > 0 && LangRenSha.GetPlayerProperty(game, yuYanJiaPlayer, LangRenSha.dictSkillTransformation, 0) == (int)LangRenSha.SkillTransformation.Disabled;
+
+                if (yuYanJiaAlive.Count == 0 || skillDisabled)
                 {
                     actionDuration = new Random().Next(3, 6);
                 }
 
                 if (UserAction.EndUserAction(game, update))
                 {
+                    // Reset skill transformation after action completes
+                    if (yuYanJiaAlive.Count > 0)
+                    {
+                        LangRenSha.SetPlayerProperty(game, yuYanJiaAlive[0], LangRenSha.dictSkillTransformation, (int)LangRenSha.SkillTransformation.None, update);
+                    }
+                    update[dictYuYanJiaResult] = "";
                     LangRenSha.AdvanceAction(game, update);
                     return GameActionResult.Restart;
                 }
@@ -122,7 +132,19 @@ namespace ProcedureCore.LangRenSha
                 {
                     if (UserAction.StartUserAction(game, actionDuration, update))
                     {
-                        update[UserAction.dictUserActionTargets] = alivePlayers;
+
+                        List<int> targets;
+                        if (skillDisabled)
+                        {
+                            // Skill disabled - only allow -100 (do not use)
+                            targets = new List<int> { -100 };
+                            update[UserAction.dictUserActionInfo3] = "1"; // Indicate skill is disabled
+                        }
+                        else
+                        {
+                            targets = alivePlayers;
+                        }
+                        update[UserAction.dictUserActionTargets] = targets;
                         update[UserAction.dictUserActionUsers] = yuYanJia;
                         update[UserAction.dictUserActionTargetsCount] = 1;
                         update[UserAction.dictUserActionTargetsHint] = (int)HintConstant.YuYanJia_ChaYan;
@@ -139,13 +161,21 @@ namespace ProcedureCore.LangRenSha
                             {
                                 return GameActionResult.NotExecuted;
                             }
-                            if (miceTagged || isEvil)
+                            if (targets[0] > 0)
                             {
-                                TongLing(game, targets[0], update);
+                                if (miceTagged || isEvil)
+                                {
+                                    TongLing(game, targets[0], update);
+                                }
+                                else
+                                {
+                                    ChaYan(game, targets[0], update);
+                                }
                             }
-                            else
+                            // Reset skill transformation after action completes
+                            if (yuYanJiaAlive.Count > 0)
                             {
-                                ChaYan(game, targets[0], update);
+                                LangRenSha.SetPlayerProperty(game, yuYanJiaAlive[0], LangRenSha.dictSkillTransformation, (int)LangRenSha.SkillTransformation.None, update);
                             }
                             UserAction.EndUserAction(game, update, true);
                             LangRenSha.AdvanceAction(game, update);

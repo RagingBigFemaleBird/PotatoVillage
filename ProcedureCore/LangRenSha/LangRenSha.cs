@@ -118,6 +118,7 @@ namespace ProcedureCore.LangRenSha
                 "AwkSheMengRen" => new AwkSheMengRen(),
                 "ShiXiangGui" => new ShiXiangGui(),
                 "XueYue" => new XueYue(),
+                "MengYan" => new MengYan(),
                 _ => throw new ArgumentException($"Not a role: {roleName}")
             };
         }
@@ -177,6 +178,9 @@ namespace ProcedureCore.LangRenSha
         public static string dictViewRoleInTurn = "view_role_in_turn"; // 0 = all at once (default), 1 = view in turn (轮流看牌)
         public static string dictRoleViewingGroupSize = "role_viewing_group_size"; // Group size for turn-based viewing (看牌组大小), default 3
         public static string dictRoleViewingStartPlayer = "role_viewing_start_player"; // Random starting player for turn-based viewing
+
+        // Skill transformation (player attribute)
+        public static string dictSkillTransformation = "skill_transformation"; // 0 = none, 1 = disabled, 2 = enhanced
 
         // Skill use announcement fields
         public static string dictSkillUseFrom = "skill_use_from"; // integer - who used the skill

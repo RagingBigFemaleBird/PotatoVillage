@@ -206,6 +206,8 @@ namespace ProcedureCore.LangRenSha
                         if (nvWuAlive.Count > 0)
                         {
                             AwkSheMengRen.SetSkippedAct(game, nvWuAlive[0], skippedAct, update);
+                            // Reset skill transformation after action completes
+                            LangRenSha.SetPlayerProperty(game, nvWuAlive[0], LangRenSha.dictSkillTransformation, (int)LangRenSha.SkillTransformation.None, update);
                         }
                         UserAction.EndUserAction(game, update, true);
                         LangRenSha.AdvanceAction(game, update);
@@ -216,6 +218,8 @@ namespace ProcedureCore.LangRenSha
                     if (nvWuAlive.Count > 0)
                     {
                         AwkSheMengRen.SetSkippedAct(game, nvWuAlive[0], true, update);
+                        // Reset skill transformation after action completes
+                        LangRenSha.SetPlayerProperty(game, nvWuAlive[0], LangRenSha.dictSkillTransformation, (int)LangRenSha.SkillTransformation.None, update);
                     }
                     LangRenSha.AdvanceAction(game, update);
                     return GameActionResult.Restart;
@@ -242,16 +246,29 @@ namespace ProcedureCore.LangRenSha
                         {
                             poisonUsed = true;
                         }
+
+                        // Check if skill is disabled by MengYan
+                        var skillDisabled = nvWuPlayer > 0 && LangRenSha.GetPlayerProperty(game, nvWuPlayer, LangRenSha.dictSkillTransformation, 0) == (int)LangRenSha.SkillTransformation.Disabled;
+
                         var targets = new List<int>();
-                        if (!saveUsed && !selfAttacked)
+                        if (skillDisabled)
                         {
-                            targets.Add(0);
+                            // Skill disabled - only allow -100 (do not use)
+                            targets.Add(-100);
+                            update[UserAction.dictUserActionInfo3] = "1"; // Indicate skill is disabled
                         }
-                        if (!poisonUsed)
+                        else
                         {
-                            targets.AddRange(alivePlayers);
+                            if (!saveUsed && !selfAttacked)
+                            {
+                                targets.Add(0);
+                            }
+                            if (!poisonUsed)
+                            {
+                                targets.AddRange(alivePlayers);
+                            }
+                            targets.Add(-100);
                         }
-                        targets.Add(-100);
                         update[UserAction.dictUserActionTargets] = targets;
                         update[UserAction.dictUserActionUsers] = nvWu;
                         update[UserAction.dictUserActionTargetsCount] = 1;
@@ -288,6 +305,8 @@ namespace ProcedureCore.LangRenSha
                                 if (nvWuAlive.Count > 0)
                                 {
                                     AwkSheMengRen.SetSkippedAct(game, nvWuAlive[0], skippedAct, update);
+                                    // Reset skill transformation after action completes
+                                    LangRenSha.SetPlayerProperty(game, nvWuAlive[0], LangRenSha.dictSkillTransformation, (int)LangRenSha.SkillTransformation.None, update);
                                 }
                                 UserAction.EndUserAction(game, update, true);
                                 LangRenSha.AdvanceAction(game, update);

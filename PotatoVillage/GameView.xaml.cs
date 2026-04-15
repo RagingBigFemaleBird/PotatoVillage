@@ -782,9 +782,9 @@ namespace PotatoVillage
             OrientationService.LockPortrait();
 
             // Subscribe to app lifecycle events for iOS background/foreground handling
-            if (Application.Current != null)
+            if (Window != null)
             {
-                Application.Current.MainPage!.Window!.Resumed += OnAppResumed;
+                Window.Resumed += OnAppResumed;
             }
         }
 
@@ -796,9 +796,9 @@ namespace PotatoVillage
             OrientationService.LockPortrait();
 
             // Unsubscribe from app lifecycle events
-            if (Application.Current?.MainPage?.Window != null)
+            if (Window != null)
             {
-                Application.Current.MainPage.Window.Resumed -= OnAppResumed;
+                Window.Resumed -= OnAppResumed;
             }
 
             // Clean up event subscriptions

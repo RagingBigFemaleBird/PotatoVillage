@@ -203,7 +203,7 @@ namespace ProcedureCore.LangRenSha
             }
             else
             {
-                var validRoles = new HashSet<string> { "ShouWei", "NvWu", "TongLingShi", "LieRen", "LangRen" };
+                var validRoles = new HashSet<string> { "ShouWei", "NvWu", "TongLingShi", "LieRen", "LangRen", "HunZi" };
                 if (!validRoles.Contains(targetRole))
                 {
                     targetRole = "PingMin";
@@ -267,16 +267,25 @@ namespace ProcedureCore.LangRenSha
         }
 
         /// <summary>
-        /// Checks whether JiXieLang can attack tonight based on all LangRen being dead.
-        /// Always returns attack status regardless of mimicked role.
+        /// Checks whether JiXieLang can attack tonight based on succession rules.
+        /// JiXieLang (succession 2) can attack when all LangRen (succession 0) and succession 1 players are dead.
         /// </summary>
         private bool CanAttackTonight(Game game, int jxlPlayer)
         {
             if (jxlPlayer == 0) return false;
 
+            // Get LangRen with succession 0 or 1 (they attack first)
             var langRenAlive = LangRenSha.GetPlayers(game, x =>
-                (string)x[LangRenSha.dictRole] == "LangRen" && (int)x[LangRenSha.dictAlive] == 1);
-            return langRenAlive.Count == 0;
+                (string)x[LangRenSha.dictRole] == "LangRen" && 
+                (int)x[LangRenSha.dictAlive] == 1 &&
+                (!x.ContainsKey(LangRen.dictSuceession) || (int)x[LangRen.dictSuceession] == 0 || (int)x[LangRen.dictSuceession] == 1));
+
+            // Get succession 1 players (they also attack with LangRen)
+            var succession1Alive = LangRenSha.GetPlayers(game, x =>
+                x.ContainsKey(LangRen.dictSuceession) && (int)x[LangRen.dictSuceession] == 1 && (int)x[LangRenSha.dictAlive] == 1);
+
+            // JiXieLang can attack when all LangRen and succession 1 players are dead
+            return langRenAlive.Count == 0 && succession1Alive.Count == 0;
         }
 
         /// <summary>

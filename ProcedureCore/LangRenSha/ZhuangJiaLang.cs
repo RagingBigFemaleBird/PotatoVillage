@@ -214,12 +214,12 @@ namespace ProcedureCore.LangRenSha
                 }
                 else
                 {
-                    targetRole = "PingMin"; // JiXieLang hasn't selected yet, treat as no skill
+                    targetRole = "LangRen";
                 }
             }
             else
             {
-                var validRoles = new HashSet<string> { "ShouWei", "NvWu", "TongLingShi", "LieRen", "LangRen" };
+                var validRoles = new HashSet<string> { "ShouWei", "NvWu", "TongLingShi", "LieRen", "LangRen", "HunZi" };
                 if (!validRoles.Contains(targetRole))
                 {
                     targetRole = "PingMin";
@@ -283,15 +283,29 @@ namespace ProcedureCore.LangRenSha
         }
 
         /// <summary>
-        /// Checks whether ZhuangJiaLang can attack tonight based on all LangRen being dead.
+        /// Checks whether ZhuangJiaLang can attack tonight based on succession rules.
+        /// ZhuangJiaLang (succession 3) can attack when all LangRen (succession 0), succession 1, and succession 2 players are dead.
         /// </summary>
         private bool CanAttackTonight(Game game, int zjlPlayer)
         {
             if (zjlPlayer == 0) return false;
 
+            // Get LangRen with succession 0 or 1 (they attack first)
             var langRenAlive = LangRenSha.GetPlayers(game, x =>
-                (string)x[LangRenSha.dictRole] == "LangRen" && (int)x[LangRenSha.dictAlive] == 1);
-            return langRenAlive.Count == 0;
+                (string)x[LangRenSha.dictRole] == "LangRen" && 
+                (int)x[LangRenSha.dictAlive] == 1 &&
+                (!x.ContainsKey(LangRen.dictSuceession) || (int)x[LangRen.dictSuceession] == 0 || (int)x[LangRen.dictSuceession] == 1));
+
+            // Get succession 1 players (they also attack with LangRen)
+            var succession1Alive = LangRenSha.GetPlayers(game, x =>
+                x.ContainsKey(LangRen.dictSuceession) && (int)x[LangRen.dictSuceession] == 1 && (int)x[LangRenSha.dictAlive] == 1);
+
+            // Get succession 2 players (they attack after LangRen and succession 1 are dead)
+            var succession2Alive = LangRenSha.GetPlayers(game, x =>
+                x.ContainsKey(LangRen.dictSuceession) && (int)x[LangRen.dictSuceession] == 2 && (int)x[LangRenSha.dictAlive] == 1);
+
+            // ZhuangJiaLang can attack when all LangRen, succession 1, and succession 2 players are dead
+            return langRenAlive.Count == 0 && succession1Alive.Count == 0 && succession2Alive.Count == 0;
         }
 
         /// <summary>

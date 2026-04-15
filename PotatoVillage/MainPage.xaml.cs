@@ -230,6 +230,16 @@ namespace PotatoVillage
                 ["ShouWei"] = 1,
                 ["PingMin"] = 4
             },
+            ["Tufu"] = new()
+            {
+                ["LangRen"] = 4,
+                ["YuYanJia"] = 1,
+                ["NvWu"] = 1,
+                ["LieRen"] = 1,
+                ["ShouWei"] = 1,
+                ["LieMoRen"] = 1,
+                ["PingMin"] = 5
+            },
             ["MengYan"] = new()
             {
                 ["LangRen"] = 3,
@@ -369,9 +379,14 @@ namespace PotatoVillage
                    selectedAwkShiXiangGui ||
                    selectedGhostBride ||
                    selectedMeiYangYang ||
+                   selectedHongTaiLang ||
+                   selectedLieMoRen ||
+                   selectedTuFu ||
                    selectedShouMuRen ||
                    selectedAwkSheMengRen ||
                    selectedShiXiangGui ||
+                   selectedXueYue ||
+                   selectedMengYan ||
                    selectedPingMin.Count > 0;
         }
 
@@ -382,7 +397,7 @@ namespace PotatoVillage
             // Create a temporary connection to fetch pending games
             if (string.IsNullOrEmpty(currentServerUrl))
             {
-                await DisplayAlert(localization.GetString("error"), localization.GetString("server_url_required"), localization.GetString("yes"));
+                await DisplayAlertAsync(localization.GetString("error"), localization.GetString("server_url_required"), localization.GetString("yes"));
                 return;
             }
 
@@ -587,13 +602,13 @@ namespace PotatoVillage
 
                 if (!int.TryParse(roomEntry.Text, out int roomNumber) || roomNumber <= 0)
                 {
-                    await DisplayAlert(localization.GetString("error"), localization.GetString("invalid_room_number"), localization.GetString("yes"));
+                    await DisplayAlertAsync(localization.GetString("error"), localization.GetString("invalid_room_number"), localization.GetString("yes"));
                     return;
                 }
 
                 if (!int.TryParse(seatEntry.Text, out int seatNumber) || seatNumber <= 0)
                 {
-                    await DisplayAlert(localization.GetString("error"), localization.GetString("invalid_seat_number"), localization.GetString("yes"));
+                    await DisplayAlertAsync(localization.GetString("error"), localization.GetString("invalid_seat_number"), localization.GetString("yes"));
                     return;
                 }
 
@@ -624,7 +639,7 @@ namespace PotatoVillage
                 }
 
                 // Show error and return to main page
-                await DisplayAlert(localization.GetString("error"), localization.GetString("failed_to_load_games", "Failed to load games"), localization.GetString("yes"));
+                await DisplayAlertAsync(localization.GetString("error"), localization.GetString("failed_to_load_games", "Failed to load games"), localization.GetString("yes"));
             }
         }
 
@@ -1443,7 +1458,7 @@ namespace PotatoVillage
             var updateBtn = localization.GetString("update_now", "Update Now");
             var cancelBtn = localization.GetString("cancel", "Cancel");
 
-            var result = await DisplayAlert(title, message, updateBtn, cancelBtn);
+            var result = await DisplayAlertAsync(title, message, updateBtn, cancelBtn);
             if (result)
             {
                 // Open the appropriate app store based on platform

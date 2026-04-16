@@ -445,6 +445,7 @@ namespace PotatoVillage
                 Text = sessionRoomNumber,
                 Keyboard = Keyboard.Numeric,
                 TextColor = PopupTextColor,
+                BackgroundColor = Colors.Transparent,
                 HorizontalOptions = LayoutOptions.Fill
             };
 
@@ -454,6 +455,7 @@ namespace PotatoVillage
                 Text = sessionSeatNumber,
                 Keyboard = Keyboard.Numeric,
                 TextColor = PopupTextColor,
+                BackgroundColor = Colors.Transparent,
                 HorizontalOptions = LayoutOptions.Fill
             };
 
@@ -853,11 +855,11 @@ namespace PotatoVillage
             // Duration settings
             mainStack.Children.Add(new Label { Text = localization.GetString("duration_settings", "Duration Settings"), FontAttributes = FontAttributes.Bold, FontSize = 14, TextColor = PopupTextColor, Margin = new Thickness(0, 12, 0, 0) });
 
-            var speechEntry = new Entry { Text = speechDuration.ToString(), Keyboard = Keyboard.Numeric, TextColor = PopupTextColor, WidthRequest = 80 };
-            var werewolfEntry = new Entry { Text = werewolfDuration.ToString(), Keyboard = Keyboard.Numeric, TextColor = PopupTextColor, WidthRequest = 80 };
-            var godEntry = new Entry { Text = godDuration.ToString(), Keyboard = Keyboard.Numeric, TextColor = PopupTextColor, WidthRequest = 80 };
-            var sheriffExtraTimeEntry = new Entry { Text = sheriffExtraTime.ToString(), Keyboard = Keyboard.Numeric, TextColor = PopupTextColor, WidthRequest = 80 };
-            var roleViewingGroupSizeEntry = new Entry { Text = roleViewingGroupSize.ToString(), Keyboard = Keyboard.Numeric, TextColor = PopupTextColor, WidthRequest = 80 };
+            var speechEntry = new Entry { Text = speechDuration.ToString(), Keyboard = Keyboard.Numeric, TextColor = PopupTextColor, BackgroundColor = Colors.Transparent, WidthRequest = 40 };
+            var werewolfEntry = new Entry { Text = werewolfDuration.ToString(), Keyboard = Keyboard.Numeric, TextColor = PopupTextColor, BackgroundColor = Colors.Transparent, WidthRequest = 40 };
+            var godEntry = new Entry { Text = godDuration.ToString(), Keyboard = Keyboard.Numeric, TextColor = PopupTextColor, BackgroundColor = Colors.Transparent, WidthRequest = 40 };
+            var sheriffExtraTimeEntry = new Entry { Text = sheriffExtraTime.ToString(), Keyboard = Keyboard.Numeric, TextColor = PopupTextColor, BackgroundColor = Colors.Transparent, WidthRequest = 40 };
+            var roleViewingGroupSizeEntry = new Entry { Text = roleViewingGroupSize.ToString(), Keyboard = Keyboard.Numeric, TextColor = PopupTextColor, BackgroundColor = Colors.Transparent, WidthRequest = 40 };
 
             mainStack.Children.Add(CreateHorizontalEntry(speechEntry, localization.GetString("speech_duration", "Speech Duration")));
             mainStack.Children.Add(CreateHorizontalEntry(werewolfEntry, localization.GetString("werewolf_duration", "Werewolf Duration")));
@@ -908,10 +910,10 @@ namespace PotatoVillage
             specialLangRenBtns2.Children.Add(CreateRoleButton(localization.GetString("TuFu", "TuFu"), "TuFu", () => selectedTuFu, v => selectedTuFu = v));
             specialLangRenBtns2.Children.Add(CreateRoleButton(localization.GetString("AwkShiXiangGui", "AwkShiXiangGui"), "AwkShiXiangGui", () => selectedAwkShiXiangGui, v => selectedAwkShiXiangGui = v));
             specialLangRenBtns2.Children.Add(CreateRoleButton(localization.GetString("ShiXiangGui", "ShiXiangGui"), "ShiXiangGui", () => selectedShiXiangGui, v => selectedShiXiangGui = v));
-            specialLangRenBtns2.Children.Add(CreateRoleButton(localization.GetString("XueYue", "XueYue"), "XueYue", () => selectedXueYue, v => selectedXueYue = v));
             mainStack.Children.Add(specialLangRenBtns2);
 
             var specialLangRenBtns3 = new HorizontalStackLayout { Spacing = 4 };
+            specialLangRenBtns3.Children.Add(CreateRoleButton(localization.GetString("XueYue", "XueYue"), "XueYue", () => selectedXueYue, v => selectedXueYue = v));
             specialLangRenBtns3.Children.Add(CreateRoleButton(localization.GetString("MengYan", "MengYan"), "MengYan", () => selectedMengYan, v => selectedMengYan = v));
             specialLangRenBtns3.Children.Add(CreateRoleButton(localization.GetString("JiaMian", "JiaMian"), "JiaMian", () => selectedJiaMian, v => selectedJiaMian = v));
             mainStack.Children.Add(specialLangRenBtns3);
@@ -1372,6 +1374,7 @@ namespace PotatoVillage
                 Placeholder = localization.GetString("hub_url", "Server URL"),
                 Text = currentServerUrl,
                 TextColor = PopupTextColor,
+                BackgroundColor = Colors.Transparent,
                 HorizontalOptions = LayoutOptions.Fill
             };
 

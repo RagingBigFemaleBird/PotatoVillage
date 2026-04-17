@@ -263,7 +263,7 @@ namespace PotatoVillage
                 roleName == "LaoShu" || roleName == "SheMengRen" || roleName == "Xiong" ||
                 roleName == "Thief" || roleName == "MengMianRen" || roleName == "ShouWei" ||
                 roleName == "MeiYangYang" || roleName == "LieMoRen" || roleName == "AwkSheMengRen" ||
-                roleName == "ShouMuRen" || roleName == "MoShuShi")
+                roleName == "ShouMuRen" || roleName == "MoShuShi" || roleName == "DingXuWangZi")
             {
                 return Color.FromArgb("#1E3A8A");
             }

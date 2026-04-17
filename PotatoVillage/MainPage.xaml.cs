@@ -70,6 +70,7 @@ namespace PotatoVillage
         private bool selectedMengYan = false;
         private bool selectedMoShuShi = false;
         private bool selectedGuiShuShi = false;
+        private bool selectedDingXuWangZi = false;
         private HashSet<string> selectedPingMin = new();
 
         // Dictionary to store button references for template application
@@ -242,6 +243,15 @@ namespace PotatoVillage
                 ["LieMoRen"] = 1,
                 ["PingMin"] = 5
             },
+            ["GuiShuShi"] = new()
+            {
+                ["LangRen"] = 3,
+                ["YuYanJia"] = 1,
+                ["NvWu"] = 1,
+                ["MoShuShi"] = 1,
+                ["DingXuWangZi"] = 1,
+                ["PingMin"] = 4
+            },
             ["MengYan"] = new()
             {
                 ["LangRen"] = 3,
@@ -391,6 +401,7 @@ namespace PotatoVillage
                    selectedMengYan ||
                    selectedMoShuShi ||
                    selectedGuiShuShi ||
+                   selectedDingXuWangZi ||
                    selectedPingMin.Count > 0;
         }
 
@@ -955,6 +966,7 @@ namespace PotatoVillage
             var godBtns4 = new HorizontalStackLayout { Spacing = 4 };
             godBtns4.Children.Add(CreateRoleButton(localization.GetString("AwkSheMengRen", "AwkSheMengRen"), "AwkSheMengRen", () => selectedAwkSheMengRen, v => selectedAwkSheMengRen = v));
             godBtns4.Children.Add(CreateRoleButton(localization.GetString("MoShuShi", "MoShuShi"), "MoShuShi", () => selectedMoShuShi, v => selectedMoShuShi = v));
+            godBtns4.Children.Add(CreateRoleButton(localization.GetString("DingXuWangZi", "DingXuWangZi"), "DingXuWangZi", () => selectedDingXuWangZi, v => selectedDingXuWangZi = v));
             mainStack.Children.Add(godBtns4);
             mainStack.Children.Add(CreateCategorySeparator());
 
@@ -1226,6 +1238,7 @@ namespace PotatoVillage
                 case "AwkSheMengRen": selectedAwkSheMengRen = selected; break;
                 case "ShiXiangGui": selectedShiXiangGui = selected; break;
                 case "XueYue": selectedXueYue = selected; break;
+                case "DingXuWangZi": selectedDingXuWangZi = selected; break;
             }
         }
 
@@ -1344,6 +1357,7 @@ namespace PotatoVillage
             if (selectedMengYan) roleDict["MengYan"] = 1;
             if (selectedMoShuShi) roleDict["MoShuShi"] = 1;
             if (selectedGuiShuShi) roleDict["GuiShuShi"] = 1;
+            if (selectedDingXuWangZi) roleDict["DingXuWangZi"] = 1;
             if (selectedPingMin.Count > 0) roleDict["PingMin"] = selectedPingMin.Count;
 
             return roleDict;

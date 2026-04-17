@@ -15,7 +15,7 @@ namespace ProcedureCore.LangRenSha
     {
         private List<(int, Role)> players;
         private static List<Func<Game, int, List<int>, Dictionary<string, object>, GameActionResult>> interruptHandlers = new()
-            { LangRen.RevealSelf, LangQiang.RevealSelf, AwkShiXiangGui.RevealSelf, XueYue.RevealSelf, LangRenSha.WithdrawSheriff, LangRenSha.OverrideDayVote, LangRenSha.OverrideSheriffVote };
+            { LangRen.RevealSelf, LangQiang.RevealSelf, AwkShiXiangGui.RevealSelf, XueYue.RevealSelf, DingXuWangZi.RevealSelf, LangRenSha.WithdrawSheriff, LangRenSha.OverrideDayVote, LangRenSha.OverrideSheriffVote };
         public static List<Func<Game, int, List<int>, Dictionary<string, object>, GameActionResult>> InterruptHandlers
         {
             get
@@ -143,6 +143,7 @@ namespace ProcedureCore.LangRenSha
                 "MengYan" => new MengYan(),
                 "MoShuShi" => new MoShuShi(),
                 "GuiShuShi" => new GuiShuShi(),
+                "DingXuWangZi" => new DingXuWangZi(),
                 _ => throw new ArgumentException($"Not a role: {roleName}")
             };
         }
@@ -1485,8 +1486,8 @@ namespace ProcedureCore.LangRenSha
                     }
                     else if (voteOut.Count == 1)
                     {
-                        // Single target - run voted-out handlers before announcement
-                        update[dictSpeak] = (int)SpeakConstant.VotedOutHandlerProcessing;
+                        // Single target - go to reveal phase before running voted-out handlers
+                        update[dictSpeak] = (int)SpeakConstant.VotedOutReveal;
                     }
                     else
                     {
@@ -1506,6 +1507,47 @@ namespace ProcedureCore.LangRenSha
                         update[UserAction.dictUserActionTargetsHint] = (int)HintConstant.VoteResult;
                         update[UserAction.dictUserActionInfo] = Game.GetGameDictionaryProperty(game, dictVoteInfo, "");
                         return GameActionResult.Restart;
+                    }
+                }
+                return GameActionResult.NotExecuted;
+            }
+            // voted out reveal phase - players may reveal (e.g. DingXuWangZi).
+            // On reveal, an interrupt handler will redirect dictSpeak; otherwise
+            // we time out and proceed to VotedOutHandlerProcessing.
+            if (Game.GetGameDictionaryProperty(game, dictSpeak, 0) == (int)SpeakConstant.VotedOutReveal)
+            {
+                if (UserAction.EndUserAction(game, update))
+                {
+                    update[dictSpeak] = (int)SpeakConstant.VotedOutHandlerProcessing;
+                    return GameActionResult.Restart;
+                }
+                else
+                {
+                    if (UserAction.StartUserAction(game, actionDuraionPlayerReact, update))
+                    {
+                        update[UserAction.dictUserActionTargets] = new List<int>() { -100 };
+                        update[UserAction.dictUserActionUsers] = alivePlayers;
+                        update[UserAction.dictUserActionTargetsCount] = 0;
+                        update[UserAction.dictUserActionTargetsHint] = (int)HintConstant.VotedOutReveal;
+                        return GameActionResult.Restart;
+                    }
+                    else
+                    {
+                        // Process interrupt handlers (e.g. DingXuWangZi reveal)
+                        (var inputValid, var input, var input_others) = UserAction.GetUserResponse(game, true, alivePlayers, update);
+                        foreach (var int_input in input_others)
+                        {
+                            var key = int.Parse(int_input.Key);
+                            var value = (List<int>)int_input.Value;
+                            foreach (var handler in LangRenSha.InterruptHandlers)
+                            {
+                                var result = handler(game, key, value, update);
+                                if (result != GameActionResult.NotExecuted)
+                                {
+                                    return result;
+                                }
+                            }
+                        }
                     }
                 }
                 return GameActionResult.NotExecuted;
@@ -1869,6 +1911,11 @@ namespace ProcedureCore.LangRenSha
                 var skillTo = Game.GetGameDictionaryProperty(game, dictSkillUseTo, new List<int>());
                 var skillUse = Game.GetGameDictionaryProperty(game, dictSkillUse, "");
                 var skillResult = Game.GetGameDictionaryProperty(game, dictSkillUseResult, "");
+                int duration = 5;
+                if (skillResult == "2")
+                {
+                    duration = Game.GetGameDictionaryProperty(game, dictDurationSpeech, 90);
+                }
 
                 if (UserAction.EndUserAction(game, update))
                 {
@@ -1888,7 +1935,7 @@ namespace ProcedureCore.LangRenSha
                 else
                 {
                     // Broadcast skill use announcement
-                    if (UserAction.StartUserAction(game, 5, update))
+                    if (UserAction.StartUserAction(game, duration, update))
                     {
                         // Format: "from;to1,to2,...;skill;result"
                         var toStr = string.Join(",", skillTo);

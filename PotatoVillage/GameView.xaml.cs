@@ -75,6 +75,7 @@ namespace PotatoVillage
             { 106, new Dictionary<int, string> { { 0, "NoSheriff" } } },
             { 107, new Dictionary<int, string> { { -2, "Withdraw" }, { -101, "OwnerSheriffOverride" } } },
             { 112, new Dictionary<int, string> { { 0, "SkipVote" } } },
+            { 113, new Dictionary<int, string> { { -100, "DingXuWangZi_Reveal" } } },
             { 151, new Dictionary<int, string> { { -100, "DoNotUse"} } },
             { 153, new Dictionary<int, string> { { -2, "Left" }, { -1, "Right"} } },
             { 98, new Dictionary<int, string> { { -1, "Kill" }, { -100, "DoNotKill"} } },
@@ -1100,6 +1101,7 @@ namespace PotatoVillage
                 110 => "sheriff_recommend_vote",
                 111 => "voteout",
                 112 => "owner_vote_select",
+                113 => "voted_out_reveal",
                 150 => "sheriff_handover",
                 151 => "hunter_kill",
                 152 => "death_announcement",
@@ -1562,8 +1564,11 @@ namespace PotatoVillage
             }
             else
             {
-                // Set the full instruction text with color support
-                SetTargetInstructionText($"{instructionText}\n{ui}");
+                // Set the full instruction text with color support.
+                // Avoid a trailing newline + empty span when `ui` is empty - it
+                // crashes WinUI's Label.RecalculateSpanPositions.
+                var combined = string.IsNullOrEmpty(ui) ? instructionText : $"{instructionText}\n{ui}";
+                SetTargetInstructionText(combined);
             }
 
             // Get all players from game dictionary

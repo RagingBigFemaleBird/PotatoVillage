@@ -285,6 +285,7 @@ namespace ProcedureCore.LangRenSha
         EndOfDay = 40,
         VotedOutAnnouncement = 41,
         VotedOutHandlerProcessing = 42,
+        VotedOutReveal = 43, // After first voteout result, players may reveal (e.g. DingXuWangZi)
 
         // === Death Handling (97-102) ===
         DeathHandlingInterrupt = 97,
@@ -441,10 +442,11 @@ namespace ProcedureCore.LangRenSha
         OwnerSheriffSelect = 106,
         WithdrawOrReveal = 107,  // 退水自爆
 
-        // === Day Voting (110-112) ===
+        // === Day Voting (110-113) ===
         SheriffRecommendVote = 110,
         VoteOut = 111,
         OwnerVoteSelect = 112,
+        VotedOutReveal = 113, // Reveal phase after first voteout result
         // === Death Handling (150-154) ===
         SheriffHandover = 150,
         HunterKill = 151,

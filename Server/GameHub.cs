@@ -158,6 +158,7 @@ namespace Server
                 { "MengYan", new MengYan() },
                 { "MoShuShi", new MoShuShi() },
                 { "GuiShuShi", new GuiShuShi() },
+                { "DingXuWangZi", new DingXuWangZi() },
             };
 
             if (!roleDict.ContainsKey("LangRen"))

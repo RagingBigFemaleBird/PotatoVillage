@@ -142,25 +142,29 @@ namespace ProcedureCore.LangRenSha
 
         private void ProcessSheMengTarget(Game game, int sheMengRenPlayer, int target, Dictionary<string, object> update)
         {
+            // MoShuShi swap: SheMengRen's actual target (after swap) is used for death computation
+            // and same-target kill comparison.
+            var actualTarget = MoShuShi.GetSwappedTarget(game, target);
+
             var prevTarget = Game.GetGameDictionaryProperty(game, dictSheMengPrevTarget, 0);
 
-            // Check if same target as previous night
-            if (prevTarget == target && prevTarget > 0)
+            // Check if same target as previous night (comparing previous actual target to today's actual target)
+            if (prevTarget == actualTarget && prevTarget > 0)
             {
                 // Same target selected twice in a row - target dies without death skills
-                LangRenSha.MarkPlayerAboutToDie(game, target, update);
-                
+                LangRenSha.MarkPlayerAboutToDie(game, actualTarget, update);
+
                 // Disable hunter's shooting ability if the target is a hunter
-                LangRenSha.SetPlayerProperty(game, target, LieRen.dictHuntingDisabled, 1, update);
+                LangRenSha.SetPlayerProperty(game, actualTarget, LieRen.dictHuntingDisabled, 1, update);
             }
             else
             {
                 // Mark target as protected for this night
-                update[dictSheMengTarget] = target;
+                update[dictSheMengTarget] = actualTarget;
             }
 
-            // Store current target as previous for next night
-            update[dictSheMengPrevTarget] = target;
+            // Store current actual target as previous for next night
+            update[dictSheMengPrevTarget] = actualTarget;
         }
 
     }

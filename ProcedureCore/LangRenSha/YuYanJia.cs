@@ -66,12 +66,16 @@ namespace ProcedureCore.LangRenSha
 
         public void ChaYan(Game game, int target, Dictionary<string, object> update)
         {
+            // MoShuShi swap: YuYanJia checks the actual (swapped) target.
+            target = MoShuShi.GetSwappedTarget(game, target);
             var result = LangRenSha.GetPlayerProperty(game, target, dictYuYanJiaResult, 1);
             update[dictYuYanJiaResult] = result.ToString();
         }
 
         public void TongLing(Game game, int target, Dictionary<string, object> update)
         {
+            // MoShuShi swap applies to TongLing too.
+            target = MoShuShi.GetSwappedTarget(game, target);
             var tongling_result = LangRenSha.GetPlayerProperty(game, target, TongLingShi.dictTongLingShiResult, "");
             if (string.IsNullOrEmpty(tongling_result))
             {

@@ -96,7 +96,9 @@ namespace ProcedureCore.LangRenSha
         {
             var aboutToDie = Game.GetGameDictionaryProperty(game, LangRenSha.dictAboutToDie, new List<int>());
 
-            // Count occurrences of each target to detect double attacks
+            // Count occurrences of each ORIGINAL target to detect double attacks.
+            // Guard / double-attack / immunity checks are done against the original (chosen) target;
+            // only the actual kill is redirected to the MoShuShi-swapped target.
             var targetCounts = new Dictionary<int, int>();
             foreach (var target in targets)
             {
@@ -121,7 +123,7 @@ namespace ProcedureCore.LangRenSha
                 var zjlSuperGuardTarget = Game.GetGameDictionaryProperty(game, ZhuangJiaLang.dictSuperGuardTarget, 0);
                 var wuZhe = Game.GetGameDictionaryProperty(game, WuZhe.dictDanced, new List<int>());
 
-                // Check AwkSheMengRen protection - target is immune to ALL deaths
+                // Check AwkSheMengRen protection on the ORIGINAL target - target is immune to ALL deaths
                 if (AwkSheMengRen.IsProtected(game, target))
                 {
                     continue;
@@ -138,7 +140,10 @@ namespace ProcedureCore.LangRenSha
                     }
                 }
 
-                LangRenSha.ChainKill(game, 0, target, aboutToDie, update);
+                // MoShuShi swap: once guard/immunity checks on the original target pass,
+                // the actual kill lands on the swapped target.
+                var actualTarget = MoShuShi.GetSwappedTarget(game, target);
+                LangRenSha.ChainKill(game, 0, actualTarget, aboutToDie, update);
             }
             update[LangRenSha.dictAboutToDie] = aboutToDie;
         }

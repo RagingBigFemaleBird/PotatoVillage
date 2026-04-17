@@ -68,6 +68,7 @@ namespace PotatoVillage
         private bool selectedShiXiangGui = false;
         private bool selectedXueYue = false;
         private bool selectedMengYan = false;
+        private bool selectedMoShuShi = false;
         private HashSet<string> selectedPingMin = new();
 
         // Dictionary to store button references for template application
@@ -387,6 +388,7 @@ namespace PotatoVillage
                    selectedShiXiangGui ||
                    selectedXueYue ||
                    selectedMengYan ||
+                   selectedMoShuShi ||
                    selectedPingMin.Count > 0;
         }
 
@@ -935,6 +937,7 @@ namespace PotatoVillage
             godBtns2.Children.Add(CreateRoleButton(localization.GetString("SheMengRen", "SheMengRen"), "SheMengRen", () => selectedSheMengRen, v => selectedSheMengRen = v));
             godBtns2.Children.Add(CreateRoleButton(localization.GetString("Thief", "Thief"), "Thief", () => selectedThief, v => selectedThief = v));
             godBtns2.Children.Add(CreateRoleButton(localization.GetString("ShouMuRen", "ShouMuRen"), "ShouMuRen", () => selectedShouMuRen, v => selectedShouMuRen = v));
+            godBtns2.Children.Add(CreateRoleButton(localization.GetString("MoShuShi", "MoShuShi"), "MoShuShi", () => selectedMoShuShi, v => selectedMoShuShi = v));
             mainStack.Children.Add(godBtns2);
 
             // God row 3
@@ -1336,6 +1339,7 @@ namespace PotatoVillage
             if (selectedShiXiangGui) roleDict["ShiXiangGui"] = 1;
             if (selectedXueYue) roleDict["XueYue"] = 1;
             if (selectedMengYan) roleDict["MengYan"] = 1;
+            if (selectedMoShuShi) roleDict["MoShuShi"] = 1;
             if (selectedPingMin.Count > 0) roleDict["PingMin"] = selectedPingMin.Count;
 
             return roleDict;

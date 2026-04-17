@@ -68,13 +68,18 @@ namespace ProcedureCore.LangRenSha
 
         public void Poison(Game game, int source, int target, Dictionary<string, object> update)
         {
+            // Guard / immunity checks use the ORIGINAL target (what NvWu chose);
+            // only the actual kill is redirected to the MoShuShi-swapped target.
+            var originalTarget = target;
+            var actualTarget = MoShuShi.GetSwappedTarget(game, target);
+
             var aboutToDie = Game.GetGameDictionaryProperty(game, LangRenSha.dictAboutToDie, new List<int>()); ;
             var miceTag = Game.GetGameDictionaryProperty(game, LaoShu.dictMiceTag, 0);
             var miceTagged = miceTag == source;
 
             // SuperGuard from JiXieLang: blocks poison and reflects it back to NvWu (unless ZhuangJiaLang present)
             var superGuardTarget = Game.GetGameDictionaryProperty(game, JiXieLang.dictSuperGuardTarget, 0);
-            if (target == superGuardTarget && superGuardTarget > 0)
+            if (originalTarget == superGuardTarget && superGuardTarget > 0)
             {
                 // When ZhuangJiaLang is present, SuperGuard only protects (no reflection)
                 if (!ZhuangJiaLang.IsPresent(game))
@@ -91,7 +96,7 @@ namespace ProcedureCore.LangRenSha
 
             // SuperGuard from ZhuangJiaLang: blocks poison but does NOT reflect
             var zjlSuperGuardTarget = Game.GetGameDictionaryProperty(game, ZhuangJiaLang.dictSuperGuardTarget, 0);
-            if (target == zjlSuperGuardTarget && zjlSuperGuardTarget > 0)
+            if (originalTarget == zjlSuperGuardTarget && zjlSuperGuardTarget > 0)
             {
                 if (!miceTagged)
                 {
@@ -100,12 +105,13 @@ namespace ProcedureCore.LangRenSha
                 return;
             }
 
-            if (LangRenSha.GetPlayerProperty(game, target, dictCannotBePoisoned, 0) == 0)
+            if (LangRenSha.GetPlayerProperty(game, actualTarget, dictCannotBePoisoned, 0) == 0)
             {
-                LangRenSha.ChainKill(game, source, target, aboutToDie, update);
-                if (aboutToDie.Contains(target))
+                // MoShuShi swap: kill the actual (swapped) target
+                LangRenSha.ChainKill(game, source, actualTarget, aboutToDie, update);
+                if (aboutToDie.Contains(actualTarget))
                 {
-                    LangRenSha.SetPlayerProperty(game, target, LieRen.dictHuntingDisabled, 1, update);
+                    LangRenSha.SetPlayerProperty(game, actualTarget, LieRen.dictHuntingDisabled, 1, update);
                 }
                 update[LangRenSha.dictAboutToDie] = aboutToDie;
             }

@@ -103,10 +103,15 @@ namespace ProcedureCore.LangRenSha
         LaoShu_GiftAct = 77,
         LaoShu_GiftCloseEyes = 78,
 
-        // === SheMengRen (80-82) ===
-        SheMengRen_OpenEyes = 80,
-        SheMengRen_Act = 81,
-        SheMengRen_CloseEyes = 82,
+        // === MoShuShi (79-81) - Acts after LaoShu, before SheMengRen ===
+        MoShuShi_OpenEyes = 79,
+        MoShuShi_Swap = 80,
+        MoShuShi_CloseEyes = 81,
+
+        // === SheMengRen (82-84) ===
+        SheMengRen_OpenEyes = 82,
+        SheMengRen_Act = 83,
+        SheMengRen_CloseEyes = 84,
 
         // === ShouWei (85-87) ===
         ShouWei_OpenEyes = 85,
@@ -334,6 +339,9 @@ namespace ProcedureCore.LangRenSha
 
         // === SheMengRen (8) ===
         SheMengRen_Act = 8,
+
+        // === MoShuShi (31) ===
+        MoShuShi_Swap = 31,
 
         // === Xiong (9) ===
         Xiong_Act = 9,

@@ -119,6 +119,7 @@ namespace ProcedureCore.LangRenSha
                 "ShiXiangGui" => new ShiXiangGui(),
                 "XueYue" => new XueYue(),
                 "MengYan" => new MengYan(),
+                "MoShuShi" => new MoShuShi(),
                 _ => throw new ArgumentException($"Not a role: {roleName}")
             };
         }
@@ -512,6 +513,8 @@ namespace ProcedureCore.LangRenSha
             {
                 if (UserAction.EndUserAction(game, update))
                 {
+                    // Clear any MoShuShi swap at end of night / start of day
+                    MoShuShi.ClearSwap(update);
                     LangRenSha.AdvanceAction(game, update);
                     return GameActionResult.Restart;
                 }

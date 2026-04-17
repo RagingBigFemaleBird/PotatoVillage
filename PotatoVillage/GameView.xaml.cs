@@ -60,6 +60,7 @@ namespace PotatoVillage
             { 24, new Dictionary<int, string> { { -1, "yes" }, { 0, "no" } } },
             { 26, new Dictionary<int, string> { { -1, "yes" }, { 0, "no" } } },
             { 27, new Dictionary<int, string> { { -100, "DoNotUse"} } },
+            { 31, new Dictionary<int, string> { { -100, "DoNotUse"} } },
             { 63, new Dictionary<int, string> { { -100, "DoNotUse"} } },
             { 70, new Dictionary<int, string> { { -100, "DoNotUse"} } },
             { 71, new Dictionary<int, string> { { -100, "DoNotUse"} } },
@@ -112,6 +113,7 @@ namespace PotatoVillage
             { 25, MeiYangYangCivilianMayActHandler },
             { 26, MeiYangYangCivilianSacrificeHandler },
             { 30, ShiXiangGuiResultHandler },
+            { 31, MoShuShiSwapHandler },
             { 104, SheriffSpeechHandler },
             { 105, SheriffPKHandler },
             { 151, LieRenInfoHandler },
@@ -557,6 +559,17 @@ namespace PotatoVillage
             if (string.IsNullOrEmpty(userInfo) || userInfo == "0")
                 return LocalizationManager.Instance.GetString("nvwu_no_save", "Cannot view attack info.");
             var txt = LocalizationManager.Instance.GetString("nvwu_save", "Last night {0} was attacked.");
+            return txt.Replace("{0}", userInfo);
+        }
+
+        private static string MoShuShiSwapHandler(string userInfo, string userInfo2)
+        {
+            var localization = LocalizationManager.Instance;
+            if (string.IsNullOrWhiteSpace(userInfo))
+            {
+                return localization.GetString("moshushi_none_used", "No players selected yet.");
+            }
+            var txt = localization.GetString("moshushi_already_used", "Already used: {0}");
             return txt.Replace("{0}", userInfo);
         }
 
@@ -1033,6 +1046,7 @@ namespace PotatoVillage
                 26 => "meiyangyang_info",
                 29 => "shixianggui_chayan",
                 30 => "shixianggui_result",
+                31 => "moshushi_swap",
                 50 => "open_eyes",
                 51 => "close_eyes",
                 52 => "lucky_one_open_eyes",

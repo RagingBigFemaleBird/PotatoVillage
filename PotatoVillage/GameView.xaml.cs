@@ -61,6 +61,7 @@ namespace PotatoVillage
             { 26, new Dictionary<int, string> { { -1, "yes" }, { 0, "no" } } },
             { 27, new Dictionary<int, string> { { -100, "DoNotUse"} } },
             { 31, new Dictionary<int, string> { { -100, "DoNotUse"} } },
+            { 32, new Dictionary<int, string> { { -100, "DoNotUse"} } },
             { 63, new Dictionary<int, string> { { -100, "DoNotUse"} } },
             { 70, new Dictionary<int, string> { { -100, "DoNotUse"} } },
             { 71, new Dictionary<int, string> { { -100, "DoNotUse"} } },
@@ -114,6 +115,7 @@ namespace PotatoVillage
             { 26, MeiYangYangCivilianSacrificeHandler },
             { 30, ShiXiangGuiResultHandler },
             { 31, MoShuShiSwapHandler },
+            { 32, GuiShuShiSwapHandler },
             { 104, SheriffSpeechHandler },
             { 105, SheriffPKHandler },
             { 151, LieRenInfoHandler },
@@ -570,6 +572,17 @@ namespace PotatoVillage
                 return localization.GetString("moshushi_none_used", "No players selected yet.");
             }
             var txt = localization.GetString("moshushi_already_used", "Already used: {0}");
+            return txt.Replace("{0}", userInfo);
+        }
+
+        private static string GuiShuShiSwapHandler(string userInfo, string userInfo2)
+        {
+            var localization = LocalizationManager.Instance;
+            if (string.IsNullOrWhiteSpace(userInfo))
+            {
+                return localization.GetString("guishushi_none_used", "No players selected yet.");
+            }
+            var txt = localization.GetString("guishushi_already_used", "Already used: {0}");
             return txt.Replace("{0}", userInfo);
         }
 
@@ -1047,6 +1060,7 @@ namespace PotatoVillage
                 29 => "shixianggui_chayan",
                 30 => "shixianggui_result",
                 31 => "moshushi_swap",
+                32 => "guishushi_swap",
                 50 => "open_eyes",
                 51 => "close_eyes",
                 52 => "lucky_one_open_eyes",
@@ -1091,6 +1105,7 @@ namespace PotatoVillage
                 152 => "death_announcement",
                 153 => "sheriff_choose_direction",
                 154 => "vote_result",
+                155 => "voted_out",
                 1000 => "check_private",
                 1001 => "night_time",
                 1002 => "day_time",

@@ -70,7 +70,7 @@ namespace ProcedureCore.LangRenSha
                 return GameActionResult.Restart;
             }
 
-            // Action 115: HongTaiLang chooses target
+            // Action 118: HongTaiLang chooses target
             if (currentAction == (int)ActionConstant.HongTaiLang_ChooseTarget)
             {
                 return HandleChooseTarget(game, update, dayNumber);

@@ -63,6 +63,9 @@ namespace PotatoVillage.Services
             { "守墓人", "shoumuren" },
             { "梦魇", "mengyan" },
             { "石像鬼", "shixianggui" },
+            { "诡术师", "guishushi" },
+            { "魔术师", "moshushi" },
+            { "定序王子", "dingxuwangzi" },
             
             // Common phrases
             { "请睁眼", "qing_zhengyan" },
@@ -88,7 +91,9 @@ namespace PotatoVillage.Services
             { "复仇", "fuchou" },
             { "成功", "chenggong" },
             { "觉醒", "juexing" },
-            
+            { "代替", "daiti" },
+            { "出局", "chuju" },
+           
             // Numbers (for player references)
             { "一号", "yihao" },
             { "二号", "erhao" },

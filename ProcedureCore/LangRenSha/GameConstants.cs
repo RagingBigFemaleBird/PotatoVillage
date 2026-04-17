@@ -141,23 +141,28 @@ namespace ProcedureCore.LangRenSha
         JiaMian_Reverse = 111,
         JiaMian_CloseEyes = 112,
 
-        // === HongTaiLang (114-116, 222) ===
-        HongTaiLang_OpenEyes = 114,
-        HongTaiLang_ChooseTarget = 115,
-        HongTaiLang_CloseEyes = 116,
+        // === GuiShuShi (113-115) - Acts after JiaMian ===
+        GuiShuShi_OpenEyes = 113,
+        GuiShuShi_Act = 114,
+        GuiShuShi_CloseEyes = 115,
+
+        // === HongTaiLang (117-119, 222) - Shifted by +3 to preserve order after GuiShuShi ===
+        HongTaiLang_OpenEyes = 117,
+        HongTaiLang_ChooseTarget = 118,
+        HongTaiLang_CloseEyes = 119,
         HongTaiLang_KillTarget = 222,
 
-        // === TuFu (117-119) - Day 1+ only ===
-        TuFu_OpenEyes = 117,
-        TuFu_Act = 118,
-        TuFu_CloseEyes = 119,
+        // === TuFu (120-122) - Day 1+ only, shifted by +3 ===
+        TuFu_OpenEyes = 120,
+        TuFu_Act = 121,
+        TuFu_CloseEyes = 122,
 
-        // === LangRen (121-128, 220) ===
-        LangRen_OpenEyes = 121,
-        LangRen_SelectTarget = 122,
-        LangRen_ConfirmKill = 123,
-        LangMeiRen_Act = 124,
-        LangRen_CloseEyes = 128,
+        // === LangRen (124-131, 220) - shifted by +3 ===
+        LangRen_OpenEyes = 124,
+        LangRen_SelectTarget = 125,
+        LangRen_ConfirmKill = 126,
+        LangMeiRen_Act = 127,
+        LangRen_CloseEyes = 131,
         LangRen_Kill = 220,
 
         // === NvWu (139-141) ===
@@ -278,6 +283,8 @@ namespace ProcedureCore.LangRenSha
 
         // === End of Day (40) ===
         EndOfDay = 40,
+        VotedOutAnnouncement = 41,
+        VotedOutHandlerProcessing = 42,
 
         // === Death Handling (97-102) ===
         DeathHandlingInterrupt = 97,
@@ -342,6 +349,9 @@ namespace ProcedureCore.LangRenSha
 
         // === MoShuShi (31) ===
         MoShuShi_Swap = 31,
+
+        // === GuiShuShi (32) ===
+        GuiShuShi_Swap = 32,
 
         // === Xiong (9) ===
         Xiong_Act = 9,
@@ -441,6 +451,7 @@ namespace ProcedureCore.LangRenSha
         DeathAnnouncement = 152,
         SheriffChooseDirection = 153,
         VoteResult = 154,
+        VotedOutAnnouncement = 155,
 
         // === Announcements (1000-1020) ===
         CheckPrivate = 1000,

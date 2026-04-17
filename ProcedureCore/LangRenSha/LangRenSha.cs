@@ -65,6 +65,27 @@ namespace ProcedureCore.LangRenSha
             }
         }
 
+        // VotedOut handlers - called when a single player has been voted out.
+        // Each handler may transform the voteout list (e.g. GuiShuShi swap)
+        // and should return the (possibly modified) list of players to be killed.
+        private static List<Func<Game, List<int>, Dictionary<string, object>, List<int>>> votedOutHandlers = new();
+
+        public static void RegisterVotedOutHandler(Func<Game, List<int>, Dictionary<string, object>, List<int>> handler)
+        {
+            if (!votedOutHandlers.Contains(handler))
+            {
+                votedOutHandlers.Add(handler);
+            }
+        }
+
+        public static List<Func<Game, List<int>, Dictionary<string, object>, List<int>>> VotedOutHandlers
+        {
+            get
+            {
+                return votedOutHandlers;
+            }
+        }
+
         public LangRenSha()
         {
             players = new List<(int, Role)>();
@@ -78,6 +99,7 @@ namespace ProcedureCore.LangRenSha
             RegisterDeadPlayerHandler(ZhuangJiaLang.HandleZhuangJiaLangDeathSkill);
             RegisterDeadPlayerHandler(MengMianRen.HandleDeathSkill);
             RegisterAfterSpeakHandler(MengMianRen.HandleAfterSpeak);
+            RegisterVotedOutHandler(GuiShuShi.HandleVotedOut);
             // Players will be initialized dynamically in GenerateStateDiff based on roleDict
         }
 
@@ -120,6 +142,7 @@ namespace ProcedureCore.LangRenSha
                 "XueYue" => new XueYue(),
                 "MengYan" => new MengYan(),
                 "MoShuShi" => new MoShuShi(),
+                "GuiShuShi" => new GuiShuShi(),
                 _ => throw new ArgumentException($"Not a role: {roleName}")
             };
         }
@@ -1462,8 +1485,8 @@ namespace ProcedureCore.LangRenSha
                     }
                     else if (voteOut.Count == 1)
                     {
-                        // Single target - go to voted out
-                        update[dictSpeak] = (int)SpeakConstant.VotedOut;
+                        // Single target - run voted-out handlers before announcement
+                        update[dictSpeak] = (int)SpeakConstant.VotedOutHandlerProcessing;
                     }
                     else
                     {
@@ -1556,8 +1579,8 @@ namespace ProcedureCore.LangRenSha
                     }
                     else if (voteOut.Count == 1)
                     {
-                        // Single target - go to voted out
-                        update[dictSpeak] = (int)SpeakConstant.VotedOut;
+                        // Single target - run voted-out handlers before announcement
+                        update[dictSpeak] = (int)SpeakConstant.VotedOutHandlerProcessing;
                     }
                     else
                     {
@@ -1621,19 +1644,11 @@ namespace ProcedureCore.LangRenSha
                                 var targets = (List<int>)entry.Value;
                                 if (targets.Count > 0 && targets[0] > 0)
                                 {
-                                    // Track the voted out player for ShouMuRen
-                                    update[ShouMuRen.dictLastVotedOutPlayer] = targets[0];
-
-                                    // Mark the selected player as about to die
-                                    MarkPlayerAboutToDie(game, targets[0], update);
-
-                                    // Set up interrupt to go through death handling then end of day
-                                    var interrupted = new Dictionary<string, object>();
-                                    interrupted[dictSpeak] = (int)SpeakConstant.EndOfDay;
-                                    update[dictSpeak] = (int)SpeakConstant.DeathHandlingInterrupt;
-                                    update[dictInterrupt] = interrupted;
+                                    // Set up voted-out player so the handler, announcement and VotedOut stage handle the rest
+                                    update[dictVoteOut] = new List<int> { targets[0] };
                                     update[dictVoteInfo] = $"Owner selected: {targets[0]}";
                                     update[dictOwnerVoteOverride] = 1;
+                                    update[dictSpeak] = (int)SpeakConstant.VotedOutHandlerProcessing;
                                     UserAction.EndUserAction(game, update, true);
                                     return GameActionResult.Restart;
                                 }
@@ -1648,6 +1663,50 @@ namespace ProcedureCore.LangRenSha
                                 }
                             }
                         }
+                    }
+                }
+                return GameActionResult.NotExecuted;
+            }
+            // voted out handler processing - one-shot stage that applies voted-out
+            // handlers (e.g. GuiShuShi swap) to transform dictVoteOut before the
+            // announcement. Modeled after DeathHandlingInterrupt: do the work,
+            // transition to the next stage, no UserAction here.
+            // A handler may override dictSpeak (e.g. to route through
+            // SkillUseAnnouncement first); in that case we don't overwrite it.
+            if (Game.GetGameDictionaryProperty(game, dictSpeak, 0) == (int)SpeakConstant.VotedOutHandlerProcessing)
+            {
+                var voteout = Game.GetGameDictionaryProperty(game, dictVoteOut, new List<int>());
+                foreach (var handler in votedOutHandlers)
+                {
+                    voteout = handler(game, voteout, update);
+                }
+                update[dictVoteOut] = voteout;
+                if (!update.ContainsKey(dictSpeak))
+                {
+                    update[dictSpeak] = (int)SpeakConstant.VotedOutAnnouncement;
+                }
+                return GameActionResult.Restart;
+            }
+            // voted out announcement - announce who was voted out before death handling
+            if (Game.GetGameDictionaryProperty(game, dictSpeak, 0) == (int)SpeakConstant.VotedOutAnnouncement)
+            {
+                var voteout = Game.GetGameDictionaryProperty(game, dictVoteOut, new List<int>());
+
+                if (UserAction.EndUserAction(game, update))
+                {
+                    update[dictSpeak] = (int)SpeakConstant.VotedOut;
+                    return GameActionResult.Restart;
+                }
+                else
+                {
+                    if (UserAction.StartUserAction(game, 5, update))
+                    {
+                        update[UserAction.dictUserActionTargets] = new List<int>();
+                        update[UserAction.dictUserActionUsers] = new List<int>() { -1 };
+                        update[UserAction.dictUserActionTargetsCount] = 0;
+                        update[UserAction.dictUserActionTargetsHint] = (int)HintConstant.VotedOutAnnouncement;
+                        update[UserAction.dictUserActionInfo] = voteout.Count == 1 ? voteout[0].ToString() : "";
+                        return GameActionResult.Restart;
                     }
                 }
                 return GameActionResult.NotExecuted;

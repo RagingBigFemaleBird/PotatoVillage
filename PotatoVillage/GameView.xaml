@@ -82,29 +82,45 @@
                    Padding="10,0"
                    BackgroundColor="#FFFDD0" />
 
-            <!-- Row 2: Special target buttons (e.g. Do not attack, Save, Abstain) -->
-            <Border x:Name="SpecialTargetSelectionContainer"
-                    Grid.Row="2"
-                    IsVisible="False"
-                    Padding="5"
-                    Margin="5,0"
-                    StrokeShape="RoundRectangle 8"
-                    BackgroundColor="#00000000"
-                    Stroke="Transparent"
-                    VerticalOptions="Fill"
-                    HorizontalOptions="Fill">
-                <ScrollView Orientation="Horizontal">
-                    <FlexLayout x:Name="SpecialTargetButtonsContainer"
-                                Wrap="Wrap"
-                                JustifyContent="Start"
-                                AlignItems="Center"
-                                AlignContent="Start"
-                                Direction="Row"
-                                MinimumHeightRequest="30" />
-                </ScrollView>
-            </Border>
+            <!-- Row 2: Confirm button (top) + Special target buttons (e.g. Do not attack, Save, Abstain) -->
+            <Grid Grid.Row="2" RowDefinitions="Auto,*">
+                <Button x:Name="ConfirmButton"
+                        Grid.Row="0"
+                        Text="Confirmed"
+                        IsVisible="False"
+                        Clicked="OnConfirmClicked"
+                        BackgroundColor="#007AFF"
+                        TextColor="White"
+                        FontSize="11"
+                        Padding="24,0"
+                        Margin="5,2"
+                        HeightRequest="24"
+                        HorizontalOptions="Fill"
+                        VerticalOptions="Center" />
 
-            <!-- Row 3: Regular target selection area (player buttons) and action history -->
+                <Border x:Name="SpecialTargetSelectionContainer"
+                        Grid.Row="1"
+                        IsVisible="False"
+                        Padding="5"
+                        Margin="5,0"
+                        StrokeShape="RoundRectangle 8"
+                        BackgroundColor="#00000000"
+                        Stroke="Transparent"
+                        VerticalOptions="Fill"
+                        HorizontalOptions="Fill">
+                    <ScrollView Orientation="Horizontal">
+                        <FlexLayout x:Name="SpecialTargetButtonsContainer"
+                                    Wrap="Wrap"
+                                    JustifyContent="Start"
+                                    AlignItems="Center"
+                                    AlignContent="Start"
+                                    Direction="Row"
+                                    MinimumHeightRequest="30" />
+                    </ScrollView>
+                </Border>
+            </Grid>
+
+            <!-- Row 3: regular target selection area (player buttons) and action history -->
             <Grid Grid.Row="3" RowDefinitions="*,Auto">
                 <Border x:Name="TargetSelectionContainer" 
                         Grid.Row="0"
@@ -147,30 +163,15 @@
                 </Border>
             </Grid>
 
-            <!-- Bottom bar: Confirm, Sheriff, Reveal, Mute, Leave -->
+            <!-- Bottom bar: Sheriff, Past Actions, Reveal, Mute, Leave -->
             <Grid Grid.Row="4"
-                  ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto"
+                  ColumnDefinitions="*,Auto,Auto,Auto,Auto"
                   BackgroundColor="#F0F0F0"
                   Padding="6,0">
 
-                <!-- Confirm button -->
-                <Button x:Name="ConfirmButton"
-                        Grid.Column="0"
-                        Text="Confirmed"
-                        IsVisible="False"
-                        Clicked="OnConfirmClicked"
-                        BackgroundColor="#007AFF"
-                        TextColor="White"
-                        FontSize="11"
-                        Padding="24,0"
-                        Margin="0,0,4,0"
-                        HeightRequest="20"
-                        WidthRequest="120"
-                        VerticalOptions="Center" />
-
                 <!-- Sheriff status label -->
                 <Label x:Name="CurrentSheriffLabel"
-                       Grid.Column="1"
+                       Grid.Column="0"
                        Text=""
                        FontSize="12"
                        TextColor="#888888"
@@ -180,7 +181,7 @@
 
                 <!-- Past Actions button -->
                 <Button x:Name="PastActionsBtn"
-                        Grid.Column="2"
+                        Grid.Column="1"
                         Text="📋"
                         Clicked="OnPastActionsClicked"
                         FontSize="10"
@@ -193,7 +194,7 @@
 
                 <!-- Reveal button -->
                 <Button x:Name="RevealBtn"
-                        Grid.Column="3"
+                        Grid.Column="2"
                         Text="Reveal"
                         Clicked="OnRevealClicked"
                         FontSize="11"
@@ -205,7 +206,7 @@
 
                 <!-- Announcer Toggle Button -->
                 <Button x:Name="AnnouncerBtn"
-                        Grid.Column="4"
+                        Grid.Column="3"
                         Text="×"
                         FontSize="10"
                         WidthRequest="15"
@@ -219,7 +220,7 @@
 
                 <!-- Disconnect button -->
                 <Button Text="X"
-                        Grid.Column="5"
+                        Grid.Column="4"
                         Clicked="OnDisconnectClicked"
                         FontSize="11"
                         Padding="8,0"

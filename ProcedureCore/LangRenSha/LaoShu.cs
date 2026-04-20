@@ -256,6 +256,10 @@ namespace ProcedureCore.LangRenSha
                 var tagged = Game.GetGameDictionaryProperty(game, dictMiceTag, 0);
 
                 var isGifted = tagged > 0 && LangRenSha.GetPlayerProperty(game, tagged, dictMiceGifted, 0) == 1;
+                if (!isGifted)
+                {
+                    actionDuration = new Random().Next(3, 6);
+                }
 
                 var alivePlayers = LangRenSha.GetPlayers(game, x => (int)x[LangRenSha.dictAlive] == 1);
 

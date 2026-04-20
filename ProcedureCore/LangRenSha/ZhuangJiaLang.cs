@@ -29,14 +29,16 @@ namespace ProcedureCore.LangRenSha
 
         private static List<int> actionOrders = new()
         {
-            (int)ActionConstant.ZhuangJiaLang_OpenEyes,         // 0: 48
-            (int)ActionConstant.ZhuangJiaLang_Act,              // 1: 49
-            (int)ActionConstant.ZhuangJiaLang_Info,             // 2: 50
-            (int)ActionConstant.ZhuangJiaLang_CloseEyes,        // 3: 51
-            (int)ActionConstant.ZhuangJiaLang_ActAgain_OpenEyes,// 4: 137
-            (int)ActionConstant.ZhuangJiaLang_ActAgain,         // 5: 138
-            (int)ActionConstant.ZhuangJiaLang_ActAgain_Info,    // 6: 139
-            (int)ActionConstant.ZhuangJiaLang_ActAgain_CloseEyes,// 7: 140
+            (int)ActionConstant.ZhuangJiaLang_OpenEyes,                  // 0: 48
+            (int)ActionConstant.ZhuangJiaLang_Act,                       // 1: 49
+            (int)ActionConstant.ZhuangJiaLang_Info,                      // 2: 50
+            (int)ActionConstant.ZhuangJiaLang_CloseEyes,                 // 3: 51
+            (int)ActionConstant.ZhuangJiaLang_ActAgain_OpenEyes,         // 4: 137
+            (int)ActionConstant.ZhuangJiaLang_ActAgain,                  // 5: 138
+            (int)ActionConstant.ZhuangJiaLang_ActAgain_CloseEyes,        // 6: 140
+            (int)ActionConstant.ZhuangJiaLang_ActAgain_Info_OpenEyes,    // 7: 275 (moved later, before LieRen)
+            (int)ActionConstant.ZhuangJiaLang_ActAgain_Info,             // 8: 276
+            (int)ActionConstant.ZhuangJiaLang_ActAgain_Info_CloseEyes,   // 9: 277
         };
 
         public ZhuangJiaLang() { }
@@ -86,9 +88,10 @@ namespace ProcedureCore.LangRenSha
                 return GameActionResult.Restart;
             }
 
-            // Day 0: Skip day-1+ actions
-            if (day == 0 && (action == actionOrders[4] || action == actionOrders[5] ||
-                             action == actionOrders[6] || action == actionOrders[7]))
+            // Day 0: Skip ActAgain act phase entirely (open/act/close, indices 4-6).
+            // Skill use is already disallowed on day 0, and the ActAgain Info phase (indices 7-9)
+            // always runs in its own later slot, so this skip leaks no information about what was learned.
+            if (day == 0 && (action == actionOrders[4] || action == actionOrders[5] || action == actionOrders[6]))
             {
                 LangRenSha.AdvanceAction(game, update);
                 return GameActionResult.Restart;
@@ -101,8 +104,16 @@ namespace ProcedureCore.LangRenSha
                 return GameActionResult.Restart;
             }
 
-            // Day 1+: Open/close eyes around ActAgain
-            if (LangRenSha.AnnouncerAction(game, update, false, actionOrders[4], actionOrders[7],
+            // Day 1+: Open/close eyes around ActAgain act phase
+            if (LangRenSha.AnnouncerAction(game, update, false, actionOrders[4], actionOrders[6],
+                (int)HintConstant.OpenEyes, (int)HintConstant.CloseEyes, Name, 4) == GameActionResult.Restart)
+            {
+                return GameActionResult.Restart;
+            }
+
+            // Open/close eyes around ActAgain info phase (moved later, before LieRen).
+            // This ensures gun status (for LieRen mimicry) reflects all hunt-disabling skills.
+            if (LangRenSha.AnnouncerAction(game, update, false, actionOrders[7], actionOrders[9],
                 (int)HintConstant.OpenEyes, (int)HintConstant.CloseEyes, Name, 4) == GameActionResult.Restart)
             {
                 return GameActionResult.Restart;
@@ -126,8 +137,8 @@ namespace ProcedureCore.LangRenSha
                 return HandleActAgain(game, update);
             }
 
-            // === Day 1+: ActAgain Info (TongLing result + attack status) ===
-            if (action == actionOrders[6])
+            // === ActAgain Info (TongLing result + LieRen gun status) - now in its own later phase ===
+            if (action == actionOrders[8])
             {
                 return HandleActAgainInfo(game, update);
             }
@@ -346,7 +357,10 @@ namespace ProcedureCore.LangRenSha
                 : "";
 
             var actionDuration = Game.GetGameDictionaryProperty(game, LangRenSha.dictDurationPlayerReact, ActionDuration);
-            bool canUse = CanUseSkillTonight(game, zjlPlayer, mimicked);
+            var dayForSkill = Game.GetGameDictionaryProperty(game, LangRenSha.dictDay, 0);
+            // On day 0, ActAgain runs only to deliver gun status (when LieRen was learned).
+            // No skill may be used regardless of what was mimicked.
+            bool canUse = dayForSkill >= 1 && CanUseSkillTonight(game, zjlPlayer, mimicked);
 
             if (zjlAlive.Count == 0 || !canUse)
             {
@@ -421,7 +435,9 @@ namespace ProcedureCore.LangRenSha
                 string info = "";
                 if (mimicked == "TongLingShi")
                 {
-                    info = Game.GetGameDictionaryProperty(game, TongLingShi.dictTongLingResult, "");
+                    info = zjlPlayer > 0
+                        ? LangRenSha.GetPlayerProperty(game, zjlPlayer, TongLingShi.dictTongLingResult, "")
+                        : "";
                 }
                 else if (mimicked == "LieRen")
                 {
@@ -469,7 +485,7 @@ namespace ProcedureCore.LangRenSha
                 case "TongLingShi":
                     // TongLing: reveal exact role
                     var tongLingShi = new TongLingShi();
-                    tongLingShi.TongLing(game, target, update);
+                    tongLingShi.TongLing(game, zjlPlayer, target, update);
                     break;
 
                 case "LangRen":

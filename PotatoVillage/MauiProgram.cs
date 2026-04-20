@@ -15,6 +15,20 @@ namespace PotatoVillage
                     fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
                 });
 
+#if IOS
+            // Apply iOS 26 Liquid Glass effect to every Button.
+            // Guarded at runtime so older iOS versions (which lack UIButtonConfiguration.GlassButtonConfiguration)
+            // continue to use the default style.
+            Microsoft.Maui.Handlers.ButtonHandler.Mapper.AppendToMapping("GlassEffect", (handler, view) =>
+            {
+                if (OperatingSystem.IsIOSVersionAtLeast(26))
+                {
+                    var nativeButton = handler.PlatformView;
+                    nativeButton.Configuration = UIKit.UIButtonConfiguration.GlassButtonConfiguration;
+                }
+            });
+#endif
+
 #if WINDOWS
             // Set Windows app to mobile phone screen size (portrait: 400x800, landscape: 800x400)
             Microsoft.Maui.Handlers.WindowHandler.Mapper.AppendToMapping(nameof(IWindow), (handler, view) =>

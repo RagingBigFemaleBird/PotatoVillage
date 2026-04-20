@@ -125,8 +125,11 @@ namespace ProcedureCore.LangRenSha
                             var targets = UserAction.TallyUserInput(input, 0, UserAction.UserInputMode.VoteMost, -1);
                             if (targets.Count > 0 && targets[0] > 0 && isEvil)
                             {
+                                // Apply MoShuShi swap (if any) so the link follows the actual target.
+                                var actualTarget = MoShuShi.GetSwappedTarget(game, targets[0]);
+
                                 // Store the linked target as player property
-                                LangRenSha.SetPlayerProperty(game, xiongPlayer, dictXiongLink, targets[0], update);
+                                LangRenSha.SetPlayerProperty(game, xiongPlayer, dictXiongLink, actualTarget, update);
 
                                 UserAction.EndUserAction(game, update, true);
                                 LangRenSha.AdvanceAction(game, update);

@@ -11,6 +11,9 @@ namespace ProcedureCore.LangRenSha
     public class YuYanJia : Role
     {
         public static string dictYuYanJiaResult = "chayan";
+        // Per-player key storing the most recent ChaYan/TongLing result for the initiator.
+        // Distinct from dictYuYanJiaResult (which is a per-player visibility flag set on every player).
+        public static string dictYuYanJiaLastResult = "yuyanjia_last_result";
 
         private static Dictionary<string, object> roleDict = new()
             {
@@ -64,24 +67,20 @@ namespace ProcedureCore.LangRenSha
             }
         }
 
-        public void ChaYan(Game game, int target, Dictionary<string, object> update)
+        public void ChaYan(Game game, int initiator, int target, Dictionary<string, object> update)
         {
             // MoShuShi swap: YuYanJia checks the actual (swapped) target.
             target = MoShuShi.GetSwappedTarget(game, target);
             var result = LangRenSha.GetPlayerProperty(game, target, dictYuYanJiaResult, 1);
-            update[dictYuYanJiaResult] = result.ToString();
+            LangRenSha.SetPlayerProperty(game, initiator, dictYuYanJiaLastResult, result.ToString(), update);
         }
 
-        public void TongLing(Game game, int target, Dictionary<string, object> update)
+        public void TongLing(Game game, int initiator, int target, Dictionary<string, object> update)
         {
-            // MoShuShi swap applies to TongLing too.
+            // MoShuShi swap applies to TongLing too. After swapping, reuse TongLingShi's implementation
+            // (writes the result to initiator's TongLingShi.dictTongLingResult player property).
             target = MoShuShi.GetSwappedTarget(game, target);
-            var tongling_result = LangRenSha.GetPlayerProperty(game, target, TongLingShi.dictTongLingShiResult, "");
-            if (string.IsNullOrEmpty(tongling_result))
-            {
-                tongling_result = LangRenSha.GetPlayerProperty(game, target, LangRenSha.dictRole, "");
-            }
-            update[dictYuYanJiaResult] = tongling_result;
+            new TongLingShi().TongLing(game, initiator, target, update);
         }
 
         public GameActionResult GenerateStateDiff(Game game, Dictionary<string, object> update)
@@ -127,8 +126,9 @@ namespace ProcedureCore.LangRenSha
                     if (yuYanJiaAlive.Count > 0)
                     {
                         LangRenSha.SetPlayerProperty(game, yuYanJiaAlive[0], LangRenSha.dictSkillTransformation, (int)LangRenSha.SkillTransformation.None, update);
+                        LangRenSha.SetPlayerProperty(game, yuYanJiaAlive[0], dictYuYanJiaLastResult, "", update);
+                        LangRenSha.SetPlayerProperty(game, yuYanJiaAlive[0], TongLingShi.dictTongLingResult, "", update);
                     }
-                    update[dictYuYanJiaResult] = "";
                     LangRenSha.AdvanceAction(game, update);
                     return GameActionResult.Restart;
                 }
@@ -167,13 +167,14 @@ namespace ProcedureCore.LangRenSha
                             }
                             if (targets[0] > 0)
                             {
+                                var initiator = yuYanJiaAlive.Count > 0 ? yuYanJiaAlive[0] : 0;
                                 if (miceTagged || isEvil)
                                 {
-                                    TongLing(game, targets[0], update);
+                                    TongLing(game, initiator, targets[0], update);
                                 }
                                 else
                                 {
-                                    ChaYan(game, targets[0], update);
+                                    ChaYan(game, initiator, targets[0], update);
                                 }
                             }
                             // Reset skill transformation after action completes
@@ -209,7 +210,17 @@ namespace ProcedureCore.LangRenSha
                         update[UserAction.dictUserActionTargetsCount] = 1;
                         update[UserAction.dictUserActionTargetsHint] = (int)HintConstant.YuYanJia_Result;
                         update[UserAction.dictUserActionRole] = Name;
-                        update[UserAction.dictUserActionInfo] = $"{Game.GetGameDictionaryProperty(game, dictYuYanJiaResult, "")}";
+                        var lastResult = "";
+                        if (yuYanJiaAlive.Count > 0)
+                        {
+                            lastResult = LangRenSha.GetPlayerProperty(game, yuYanJiaAlive[0], dictYuYanJiaLastResult, "");
+                            if (string.IsNullOrEmpty(lastResult))
+                            {
+                                // TongLing path stores its result on TongLingShi.dictTongLingResult
+                                lastResult = LangRenSha.GetPlayerProperty(game, yuYanJiaAlive[0], TongLingShi.dictTongLingResult, "");
+                            }
+                        }
+                        update[UserAction.dictUserActionInfo] = $"{lastResult}";
                         return GameActionResult.Restart;
                     }
                     else

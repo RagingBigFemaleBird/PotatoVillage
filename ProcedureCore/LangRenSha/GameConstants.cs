@@ -56,24 +56,22 @@ namespace ProcedureCore.LangRenSha
         GhostBride_WitnessInfo = 42,
         GhostBride_WitnessCloseEyes = 43,
 
-        // === JiXieLang (44-47, 133-136) ===
+        // === JiXieLang (44-47, 133, 134, 136) - ActAgain_Info phase moved later (270-272) ===
         JiXieLang_OpenEyes = 44,
         JiXieLang_Act = 45,
         JiXieLang_Info = 46,
         JiXieLang_CloseEyes = 47,
         JiXieLang_ActAgain_OpenEyes = 133,
         JiXieLang_ActAgain = 134,
-        JiXieLang_ActAgain_Info = 135,
         JiXieLang_ActAgain_CloseEyes = 136,
 
-        // === ZhuangJiaLang (48-51, 137-140) - Acts after JiXieLang ===
+        // === ZhuangJiaLang (48-51, 137, 138, 140) - Acts after JiXieLang. ActAgain_Info phase moved later (275-277) ===
         ZhuangJiaLang_OpenEyes = 48,
         ZhuangJiaLang_Act = 49,
         ZhuangJiaLang_Info = 50,
         ZhuangJiaLang_CloseEyes = 51,
         ZhuangJiaLang_ActAgain_OpenEyes = 137,
         ZhuangJiaLang_ActAgain = 138,
-        ZhuangJiaLang_ActAgain_Info = 139,
         ZhuangJiaLang_ActAgain_CloseEyes = 140,
 
         // === YingZi (60-63) ===
@@ -165,10 +163,10 @@ namespace ProcedureCore.LangRenSha
         LangRen_CloseEyes = 131,
         LangRen_Kill = 220,
 
-        // === NvWu (139-141) ===
-        NvWu_OpenEyes = 139,
-        NvWu_Act = 140,
-        NvWu_CloseEyes = 141,
+        // === NvWu (142-144) - Moved from 139-141 to avoid collision with ZhuangJiaLang_ActAgain_CloseEyes (140) ===
+        NvWu_OpenEyes = 142,
+        NvWu_Act = 143,
+        NvWu_CloseEyes = 144,
 
         // === LieMoRen (145-147) - Day 1+ only ===
         LieMoRen_OpenEyes = 145,
@@ -209,6 +207,16 @@ namespace ProcedureCore.LangRenSha
         MeiYangYang_SacrificeOpenEyes = 247,
         MeiYangYang_SacrificeAction = 248,
         MeiYangYang_SacrificeCloseEyes = 249,
+
+        // === JiXieLang ActAgain Info (270-272) - Moved later: gun status (LieRen mimicry) depends on hunt-disabling skills having acted ===
+        JiXieLang_ActAgain_Info_OpenEyes = 270,
+        JiXieLang_ActAgain_Info = 271,
+        JiXieLang_ActAgain_Info_CloseEyes = 272,
+
+        // === ZhuangJiaLang ActAgain Info (275-277) - Moved later: gun status (LieRen mimicry) depends on hunt-disabling skills having acted ===
+        ZhuangJiaLang_ActAgain_Info_OpenEyes = 275,
+        ZhuangJiaLang_ActAgain_Info = 276,
+        ZhuangJiaLang_ActAgain_Info_CloseEyes = 277,
 
         // === AwkSheMengRen Judge Phase (285-287) - Just before LieRen ===
         AwkSheMengRen_JudgeOpenEyes = 285,

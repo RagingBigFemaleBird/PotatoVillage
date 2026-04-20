@@ -60,16 +60,18 @@ namespace ProcedureCore.LangRenSha
         }
 
         /// <summary>
-        /// TongLing reveals the exact role of the target player.
+        /// TongLing reveals the exact role of the target player. Result is stored on the
+        /// initiator's player dictionary so multiple roles (e.g. JiXieLang, ZhuangJiaLang)
+        /// that mimic this skill can each retrieve their own result independently.
         /// </summary>
-        public void TongLing(Game game, int target, Dictionary<string, object> update)
+        public void TongLing(Game game, int initiator, int target, Dictionary<string, object> update)
         {
             var tongling_result = LangRenSha.GetPlayerProperty(game, target, TongLingShi.dictTongLingShiResult, "");
             if (string.IsNullOrEmpty(tongling_result))
             {
                 tongling_result = LangRenSha.GetPlayerProperty(game, target, LangRenSha.dictRole, "");
             }
-            update[dictTongLingResult] = tongling_result;
+            LangRenSha.SetPlayerProperty(game, initiator, dictTongLingResult, tongling_result, update);
         }
 
         public GameActionResult GenerateStateDiff(Game game, Dictionary<string, object> update)
@@ -133,7 +135,8 @@ namespace ProcedureCore.LangRenSha
                                 return GameActionResult.NotExecuted;
                             }
                             // Always use TongLing to reveal exact role
-                            TongLing(game, targets[0], update);
+                            var initiator = tongLingShiAlive.Count > 0 ? tongLingShiAlive[0] : 0;
+                            TongLing(game, initiator, targets[0], update);
                             UserAction.EndUserAction(game, update, true);
                             LangRenSha.AdvanceAction(game, update);
                             return GameActionResult.Restart;
@@ -163,7 +166,10 @@ namespace ProcedureCore.LangRenSha
                         update[UserAction.dictUserActionTargetsCount] = 1;
                         update[UserAction.dictUserActionTargetsHint] = (int)HintConstant.TongLingShi_Result;
                         update[UserAction.dictUserActionRole] = Name;
-                        update[UserAction.dictUserActionInfo] = $"{Game.GetGameDictionaryProperty(game, dictTongLingResult, "")}";
+                        var lastResult = tongLingShiAlive.Count > 0
+                            ? LangRenSha.GetPlayerProperty(game, tongLingShiAlive[0], dictTongLingResult, "")
+                            : "";
+                        update[UserAction.dictUserActionInfo] = $"{lastResult}";
                         return GameActionResult.Restart;
                     }
                     else

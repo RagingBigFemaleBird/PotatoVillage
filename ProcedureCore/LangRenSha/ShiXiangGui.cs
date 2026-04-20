@@ -13,8 +13,6 @@ namespace ProcedureCore.LangRenSha
     /// </summary>
     public class ShiXiangGui : Role
     {
-        public static string dictShiXiangGuiResult = "shixianggui_result";
-
         private static Dictionary<string, object> roleDict = new()
         {
             { YuYanJia.dictYuYanJiaResult, 1 },
@@ -56,19 +54,6 @@ namespace ProcedureCore.LangRenSha
         public int ActionDuration
         {
             get { return 30; }
-        }
-
-        /// <summary>
-        /// TongLing reveals the exact role of the target player.
-        /// </summary>
-        public void TongLing(Game game, int target, Dictionary<string, object> update)
-        {
-            var tongling_result = LangRenSha.GetPlayerProperty(game, target, TongLingShi.dictTongLingShiResult, "");
-            if (string.IsNullOrEmpty(tongling_result))
-            {
-                tongling_result = LangRenSha.GetPlayerProperty(game, target, LangRenSha.dictRole, "");
-            }
-            update[dictShiXiangGuiResult] = tongling_result;
         }
 
         public GameActionResult GenerateStateDiff(Game game, Dictionary<string, object> update)
@@ -140,8 +125,9 @@ namespace ProcedureCore.LangRenSha
                             {
                                 return GameActionResult.NotExecuted;
                             }
-                            // Always use TongLing to reveal exact role
-                            TongLing(game, targets[0], update);
+                            // Always use TongLing to reveal exact role (reuses YuYanJia's implementation)
+                            var initiator = shiXiangGuiAlive.Count > 0 ? shiXiangGuiAlive[0] : 0;
+                            new YuYanJia().TongLing(game, initiator, targets[0], update);
                             UserAction.EndUserAction(game, update, true);
                             LangRenSha.AdvanceAction(game, update);
                             return GameActionResult.Restart;
@@ -171,7 +157,10 @@ namespace ProcedureCore.LangRenSha
                         update[UserAction.dictUserActionTargetsCount] = 1;
                         update[UserAction.dictUserActionTargetsHint] = (int)HintConstant.ShiXiangGui_Result;
                         update[UserAction.dictUserActionRole] = Name;
-                        update[UserAction.dictUserActionInfo] = $"{Game.GetGameDictionaryProperty(game, dictShiXiangGuiResult, "")}";
+                        var lastResult = shiXiangGuiAlive.Count > 0
+                            ? LangRenSha.GetPlayerProperty(game, shiXiangGuiAlive[0], YuYanJia.dictYuYanJiaLastResult, "")
+                            : "";
+                        update[UserAction.dictUserActionInfo] = $"{lastResult}";
                         return GameActionResult.Restart;
                     }
                     else

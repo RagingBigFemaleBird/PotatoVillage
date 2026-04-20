@@ -89,11 +89,9 @@ namespace ProcedureCore.LangRenSha
         public LangRenSha()
         {
             players = new List<(int, Role)>();
-            RegisterDeadPlayerHandler(GhostBride.HandleGhostBrideDeathSkill);
+            RegisterDeadPlayerHandler(LangRenSha.HandleLinkedDeathSkill);
             RegisterDeadPlayerHandler(LieRen.HandleHunterDeathSkill);
             RegisterDeadPlayerHandler(LangQiang.HandleLangQiangDeathSkill);
-            RegisterDeadPlayerHandler(Xiong.HandleXiongDeathSkill);
-            RegisterDeadPlayerHandler(LangMeiRen.HandleLangMeiRenDeathSkill);
             RegisterDeadPlayerHandler(FuChouZhe.HandleRevengerDeathSkill);
             RegisterDeadPlayerHandler(JiXieLang.HandleJiXieLangDeathSkill);
             RegisterDeadPlayerHandler(ZhuangJiaLang.HandleZhuangJiaLangDeathSkill);
@@ -144,6 +142,8 @@ namespace ProcedureCore.LangRenSha
                 "MoShuShi" => new MoShuShi(),
                 "GuiShuShi" => new GuiShuShi(),
                 "DingXuWangZi" => new DingXuWangZi(),
+                "AwkYuYanJia" => new AwkYuYanJia(),
+                "XunXiangMeiYing" => new XunXiangMeiYing(),
                 _ => throw new ArgumentException($"Not a role: {roleName}")
             };
         }
@@ -177,6 +177,11 @@ namespace ProcedureCore.LangRenSha
         public static string dictAboutToDie = "about_to_die";
         public static string dictDeadPlayerAction = "dead_player";
         public static string dictDeadSkillsProcessed = "dead_skills_processed";
+        // Tracks per-player which death-skill handler index to try NEXT for that
+        // dead player. Allows multiple death handlers (e.g. linked + LieRen + ...)
+        // to fire on the same dead player even when each one triggers a SkillUse
+        // / DeathHandling interrupt chain that returns control here.
+        public static string dictDeadSkillsHandlerIndex = "dead_skills_handler_index";
         public static string dictPlayerAlliance = "alliance";
         public static string dictPlayerFaction = "faction";
         public static string dictOriginalSheriff = "original_sheriff";
@@ -2393,15 +2398,11 @@ namespace ProcedureCore.LangRenSha
             var laoShu = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == "LaoShu");
             var laoShuPlayer = laoShu.Count > 0 ? laoShu[0] : -1;
             var sheMengRenTarget = Game.GetGameDictionaryProperty(game, SheMengRen.dictSheMengTarget, 0);
-            var xiongAlive = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == "Xiong" && (int)x[LangRenSha.dictAlive] == 1);
-            var xiongPlayer = xiongAlive.Count > 0 ? xiongAlive[0] : 0;
-            var xiongLinkPlayer = xiongPlayer > 0 ? LangRenSha.GetPlayerProperty(game, xiongPlayer, Xiong.dictXiongLink, 0) : 0;
-            var lmrAlive = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == "LangMeiRen" && (int)x[LangRenSha.dictAlive] == 1);
-            var lmrPlayer = lmrAlive.Count > 0 ? lmrAlive[0] : 0;
-            var lmrLinkPlayer = lmrPlayer > 0 ? LangRenSha.GetPlayerProperty(game, lmrPlayer, LangMeiRen.dictLangMeiRenLink, 0) : 0;
             var sheMengRenAlive = LangRenSha.GetPlayers(game, x => (string)x[LangRenSha.dictRole] == "SheMengRen" && (int)x[LangRenSha.dictAlive] == 1);
             var sheMengRenPlayer = sheMengRenAlive.Count > 0 ? sheMengRenAlive[0] : 0;
-            var ghostBrideLinkedTo = LangRenSha.GetPlayerProperty(game, target, GhostBride.dictLinkedTo, 0);
+            // Unified link key: any role that pulls another player down on death (Xiong,
+            // LangMeiRen, GhostBride couple, XunXiangMeiYing) writes to dictLinkedTo.
+            var linkedTo = LangRenSha.GetPlayerProperty(game, target, GhostBride.dictLinkedTo, 0);
 
             if (currentAboutToDie.Contains(target))
             {
@@ -2437,23 +2438,12 @@ namespace ProcedureCore.LangRenSha
                 ChainKill(game, target, laoShuPlayer, currentAboutToDie, update);
             }
 
-            if (target == xiongPlayer && xiongLinkPlayer > 0)
+            // Unified link death chain - if dead target is linked to someone, that
+            // linked player also dies and cannot use death skills.
+            if (linkedTo > 0 && !currentAboutToDie.Contains(linkedTo))
             {
-                LangRenSha.SetPlayerProperty(game, xiongLinkPlayer, LieRen.dictHuntingDisabled, 1, update);
-                ChainKill(game, target, xiongLinkPlayer, currentAboutToDie, update);
-            }
-
-            if (target == lmrPlayer && lmrLinkPlayer > 0)
-            {
-                LangRenSha.SetPlayerProperty(game, lmrLinkPlayer, LieRen.dictHuntingDisabled, 1, update);
-                ChainKill(game, target, lmrLinkPlayer, currentAboutToDie, update);
-            }
-
-            // GhostBride couple death link - if one dies, the other dies too (cannot hunter shoot)
-            if (ghostBrideLinkedTo > 0 && !currentAboutToDie.Contains(ghostBrideLinkedTo))
-            {
-                LangRenSha.SetPlayerProperty(game, ghostBrideLinkedTo, LieRen.dictHuntingDisabled, 1, update);
-                ChainKill(game, target, ghostBrideLinkedTo, currentAboutToDie, update);
+                LangRenSha.SetPlayerProperty(game, linkedTo, LieRen.dictHuntingDisabled, 1, update);
+                ChainKill(game, target, linkedTo, currentAboutToDie, update);
             }
 
         }
@@ -2598,6 +2588,7 @@ namespace ProcedureCore.LangRenSha
         {
             var deadPlayers = Game.GetGameDictionaryProperty(game, dictDeadPlayerAction, new List<int>());
             var skillsProcessed = Game.GetGameDictionaryProperty(game, dictDeadSkillsProcessed, new List<int>());
+            var handlerIndex = Game.GetGameDictionaryProperty(game, dictDeadSkillsHandlerIndex, new Dictionary<string, object>());
 
             // Find first dead player with unprocessed death skill
             var deadPlayerWithSkill = -1;
@@ -2610,20 +2601,49 @@ namespace ProcedureCore.LangRenSha
                 break;
             }
 
-            // If there's a dead player to process, ask handlers if they want to handle it
+            // If there's a dead player to process, ask handlers (starting from the
+            // last one we tried) if they want to handle it.
             if (deadPlayerWithSkill != -1)
             {
+                var key = deadPlayerWithSkill.ToString();
+                int startIdx = handlerIndex.ContainsKey(key) ? Convert.ToInt32(handlerIndex[key]) : 0;
 
-                // Try each handler to see if it wants to handle this dead player's skill
-                foreach (var handler in deadPlayerHandlers)
+                for (int i = startIdx; i < deadPlayerHandlers.Count; i++)
                 {
-                    var (handled, result) = handler(game, deadPlayerWithSkill, update);
+                    // Snapshot current speak so we can tell whether the handler
+                    // actually completed (set up an interrupt chain that changed
+                    // dictSpeak) versus is still mid-action waiting for user input.
+                    var speakBefore = update.ContainsKey(dictSpeak)
+                        ? Convert.ToInt32(update[dictSpeak])
+                        : Game.GetGameDictionaryProperty(game, dictSpeak, 0);
+
+                    var (handled, result) = deadPlayerHandlers[i](game, deadPlayerWithSkill, update);
+
+                    var speakAfter = update.ContainsKey(dictSpeak)
+                        ? Convert.ToInt32(update[dictSpeak])
+                        : speakBefore;
+
+                    // Advance the per-player handler index when:
+                    //   * the handler declined (handled == false), so we move on, OR
+                    //   * the handler completed and queued the SkillUseAnnouncement /
+                    //     DeathHandling interrupt chain (speak changed away from
+                    //     DeadPlayerSkillsProcessing), so when control returns we
+                    //     resume from the NEXT handler instead of re-running this one.
+                    // If a handler claims the player but is still mid-action (e.g.
+                    // LieRen waiting for the user to pick a target) it returns
+                    // (true, *) without changing dictSpeak; in that case we deliberately
+                    // do NOT advance, so the same handler is invoked again next cycle.
+                    if (!handled || speakAfter != speakBefore)
+                    {
+                        handlerIndex[key] = i + 1;
+                        update[dictDeadSkillsHandlerIndex] = handlerIndex;
+                    }
+
                     if (handled)
                         return result;
-
                 }
 
-                // Mark this player's skill as processed
+                // All handlers tried for this dead player - mark as fully processed.
                 skillsProcessed.Add(deadPlayerWithSkill);
                 update[dictDeadSkillsProcessed] = skillsProcessed;
 
@@ -2634,9 +2654,98 @@ namespace ProcedureCore.LangRenSha
             {
                 // All dead player skills have been processed, clear the tracking and move on
                 update[dictDeadSkillsProcessed] = null;
+                update[dictDeadSkillsHandlerIndex] = null;
                 update[dictSpeak] = 99;
                 return GameActionResult.Restart;
             }
+        }
+
+        /// <summary>
+        /// Builds the standard SkillUse -> DeathHandling -> resume(98) interrupt chain
+        /// used by every death handler that triggers a follow-up kill (LieRen, LangQiang,
+        /// FuChouZhe, JiXieLang, ZhuangJiaLang, unified Linked-death). This deliberately
+        /// does NOT save dictDeadSkillsProcessed / dictDeadSkillsHandlerIndex inside the
+        /// inner interrupt: skip-tracking is owned by HandleDeadPlayerSkills, which has
+        /// already advanced the per-player handler index. Saving them here would re-mark
+        /// the dead player as processed and cause subsequent handlers (e.g. linked + hunter)
+        /// to be skipped on the same player.
+        /// </summary>
+        public static void SetupSkillUseInterrupt(Game game, int deadPlayer, List<int> targets, string skillUse, string skillResult, Dictionary<string, object> update)
+        {
+            var currentAboutToDie = Game.GetGameDictionaryProperty(game, dictAboutToDie, new List<int>());
+            var currentInterrupt = Game.GetGameDictionaryProperty(game, dictInterrupt, new Dictionary<string, object>());
+            var currentDeadPlayers = Game.GetGameDictionaryProperty(game, dictDeadPlayerAction, new List<int>());
+
+            // Inner interrupt: return to continue processing dead player skills
+            var deathHandlingInterrupt = new Dictionary<string, object>();
+            deathHandlingInterrupt[dictSpeak] = (int)SpeakConstant.DeadPlayerSkillsProcessing;
+            deathHandlingInterrupt[dictInterrupt] = currentInterrupt;
+            // Save death-list / aboutToDie so we can resume the original wave after the
+            // chained kills are processed. Intentionally NOT restoring dictDeadSkillsProcessed
+            // or dictDeadSkillsHandlerIndex - those track handler progress and must persist.
+            deathHandlingInterrupt[dictDeadPlayerAction] = currentDeadPlayers;
+            deathHandlingInterrupt[dictAboutToDie] = currentAboutToDie;
+
+            // Outer interrupt: skill use announcement -> death handling
+            var skillAnnouncementInterrupt = new Dictionary<string, object>();
+            skillAnnouncementInterrupt[dictSpeak] = (int)SpeakConstant.DeathHandlingInterrupt;
+            skillAnnouncementInterrupt[dictInterrupt] = deathHandlingInterrupt;
+
+            update[dictSkillUseFrom] = deadPlayer;
+            update[dictSkillUseTo] = targets;
+            update[dictSkillUse] = skillUse;
+            update[dictSkillUseResult] = skillResult;
+
+            update[dictInterrupt] = skillAnnouncementInterrupt;
+            update[dictSpeak] = (int)SpeakConstant.SkillUseAnnouncement;
+            UserAction.EndUserAction(game, update, true);
+        }
+
+        /// <summary>
+        /// Unified death handler for all roles that pull another player down on death.
+        /// Replaces the previous separate HandleXiongDeathSkill / HandleLangMeiRenDeathSkill /
+        /// HandleGhostBrideDeathSkill handlers - all of them now express their link via the
+        /// single per-player <see cref="GhostBride.dictLinkedTo"/> key (set on the source for
+        /// one-way links like Xiong/LangMeiRen, set on both sides for bidirectional links
+        /// like GhostBride couple and XunXiangMeiYing).
+        /// </summary>
+        public static (bool, GameActionResult) HandleLinkedDeathSkill(Game game, int deadPlayer, Dictionary<string, object> update)
+        {
+            var linkedTarget = GetPlayerProperty(game, deadPlayer, GhostBride.dictLinkedTo, 0);
+            if (linkedTarget <= 0)
+            {
+                return (false, GameActionResult.NotExecuted);
+            }
+
+            var targetAlive = GetPlayerProperty(game, linkedTarget, dictAlive, 0) == 1;
+            if (!targetAlive)
+            {
+                return (false, GameActionResult.NotExecuted);
+            }
+
+            var aboutToDie = Game.GetGameDictionaryProperty(game, dictAboutToDie, new List<int>());
+            if (aboutToDie.Contains(linkedTarget))
+            {
+                return (false, GameActionResult.NotExecuted);
+            }
+
+            // Mark the linked target as about to die and disable its death skills
+            // (e.g. hunter cannot shoot when killed via the link).
+            MarkPlayerAboutToDie(game, linkedTarget, update);
+            SetPlayerProperty(game, linkedTarget, LieRen.dictHuntingDisabled, 1, update);
+
+            // If this link was created by a one-shot linker (currently XunXiangMeiYing),
+            // notify the originator that its link has now been consumed so it cannot
+            // re-link on subsequent nights. The dictLinkedFrom key is set by the
+            // originator on both linked players when the link is established.
+            var linkedFrom = GetPlayerProperty(game, deadPlayer, GhostBride.dictLinkedFrom, 0);
+            if (linkedFrom > 0)
+            {
+                SetPlayerProperty(game, linkedFrom, XunXiangMeiYing.dictLinkUsed, 1, update);
+            }
+
+            SetupSkillUseInterrupt(game, deadPlayer, new List<int> { linkedTarget }, "linked", "1", update);
+            return (true, GameActionResult.Restart);
         }
     }
 }

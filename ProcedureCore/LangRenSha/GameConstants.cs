@@ -133,6 +133,11 @@ namespace ProcedureCore.LangRenSha
         WuZhe_CloseEyes = 101,
         WuZhe_Dance = 150,
 
+        // === XunXiangMeiYing (102-104) - Acts before JiaMian, succession-2 wolf ===
+        XunXiangMeiYing_OpenEyes = 102,
+        XunXiangMeiYing_Act = 103,
+        XunXiangMeiYing_CloseEyes = 104,
+
         // === JiaMian (109-112) ===
         JiaMian_OpenEyes = 109,
         JiaMian_ChaYan = 110,
@@ -185,10 +190,16 @@ namespace ProcedureCore.LangRenSha
         TongLingShi_Result = 175,
         TongLingShi_CloseEyes = 176,
 
-        // === Xiong (180-182, 310) ===
-        Xiong_OpenEyes = 180,
-        Xiong_Act = 181,
-        Xiong_CloseEyes = 182,
+        // === AwkYuYanJia (177-179, 183) - Acts after YuYanJia/TongLingShi ===
+        AwkYuYanJia_OpenEyes = 177,
+        AwkYuYanJia_ChaYan = 178,
+        AwkYuYanJia_Result = 179,
+        AwkYuYanJia_CloseEyes = 180,
+
+        // === Xiong (181-183, 310) ===
+        Xiong_OpenEyes = 181,
+        Xiong_Act = 182,
+        Xiong_CloseEyes = 183,
         Xiong_BarkCheck = 310,
 
         // === ShouMuRen (185-188) - Day 1+ only, receives info about voted out player ===
@@ -361,6 +372,13 @@ namespace ProcedureCore.LangRenSha
 
         // === GuiShuShi (32) ===
         GuiShuShi_Swap = 32,
+
+        // === AwkYuYanJia (33-34) ===
+        AwkYuYanJia_ChaYan = 33,
+        AwkYuYanJia_Result = 34,
+
+        // === XunXiangMeiYing (35) ===
+        XunXiangMeiYing_Act = 35,
 
         // === Xiong (9) ===
         Xiong_Act = 9,

@@ -258,46 +258,15 @@ namespace ProcedureCore.LangRenSha
                         var targets = (List<int>)input[deadPlayer.ToString()];
                         if (targets.Count > 0 && targets[0] > 0)
                         {
-                            var currentAboutToDie = Game.GetGameDictionaryProperty(game, LangRenSha.dictAboutToDie, new List<int>());
                             var target = targets[0];
                             LangRenSha.MarkPlayerAboutToDie(game, target, update);
                             LangRenSha.SetPlayerProperty(game, deadPlayer, dictHuntingDisabled, 1, update);
 
-                            // Mark this hunter's skill as processed before interrupting
-                            var skillsProcessed = Game.GetGameDictionaryProperty(game, LangRenSha.dictDeadSkillsProcessed, new List<int>());
-                            if (!skillsProcessed.Contains(deadPlayer))
-                            {
-                                skillsProcessed.Add(deadPlayer);
-                                update[LangRenSha.dictDeadSkillsProcessed] = skillsProcessed;
-                            }
-
-                            // Set up interrupt chain: SkillUseAnnouncement -> DeathHandling -> Continue processing
-                            var currentInterrupt = Game.GetGameDictionaryProperty(game, LangRenSha.dictInterrupt, new Dictionary<string, object>());
-                            var currentDeadPlayers = Game.GetGameDictionaryProperty(game, LangRenSha.dictDeadPlayerAction, new List<int>());
-
-                            // Inner interrupt: return to continue processing dead player skills
-                            var deathHandlingInterrupt = new Dictionary<string, object>();
-                            deathHandlingInterrupt[LangRenSha.dictSpeak] = 98; // Return to continue processing dead player skills
-                            deathHandlingInterrupt[LangRenSha.dictInterrupt] = currentInterrupt;
-
-                            // Save death-related fields for restoration
-                            deathHandlingInterrupt[LangRenSha.dictDeadPlayerAction] = currentDeadPlayers;
-                            deathHandlingInterrupt[LangRenSha.dictDeadSkillsProcessed] = skillsProcessed;
-                            deathHandlingInterrupt[LangRenSha.dictAboutToDie] = currentAboutToDie;
-
-                            // Outer interrupt: skill use announcement -> death handling
-                            var skillAnnouncementInterrupt = new Dictionary<string, object>();
-                            skillAnnouncementInterrupt[LangRenSha.dictSpeak] = (int)SpeakConstant.DeathHandlingInterrupt; // Go to death handling after announcement
-                            skillAnnouncementInterrupt[LangRenSha.dictInterrupt] = deathHandlingInterrupt;
-
-                            // Set up skill use announcement fields
-                            update[LangRenSha.dictSkillUseFrom] = deadPlayer;
-                            update[LangRenSha.dictSkillUseTo] = new List<int> { target };
-                            update[LangRenSha.dictSkillUse] = "hunted";
-                            update[LangRenSha.dictSkillUseResult] = "1"; // Succeeded
-
-                            update[LangRenSha.dictInterrupt] = skillAnnouncementInterrupt;
-                            update[LangRenSha.dictSpeak] = (int)SpeakConstant.SkillUseAnnouncement;
+                            // Skill-processed tracking is owned by HandleDeadPlayerSkills via
+                            // its per-player handler index, so we no longer mark this player
+                            // as processed here. Doing so would prevent any subsequent death
+                            // handlers (linked, etc.) from running on the same player.
+                            LangRenSha.SetupSkillUseInterrupt(game, deadPlayer, new List<int> { target }, "hunted", "1", update);
                             UserAction.EndUserAction(game, update, true);
 
                             return (true, GameActionResult.Restart);

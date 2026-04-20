@@ -253,7 +253,7 @@ namespace PotatoVillage
                 roleName == "DaMao" || roleName == "JiXieLang" || roleName == "LangMeiRen" ||
                 roleName == "HongTaiLang" || roleName == "TuFu" || roleName == "AwkShiXiangGui" ||
                 roleName == "ShiXiangGui" || roleName == "XueYue" || roleName == "MengYan" ||
-                roleName == "ZhuangJiaLang" || roleName == "GuiShuShi")
+                roleName == "ZhuangJiaLang" || roleName == "GuiShuShi" || roleName == "XunXiangMeiYing")
             {
                 return Color.FromArgb("#8B0000");
             }
@@ -263,7 +263,8 @@ namespace PotatoVillage
                 roleName == "LaoShu" || roleName == "SheMengRen" || roleName == "Xiong" ||
                 roleName == "Thief" || roleName == "MengMianRen" || roleName == "ShouWei" ||
                 roleName == "MeiYangYang" || roleName == "LieMoRen" || roleName == "AwkSheMengRen" ||
-                roleName == "ShouMuRen" || roleName == "MoShuShi" || roleName == "DingXuWangZi")
+                roleName == "ShouMuRen" || roleName == "MoShuShi" || roleName == "DingXuWangZi" ||
+                roleName == "AwkYuYanJia")
             {
                 return Color.FromArgb("#1E3A8A");
             }

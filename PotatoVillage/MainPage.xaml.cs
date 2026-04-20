@@ -71,6 +71,8 @@ namespace PotatoVillage
         private bool selectedMoShuShi = false;
         private bool selectedGuiShuShi = false;
         private bool selectedDingXuWangZi = false;
+        private bool selectedAwkYuYanJia = false;
+        private bool selectedXunXiangMeiYing = false;
         private HashSet<string> selectedPingMin = new();
 
         // Dictionary to store button references for template application
@@ -402,6 +404,8 @@ namespace PotatoVillage
                    selectedMoShuShi ||
                    selectedGuiShuShi ||
                    selectedDingXuWangZi ||
+                   selectedAwkYuYanJia ||
+                   selectedXunXiangMeiYing ||
                    selectedPingMin.Count > 0;
         }
 
@@ -849,6 +853,8 @@ namespace PotatoVillage
             selectedAwkSheMengRen = false;
             selectedShiXiangGui = false;
             selectedXueYue = false;
+            selectedAwkYuYanJia = false;
+            selectedXunXiangMeiYing = false;
             selectedPingMin.Clear();
             roleButtons.Clear();
         }
@@ -932,6 +938,7 @@ namespace PotatoVillage
             specialLangRenBtns3.Children.Add(CreateRoleButton(localization.GetString("MengYan", "MengYan"), "MengYan", () => selectedMengYan, v => selectedMengYan = v));
             specialLangRenBtns3.Children.Add(CreateRoleButton(localization.GetString("JiaMian", "JiaMian"), "JiaMian", () => selectedJiaMian, v => selectedJiaMian = v));
             specialLangRenBtns3.Children.Add(CreateRoleButton(localization.GetString("GuiShuShi", "GuiShuShi"), "GuiShuShi", () => selectedGuiShuShi, v => selectedGuiShuShi = v));
+            specialLangRenBtns3.Children.Add(CreateRoleButton(localization.GetString("XunXiangMeiYing", "XunXiangMeiYing"), "XunXiangMeiYing", () => selectedXunXiangMeiYing, v => selectedXunXiangMeiYing = v));
             mainStack.Children.Add(specialLangRenBtns3);
             mainStack.Children.Add(CreateCategorySeparator());
 
@@ -967,6 +974,7 @@ namespace PotatoVillage
             godBtns4.Children.Add(CreateRoleButton(localization.GetString("AwkSheMengRen", "AwkSheMengRen"), "AwkSheMengRen", () => selectedAwkSheMengRen, v => selectedAwkSheMengRen = v));
             godBtns4.Children.Add(CreateRoleButton(localization.GetString("MoShuShi", "MoShuShi"), "MoShuShi", () => selectedMoShuShi, v => selectedMoShuShi = v));
             godBtns4.Children.Add(CreateRoleButton(localization.GetString("DingXuWangZi", "DingXuWangZi"), "DingXuWangZi", () => selectedDingXuWangZi, v => selectedDingXuWangZi = v));
+            godBtns4.Children.Add(CreateRoleButton(localization.GetString("AwkYuYanJia", "AwkYuYanJia"), "AwkYuYanJia", () => selectedAwkYuYanJia, v => selectedAwkYuYanJia = v));
             mainStack.Children.Add(godBtns4);
             mainStack.Children.Add(CreateCategorySeparator());
 
@@ -1239,6 +1247,8 @@ namespace PotatoVillage
                 case "ShiXiangGui": selectedShiXiangGui = selected; break;
                 case "XueYue": selectedXueYue = selected; break;
                 case "DingXuWangZi": selectedDingXuWangZi = selected; break;
+                case "AwkYuYanJia": selectedAwkYuYanJia = selected; break;
+                case "XunXiangMeiYing": selectedXunXiangMeiYing = selected; break;
             }
         }
 
@@ -1358,6 +1368,8 @@ namespace PotatoVillage
             if (selectedMoShuShi) roleDict["MoShuShi"] = 1;
             if (selectedGuiShuShi) roleDict["GuiShuShi"] = 1;
             if (selectedDingXuWangZi) roleDict["DingXuWangZi"] = 1;
+            if (selectedAwkYuYanJia) roleDict["AwkYuYanJia"] = 1;
+            if (selectedXunXiangMeiYing) roleDict["XunXiangMeiYing"] = 1;
             if (selectedPingMin.Count > 0) roleDict["PingMin"] = selectedPingMin.Count;
 
             return roleDict;

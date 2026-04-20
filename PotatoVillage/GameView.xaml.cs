@@ -95,6 +95,8 @@ namespace PotatoVillage
             { 62, LangRenSuccessionHandler },
             { 6, JiaMianInfoHandler },
             { 7, YuYanJiaInfoHandler },
+            { 34, YuYanJiaInfoHandler },
+            { 35, XunXiangMeiYingInfoHandler },
             { 76, GiftedPoisonHandler },
             { 79, YingZiInfoHandler },
             { 82, FuChouZheAllianceInfoHandler },
@@ -353,6 +355,16 @@ namespace PotatoVillage
             var winnerName = LocalizationManager.Instance.GetString(userInfo, userInfo);
             var txt = LocalizationManager.Instance.GetString("game_winner", "{0} wins!");
             return txt.Replace("{0}", winnerName);
+        }
+
+        private static string XunXiangMeiYingInfoHandler(string userInfo, string userInfo2)
+        {
+            var localization = LocalizationManager.Instance;
+            var hint = localization.GetString("xunxiangmeiying_act", "Select 2 players to link bidirectionally:");
+            if (string.IsNullOrEmpty(userInfo))
+                return hint;
+            var teammate = localization.GetString("xunxiangmeiying_teammate", "One of your wolf teammates: [c:green]{0}[/c]");
+            return hint + ";" + teammate.Replace("{0}", userInfo);
         }
 
         private static string LangRenSuccessionHandler(string userInfo, string userInfo2)
@@ -1062,6 +1074,9 @@ namespace PotatoVillage
                 30 => "shixianggui_result",
                 31 => "moshushi_swap",
                 32 => "guishushi_swap",
+                33 => "awkyuyanjia_chayan",
+                34 => "awkyuyanjia_result",
+                35 => "xunxiangmeiying_act",
                 50 => "open_eyes",
                 51 => "close_eyes",
                 52 => "lucky_one_open_eyes",

@@ -14,6 +14,11 @@ namespace ProcedureCore.LangRenSha
     public class GhostBride : Role
     {
         public static string dictLinkedTo = "LinkedTo";
+        // Optional: identifies the player whose skill created this link (e.g.
+        // XunXiangMeiYing). When the link triggers a chain death, the unified
+        // HandleLinkedDeathSkill notifies the originator so it can mark its
+        // one-shot link as consumed.
+        public static string dictLinkedFrom = "LinkedFrom";
         public static string dictWitness = "witness";
         public static string dictBridePlayer = "bride_player";
         public static string dictGroomPlayer = "groom_player";
@@ -466,58 +471,10 @@ namespace ProcedureCore.LangRenSha
         }
 
         /// <summary>
-        /// Death handler for GhostBride couple - if one dies, the other dies too (cannot shoot gun).
-        /// This handles day-time deaths (vote out, etc). Night deaths are handled by ChainKill.
+        /// GhostBride couple's death-link is now handled by the unified
+        /// <see cref="LangRenSha.HandleLinkedDeathSkill"/> via the shared
+        /// <see cref="dictLinkedTo"/> player property which is set on both
+        /// the bride and the groom by <see cref="HandleChooseGroom"/>.
         /// </summary>
-        public static (bool, GameActionResult) HandleGhostBrideDeathSkill(Game game, int deadPlayer, Dictionary<string, object> update)
-        {
-            // Check if the dead player is linked to someone (part of GhostBride couple)
-            var linkedTo = LangRenSha.GetPlayerProperty(game, deadPlayer, dictLinkedTo, 0);
-
-            if (linkedTo <= 0)
-            {
-                // Not part of a couple, don't handle
-                return (false, GameActionResult.NotExecuted);
-            }
-
-            // Check if the linked player is still alive
-            var linkedAlive = LangRenSha.GetPlayerProperty(game, linkedTo, LangRenSha.dictAlive, 0);
-            if (linkedAlive != 1)
-            {
-                // Linked player already dead, nothing to do
-                return (false, GameActionResult.NotExecuted);
-            }
-
-            var currentAboutToDie = Game.GetGameDictionaryProperty(game, LangRenSha.dictAboutToDie, new List<int>());
-            LangRenSha.MarkPlayerAboutToDie(game, linkedTo, update);
-            LangRenSha.SetPlayerProperty(game, linkedTo, LieRen.dictHuntingDisabled, 1, update);
-
-            // Mark this hunter's skill as processed before interrupting
-            var skillsProcessed = Game.GetGameDictionaryProperty(game, LangRenSha.dictDeadSkillsProcessed, new List<int>());
-            if (!skillsProcessed.Contains(deadPlayer))
-            {
-                skillsProcessed.Add(deadPlayer);
-                update[LangRenSha.dictDeadSkillsProcessed] = skillsProcessed;
-            }
-
-            // Set up interrupt to go through death handling (state 97)
-            var currentInterrupt = Game.GetGameDictionaryProperty(game, LangRenSha.dictInterrupt, new Dictionary<string, object>());
-            var currentDeadPlayers = Game.GetGameDictionaryProperty(game, LangRenSha.dictDeadPlayerAction, new List<int>());
-
-            var newInterrupt = new Dictionary<string, object>();
-            newInterrupt[LangRenSha.dictSpeak] = 98; // Return to continue processing dead player skills
-            newInterrupt[LangRenSha.dictInterrupt] = currentInterrupt;
-
-            // Save death-related fields for restoration
-            newInterrupt[LangRenSha.dictDeadPlayerAction] = currentDeadPlayers;
-            newInterrupt[LangRenSha.dictDeadSkillsProcessed] = skillsProcessed;
-            newInterrupt[LangRenSha.dictAboutToDie] = currentAboutToDie;
-
-            update[LangRenSha.dictInterrupt] = newInterrupt;
-            update[LangRenSha.dictSpeak] = 97;
-            UserAction.EndUserAction(game, update, true);
-
-            return (true, GameActionResult.Restart);
-        }
     }
 }

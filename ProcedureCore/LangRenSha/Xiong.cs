@@ -48,7 +48,8 @@ namespace ProcedureCore.LangRenSha
         }
 
         // Dictionary keys for Xiong state
-        public static string dictXiongLink = "xiong_link";           // Player property: linked target
+        // Xiong's link target is now stored under the unified GhostBride.dictLinkedTo
+        // key so that the central HandleLinkedDeathSkill / ChainKill paths handle it.
         public static string dictXiongBark = "xiong_bark";           // Global: did Xiong bark today? (1 = barked, 2 = not barked)
 
         public GameActionResult GenerateStateDiff(Game game, Dictionary<string, object> update)
@@ -90,7 +91,7 @@ namespace ProcedureCore.LangRenSha
                 }
 
                 var alivePlayers = LangRenSha.GetPlayers(game, x => (int)x[LangRenSha.dictAlive] == 1);
-                var lastLink = xiongPlayer > 0 ? LangRenSha.GetPlayerProperty(game, xiongPlayer, dictXiongLink, 0) : 0;
+                var lastLink = xiongPlayer > 0 ? LangRenSha.GetPlayerProperty(game, xiongPlayer, GhostBride.dictLinkedTo, 0) : 0;
                 if (lastLink > 0)
                 {
                     alivePlayers.Remove(lastLink); // Cannot link same target as last time
@@ -128,8 +129,8 @@ namespace ProcedureCore.LangRenSha
                                 // Apply MoShuShi swap (if any) so the link follows the actual target.
                                 var actualTarget = MoShuShi.GetSwappedTarget(game, targets[0]);
 
-                                // Store the linked target as player property
-                                LangRenSha.SetPlayerProperty(game, xiongPlayer, dictXiongLink, actualTarget, update);
+                                // Store the linked target on the unified dictLinkedTo key.
+                                LangRenSha.SetPlayerProperty(game, xiongPlayer, GhostBride.dictLinkedTo, actualTarget, update);
 
                                 UserAction.EndUserAction(game, update, true);
                                 LangRenSha.AdvanceAction(game, update);
@@ -223,91 +224,6 @@ namespace ProcedureCore.LangRenSha
 
             bool shouldBark = (leftAlliance == 2 || rightAlliance == 2);
             update[dictXiongBark] = shouldBark ? 1 : 2;
-        }
-
-        /// <summary>
-        /// Death handler for Xiong - when Xiong dies, the linked player also dies.
-        /// The linked player cannot use death skills (e.g., hunter cannot shoot).
-        /// </summary>
-        /// <param name="game">The game instance</param>
-        /// <param name="deadPlayer">The player who just died</param>
-        /// <param name="update">The update dictionary</param>
-        public static (bool, GameActionResult) HandleXiongDeathSkill(Game game, int deadPlayer, Dictionary<string, object> update)
-        {
-            // Check if the dead player is Xiong
-            var isXiong = LangRenSha.GetPlayerProperty(game, deadPlayer, LangRenSha.dictRole, "") == "Xiong";
-            if (!isXiong)
-            {
-                return (false, GameActionResult.NotExecuted);
-            }
-
-            // Get the linked target
-            var linkedTarget = LangRenSha.GetPlayerProperty(game, deadPlayer, dictXiongLink, 0);
-            if (linkedTarget <= 0)
-            {
-                return (false, GameActionResult.NotExecuted);
-            }
-
-            // Check if linked target is still alive
-            var targetAlive = LangRenSha.GetPlayerProperty(game, linkedTarget, LangRenSha.dictAlive, 0) == 1;
-            if (!targetAlive)
-            {
-                return (false, GameActionResult.NotExecuted);
-            }
-
-            // Check if linked target is already about to die
-            var aboutToDie = Game.GetGameDictionaryProperty(game, LangRenSha.dictAboutToDie, new List<int>());
-            if (aboutToDie.Contains(linkedTarget))
-            {
-                return (false, GameActionResult.NotExecuted);
-            }
-
-            // Mark the linked target as about to die
-            LangRenSha.MarkPlayerAboutToDie(game, linkedTarget, update);
-
-            // Disable death skills for the linked target (e.g., hunter cannot shoot)
-            LangRenSha.SetPlayerProperty(game, linkedTarget, LieRen.dictHuntingDisabled, 1, update);
-
-            var currentAboutToDie = Game.GetGameDictionaryProperty(game, LangRenSha.dictAboutToDie, new List<int>());
-
-            var skillsProcessed = Game.GetGameDictionaryProperty(game, LangRenSha.dictDeadSkillsProcessed, new List<int>());
-            if (!skillsProcessed.Contains(deadPlayer))
-            {
-                skillsProcessed.Add(deadPlayer);
-                update[LangRenSha.dictDeadSkillsProcessed] = skillsProcessed;
-            }
-
-            // Set up interrupt chain: SkillUseAnnouncement -> DeathHandling -> Continue processing
-            var currentInterrupt = Game.GetGameDictionaryProperty(game, LangRenSha.dictInterrupt, new Dictionary<string, object>());
-            var currentDeadPlayers = Game.GetGameDictionaryProperty(game, LangRenSha.dictDeadPlayerAction, new List<int>());
-
-            // Inner interrupt: return to continue processing dead player skills
-            var deathHandlingInterrupt = new Dictionary<string, object>();
-            deathHandlingInterrupt[LangRenSha.dictSpeak] = 98; // Return to continue processing dead player skills
-            deathHandlingInterrupt[LangRenSha.dictInterrupt] = currentInterrupt;
-
-            // Save death-related fields for restoration
-            deathHandlingInterrupt[LangRenSha.dictDeadPlayerAction] = currentDeadPlayers;
-            deathHandlingInterrupt[LangRenSha.dictDeadSkillsProcessed] = skillsProcessed;
-            deathHandlingInterrupt[LangRenSha.dictAboutToDie] = currentAboutToDie;
-
-            // Outer interrupt: skill use announcement -> death handling
-            var skillAnnouncementInterrupt = new Dictionary<string, object>();
-            skillAnnouncementInterrupt[LangRenSha.dictSpeak] = (int)SpeakConstant.DeathHandlingInterrupt; // Go to death handling after announcement
-            skillAnnouncementInterrupt[LangRenSha.dictInterrupt] = deathHandlingInterrupt;
-
-            // Set up skill use announcement fields
-            update[LangRenSha.dictSkillUseFrom] = deadPlayer;
-            update[LangRenSha.dictSkillUseTo] = new List<int> { linkedTarget };
-            update[LangRenSha.dictSkillUse] = "linked";
-            update[LangRenSha.dictSkillUseResult] = "1"; // Succeeded
-
-            update[LangRenSha.dictInterrupt] = skillAnnouncementInterrupt;
-            update[LangRenSha.dictSpeak] = (int)SpeakConstant.SkillUseAnnouncement;
-            UserAction.EndUserAction(game, update, true);
-
-
-            return (true, GameActionResult.Restart);
         }
 
     }

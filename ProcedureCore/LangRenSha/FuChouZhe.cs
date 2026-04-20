@@ -236,7 +236,6 @@ namespace ProcedureCore.LangRenSha
                         var targets = (List<int>)input[deadPlayer.ToString()];
                         if (targets.Count > 0 && targets[0] > 0)
                         {
-                            var currentAboutToDie = Game.GetGameDictionaryProperty(game, LangRenSha.dictAboutToDie, new List<int>());
                             var target = targets[0];
                             var alliance = LangRenSha.GetPlayerProperty(game, deadPlayer, LangRenSha.dictPlayerAlliance, 0);
                             var targetAlliance = LangRenSha.GetPlayerProperty(game, target, LangRenSha.dictPlayerAlliance, 0);
@@ -247,42 +246,8 @@ namespace ProcedureCore.LangRenSha
                             }
                             LangRenSha.SetPlayerProperty(game, deadPlayer, dictRevengeUsed, 1, update);
 
-                            // Mark this revenger's skill as processed before interrupting
-                            var skillsProcessed = Game.GetGameDictionaryProperty(game, LangRenSha.dictDeadSkillsProcessed, new List<int>());
-                            if (!skillsProcessed.Contains(deadPlayer))
-                            {
-                                skillsProcessed.Add(deadPlayer);
-                                update[LangRenSha.dictDeadSkillsProcessed] = skillsProcessed;
-                            }
-
-                            // Set up interrupt chain: SkillUseAnnouncement -> DeathHandling -> Continue processing
-                            var currentInterrupt = Game.GetGameDictionaryProperty(game, LangRenSha.dictInterrupt, new Dictionary<string, object>());
-                            var currentDeadPlayers = Game.GetGameDictionaryProperty(game, LangRenSha.dictDeadPlayerAction, new List<int>());
-
-                            // Inner interrupt: return to continue processing dead player skills
-                            var deathHandlingInterrupt = new Dictionary<string, object>();
-                            deathHandlingInterrupt[LangRenSha.dictSpeak] = 98; // Return to continue processing dead player skills
-                            deathHandlingInterrupt[LangRenSha.dictInterrupt] = currentInterrupt;
-
-                            // Save death-related fields for restoration
-                            deathHandlingInterrupt[LangRenSha.dictDeadPlayerAction] = currentDeadPlayers;
-                            deathHandlingInterrupt[LangRenSha.dictDeadSkillsProcessed] = skillsProcessed;
-                            deathHandlingInterrupt[LangRenSha.dictAboutToDie] = currentAboutToDie;
-
-                            // Outer interrupt: skill use announcement -> death handling
-                            var skillAnnouncementInterrupt = new Dictionary<string, object>();
-                            skillAnnouncementInterrupt[LangRenSha.dictSpeak] = (int)SpeakConstant.DeathHandlingInterrupt; // Go to death handling after announcement
-                            skillAnnouncementInterrupt[LangRenSha.dictInterrupt] = deathHandlingInterrupt;
-
-                            // Set up skill use announcement fields
-                            update[LangRenSha.dictSkillUseFrom] = deadPlayer;
-                            update[LangRenSha.dictSkillUseTo] = new List<int> { target };
-                            update[LangRenSha.dictSkillUse] = "revenged";
-                            update[LangRenSha.dictSkillUseResult] = revengeSucceeded ? "1" : "0"; // Success depends on alliance
-
-                            update[LangRenSha.dictInterrupt] = skillAnnouncementInterrupt;
-                            update[LangRenSha.dictSpeak] = (int)SpeakConstant.SkillUseAnnouncement;
-                            UserAction.EndUserAction(game, update, true);
+                            // Skill-processed tracking owned by HandleDeadPlayerSkills.
+                            LangRenSha.SetupSkillUseInterrupt(game, deadPlayer, new List<int> { target }, "revenged", revengeSucceeded ? "1" : "0", update);
 
                             return (true, GameActionResult.Restart);
                         }

@@ -159,6 +159,8 @@ namespace Server
                 { "MoShuShi", new MoShuShi() },
                 { "GuiShuShi", new GuiShuShi() },
                 { "DingXuWangZi", new DingXuWangZi() },
+                { "AwkYuYanJia", new AwkYuYanJia() },
+                { "XunXiangMeiYing", new XunXiangMeiYing() },
             };
 
             if (!roleDict.ContainsKey("LangRen"))

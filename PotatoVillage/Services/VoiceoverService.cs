@@ -66,7 +66,8 @@ namespace PotatoVillage.Services
             { "诡术师", "guishushi" },
             { "魔术师", "moshushi" },
             { "定序王子", "dingxuwangzi" },
-            
+            { "寻香魅影", "xunxiangmeiying" },
+
             // Common phrases
             { "请睁眼", "qing_zhengyan" },
             { "请闭眼", "qing_biyan" },

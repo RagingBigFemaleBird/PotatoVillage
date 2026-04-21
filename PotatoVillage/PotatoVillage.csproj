@@ -27,8 +27,8 @@
 		<ApplicationId>com.biwuenterprise.potatovillage</ApplicationId>
 
 		<!-- Versions -->
-		<ApplicationDisplayVersion>2.6</ApplicationDisplayVersion>
-		<ApplicationVersion>16</ApplicationVersion>
+		<ApplicationDisplayVersion>2.7</ApplicationDisplayVersion>
+		<ApplicationVersion>17</ApplicationVersion>
 
 		<!-- To develop, package, and publish an app to the Microsoft Store, see: https://aka.ms/MauiTemplateUnpackaged -->
 		<WindowsPackageType>None</WindowsPackageType>
@@ -47,17 +47,19 @@
 	  <ApplicationId>com.biwuenterprise.potatovillage</ApplicationId>
 	</PropertyGroup>
 
-	<!-- iOS common settings for all configurations (no signing here so Debug/Run works without the distribution cert) -->
+	<!-- iOS common settings for all configurations -->
 	<PropertyGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">
 	  <ApplicationTitle>土豆天天村</ApplicationTitle>
 	  <ApplicationId>com.biwuenterprise.potatovillage</ApplicationId>
+	  <ProvisioningType>manual</ProvisioningType>
+	  <EnableCodeSigning>true</EnableCodeSigning>
+	  <CodesignKey>iPhone Distribution: Bi Wu (24G79NU8G9)</CodesignKey>
+	  <CodesignProvision>PotatoVillage</CodesignProvision>
 	</PropertyGroup>
 
 	<!-- Debug-only iOS overrides -->
 	<PropertyGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios' AND '$(Configuration)' == 'Debug'">
 	  <MtouchLink>None</MtouchLink>
-	  <!-- Do not require the distribution cert when debugging / running locally. -->
-	  <EnableCodeSigning>false</EnableCodeSigning>
 	</PropertyGroup>
 
 	<!-- Suppress signing detection during VS design-time builds (project loading/IntelliSense) -->
@@ -65,12 +67,8 @@
 	  <EnableCodeSigning>false</EnableCodeSigning>
 	</PropertyGroup>
 
-	<!-- Release iOS - signing + IPA settings for device/distribution (Publish uses this) -->
+	<!-- Release iOS - additional settings for device/distribution -->
 	<PropertyGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios' AND '$(Configuration)' == 'Release'">
-	  <ProvisioningType>manual</ProvisioningType>
-	  <EnableCodeSigning>true</EnableCodeSigning>
-	  <CodesignKey>iPhone Distribution: Bi Wu (24G79NU8G9)</CodesignKey>
-	  <CodesignProvision>PotatoVillage</CodesignProvision>
 	  <MtouchUseLlvm>true</MtouchUseLlvm>
 	  <BuildIpa>true</BuildIpa>
 	</PropertyGroup>

@@ -342,7 +342,7 @@ namespace PotatoVillage
                     return false;
                 }
 
-                int appVersion = 16;
+                int appVersion = 17;
 
                 var gameOptions = new Dictionary<string, int>
                 {

@@ -2672,9 +2672,19 @@ namespace ProcedureCore.LangRenSha
         /// </summary>
         public static void SetupSkillUseInterrupt(Game game, int deadPlayer, List<int> targets, string skillUse, string skillResult, Dictionary<string, object> update)
         {
-            var currentAboutToDie = Game.GetGameDictionaryProperty(game, dictAboutToDie, new List<int>());
+            var currentAboutToDieRef = Game.GetGameDictionaryProperty(game, dictAboutToDie, new List<int>());
             var currentInterrupt = Game.GetGameDictionaryProperty(game, dictInterrupt, new Dictionary<string, object>());
             var currentDeadPlayers = Game.GetGameDictionaryProperty(game, dictDeadPlayerAction, new List<int>());
+
+            // Snapshot aboutToDie EXCLUDING the players we are killing via this skill.
+            // MarkPlayerAboutToDie mutated the state's aboutToDie list in place (same
+            // reference returned by GetGameDictionaryProperty), so a direct save would
+            // capture the new victims and leak them back into dictAboutToDie when this
+            // inner interrupt is later restored. That leak caused chain-death victims
+            // (e.g. hunter shot after a linked death already fired in the same wave) to
+            // be re-announced as freshly dead on the next morning instead of in the
+            // current chain. Copy the list and strip the just-queued targets.
+            var currentAboutToDie = currentAboutToDieRef.Where(p => !targets.Contains(p)).ToList();
 
             // Inner interrupt: return to continue processing dead player skills
             var deathHandlingInterrupt = new Dictionary<string, object>();

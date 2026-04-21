@@ -26,6 +26,14 @@ namespace PotatoVillage
         private int currentDisplayedDeadline = 0;
         private int currentDisplayedHint = -1;
 
+        // Monotonic counter incremented every time the target-selection UI is rebuilt.
+        // Each Button.Clicked closure captures the generation that was current when it
+        // was created. OnTargetSelected ignores clicks whose captured generation no
+        // longer matches, which prevents in-flight UI events from a previous round
+        // (whose buttons have already been removed) from mutating selectedTargets and
+        // causing the wrong targets to be sent to the server.
+        private int displayGeneration = 0;
+
         // Action history tracking (client-side only)
         private List<string> actionHistory = new();
         private bool actionHistoryVisible = false;
@@ -360,11 +368,10 @@ namespace PotatoVillage
         private static string XunXiangMeiYingInfoHandler(string userInfo, string userInfo2)
         {
             var localization = LocalizationManager.Instance;
-            var hint = localization.GetString("xunxiangmeiying_act", "Select 2 players to link bidirectionally:");
             if (string.IsNullOrEmpty(userInfo))
-                return hint;
+                return "";
             var teammate = localization.GetString("xunxiangmeiying_teammate", "One of your wolf teammates: [c:green]{0}[/c]");
-            return hint + ";" + teammate.Replace("{0}", userInfo);
+            return teammate.Replace("{0}", userInfo);
         }
 
         private static string LangRenSuccessionHandler(string userInfo, string userInfo2)
@@ -1484,6 +1491,14 @@ namespace PotatoVillage
             currentDisplayedDeadline = userActionDeadline;
             currentDisplayedHint = hintIndex;
 
+            // Bump the display generation BEFORE we clear selectedTargets and the
+            // button containers. Any click events that were already queued against
+            // the previous layout will carry the prior generation value and be
+            // rejected by OnTargetSelected, so they cannot pollute selectedTargets
+            // for the new round.
+            displayGeneration++;
+            int generation = displayGeneration;
+
             // Cancel previous countdown if any
             countdownCts?.Cancel();
             countdownCts = new CancellationTokenSource();
@@ -1646,7 +1661,8 @@ namespace PotatoVillage
                     };
 
                     int capturedTargetId = specialTarget;
-                    button.Clicked += (s, e) => OnTargetSelected(button, capturedTargetId, maxTargetCount);
+                    int capturedGeneration = generation;
+                    button.Clicked += (s, e) => OnTargetSelected(button, capturedTargetId, maxTargetCount, capturedGeneration);
 
                     SpecialTargetButtonsContainer.Add(button);
                 }
@@ -1692,7 +1708,8 @@ namespace PotatoVillage
                     };
 
                     int capturedTargetId = targetId;
-                    button.Clicked += (s, e) => OnTargetSelected(button, capturedTargetId, maxTargetCount);
+                    int capturedGeneration = generation;
+                    button.Clicked += (s, e) => OnTargetSelected(button, capturedTargetId, maxTargetCount, capturedGeneration);
 
                     TargetButtonsContainer.Add(button);
                 }
@@ -1732,7 +1749,8 @@ namespace PotatoVillage
                     if (isSelectable)
                     {
                         int capturedTargetId = pid;
-                        button.Clicked += (s, e) => OnTargetSelected(button, capturedTargetId, maxTargetCount);
+                        int capturedGeneration = generation;
+                        button.Clicked += (s, e) => OnTargetSelected(button, capturedTargetId, maxTargetCount, capturedGeneration);
                     }
 
                     TargetButtonsContainer.Add(button);
@@ -1759,8 +1777,20 @@ namespace PotatoVillage
             StartCountdown(userActionDeadline, countdownCts.Token);
         }
 
-        private void OnTargetSelected(Button button, int targetId, int maxCount)
+        private void OnTargetSelected(Button button, int targetId, int maxCount, int generation)
         {
+            // Drop stale clicks left over from a previous layout. When the server
+            // pushes a new state, DisplayTargetSelection rebuilds the buttons and
+            // increments displayGeneration. Any click that the user fired against
+            // the prior layout but whose handler is dispatched after the rebuild
+            // will carry an out-of-date generation; processing it would inject a
+            // wrong target id into selectedTargets and corrupt what is sent to the
+            // server on confirm.
+            if (generation != displayGeneration)
+            {
+                return;
+            }
+
             if (selectedTargets.Contains(targetId))
             {
                 // Deselect the target
@@ -1957,6 +1987,10 @@ namespace PotatoVillage
                 currentDisplayedDeadline = 0;
                 currentDisplayedHint = -1;
             }
+
+            // Invalidate any in-flight click handlers so they cannot mutate
+            // selectedTargets after the UI has been torn down.
+            displayGeneration++;
 
             countdownCts?.Cancel();
             countdownCts = null;

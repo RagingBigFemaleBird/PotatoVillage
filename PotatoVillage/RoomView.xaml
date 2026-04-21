@@ -36,11 +36,13 @@
             </VerticalStackLayout>
 
             <!-- Leave Room Button (top right) -->
+            <!-- No BackgroundColor: lets iOS apply its default Liquid Glass
+                 material. Setting any BackgroundColor (even Transparent)
+                 disables the system glass effect on iOS Buttons. -->
             <Button x:Name="LeaveRoomBtn" 
                     Grid.Column="1"
                     Text="✕"
                     Clicked="OnLeaveRoomClicked"
-                    BackgroundColor="#FF3B30"
                     TextColor="#FFF8DC"
                     FontSize="14"
                     WidthRequest="36"
@@ -82,20 +84,24 @@
         <!-- Bottom Buttons -->
         <VerticalStackLayout Grid.Row="2" Spacing="12">
             <!-- Notice about dead players -->
-            <Frame BackgroundColor="#FFF3CD" BorderColor="#FFECB5" Padding="10" CornerRadius="5">
+            <Border BackgroundColor="#FFF3CD"
+                    Stroke="#FFECB5"
+                    Padding="10"
+                    StrokeShape="RoundRectangle 5">
                 <Label x:Name="DeadPlayerNoticeLabel" 
                        Text="{m:Translate dead_player_notice}" 
                        FontSize="12" 
                        TextColor="#856404"
                        LineBreakMode="WordWrap" />
-            </Frame>
+            </Border>
 
             <!-- Start Game Button (only visible to owner) -->
+            <!-- No BackgroundColor (not even Transparent) so iOS applies its
+                 default Liquid Glass material, matching GameView buttons. -->
             <Button x:Name="StartGameBtn" 
                     Text="{m:Translate start_game}" 
                     Clicked="OnStartGameClicked"
                     IsVisible="False"
-                    BackgroundColor="Transparent"
                     TextColor="White"
                     FontSize="18"
                     HeightRequest="50" />

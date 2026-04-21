@@ -166,7 +166,6 @@
             <!-- Bottom bar: Sheriff, Past Actions, Reveal, Mute, Leave -->
             <Grid Grid.Row="4"
                   ColumnDefinitions="*,Auto,Auto,Auto,Auto"
-                  BackgroundColor="#F0F0F0"
                   Padding="6,0">
 
                 <!-- Sheriff status label -->
@@ -184,6 +183,7 @@
                         Grid.Column="1"
                         Text="📋"
                         Clicked="OnPastActionsClicked"
+                        FontFamily="{x:Null}"
                         FontSize="10"
                         Padding="6,0"
                         Margin="4,0"
@@ -208,6 +208,7 @@
                 <Button x:Name="AnnouncerBtn"
                         Grid.Column="3"
                         Text="×"
+                        FontFamily="{x:Null}"
                         FontSize="10"
                         WidthRequest="15"
                         HeightRequest="15"

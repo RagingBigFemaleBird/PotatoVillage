@@ -50,6 +50,11 @@ namespace ProcedureCore.LangRenSha
         public int ActionDuration => 20;
 
         public static string dictLinkUsed = "xunxiangmeiying_link_used";
+        // Stores the seat number of the LangRen teammate that was revealed to
+        // this XunXiangMeiYing on the first night. Persisted on the player so
+        // the same teammate is shown every subsequent night, instead of being
+        // re-rolled (which would leak information by varying the revealed id).
+        public static string dictRevealedTeammate = "xunxiangmeiying_revealed_teammate";
 
         public GameActionResult GenerateStateDiff(Game game, Dictionary<string, object> update)
         {
@@ -104,12 +109,24 @@ namespace ProcedureCore.LangRenSha
                         update[UserAction.dictUserActionTargetsHint] = (int)HintConstant.XunXiangMeiYing_Act;
                         update[UserAction.dictUserActionRole] = Name;
 
-                        // Pick a random LangRen teammate to reveal (only one).
+                        // Reveal one LangRen teammate. The chosen teammate is
+                        // remembered on the player so the SAME id is shown on
+                        // every night - re-rolling would let the XXMY narrow
+                        // down the wolf team across nights.
                         var info = "";
-                        if (langRenTeammates.Count > 0)
+                        if (xxmyPlayer > 0)
                         {
-                            var pick = langRenTeammates[new Random().Next(langRenTeammates.Count)];
-                            info = pick.ToString();
+                            var stored = LangRenSha.GetPlayerProperty(game, xxmyPlayer, dictRevealedTeammate, 0);
+                            if (stored > 0 && langRenTeammates.Contains(stored))
+                            {
+                                info = stored.ToString();
+                            }
+                            else if (langRenTeammates.Count > 0)
+                            {
+                                var pick = langRenTeammates[new Random().Next(langRenTeammates.Count)];
+                                LangRenSha.SetPlayerProperty(game, xxmyPlayer, dictRevealedTeammate, pick, update);
+                                info = pick.ToString();
+                            }
                         }
                         update[UserAction.dictUserActionInfo] = info;
                         return GameActionResult.Restart;

@@ -245,6 +245,15 @@ namespace PotatoVillage
                 ["LieMoRen"] = 1,
                 ["PingMin"] = 5
             },
+            ["XunXiangMeiYing"] = new()
+            {
+                ["LangRen"] = 3,
+                ["AwkYuYanJia"] = 1,
+                ["NvWu"] = 1,
+                ["LieRen"] = 1,
+                ["ShouWei"] = 1,
+                ["PingMin"] = 4
+            },
             ["GuiShuShi"] = new()
             {
                 ["LangRen"] = 3,
@@ -551,7 +560,25 @@ namespace PotatoVillage
                 {
                     if (!tempConnectionManager.IsConnected)
                     {
-                        needsDisconnect = await tempConnectionManager.ConnectAsync(currentServerUrl);
+                        bool connected = await tempConnectionManager.ConnectAsync(currentServerUrl);
+                        if (!connected)
+                        {
+                            // Server unreachable / down - show error and stop.
+                            // Without this guard the code below would call GetPendingGamesAsync
+                            // on a null connection and silently render "no games available",
+                            // and any later refresh attempt on the dead manager could crash.
+                            pendingGamesContainer.Clear();
+                            pendingGamesContainer.Children.Add(new Label
+                            {
+                                Text = localization.GetString("server_unreachable", "Server is unreachable. Please try again later."),
+                                FontSize = 14,
+                                TextColor = Colors.Red,
+                                HorizontalOptions = LayoutOptions.Center,
+                                HorizontalTextAlignment = TextAlignment.Center
+                            });
+                            return;
+                        }
+                        needsDisconnect = connected;
                     }
 
                     var pendingGames = await tempConnectionManager.GetPendingGamesAsync();
@@ -579,21 +606,29 @@ namespace PotatoVillage
                 }
                 catch (Exception ex)
                 {
-                    pendingGamesContainer.Clear();
-                    pendingGamesContainer.Children.Add(new Label
+                    try
                     {
-                        Text = localization.GetString("failed_to_load_games", "Failed to load games"),
-                        FontSize = 14,
-                        TextColor = Colors.Red,
-                        HorizontalOptions = LayoutOptions.Center
-                    });
+                        pendingGamesContainer.Clear();
+                        pendingGamesContainer.Children.Add(new Label
+                        {
+                            Text = localization.GetString("failed_to_load_games", "Failed to load games"),
+                            FontSize = 14,
+                            TextColor = Colors.Red,
+                            HorizontalOptions = LayoutOptions.Center
+                        });
+                    }
+                    catch { /* popup may have been torn down already */ }
                     System.Diagnostics.Debug.WriteLine($"Failed to load pending games: {ex.Message}");
                 }
                 finally
                 {
                     if (needsDisconnect)
                     {
-                        await tempConnectionManager.Disconnect();
+                        try
+                        {
+                            await tempConnectionManager.Disconnect();
+                        }
+                        catch { /* Ignore disconnect errors */ }
                     }
                 }
             }

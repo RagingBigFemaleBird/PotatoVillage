@@ -303,6 +303,7 @@
     "available_games": "Available Games:",
     "no_pending_games": "No games available. Create one!",
     "failed_to_load_games": "Failed to load games",
+    "server_unreachable": "Server is unreachable. Please try again later.",
     "join_by_room_seat": "Or join by room and seat number:",
     "refresh": "Refresh",
     "error_no_available_seats": "No available seats"
@@ -611,6 +612,7 @@
     "available_games": "可加入的游戏:",
     "no_pending_games": "没有可加入的游戏，请创建一个！",
     "failed_to_load_games": "加载游戏列表失败",
+    "server_unreachable": "服务器不可达，请稍后重试。",
     "join_by_room_seat": "或通过房间号和座位号加入:",
     "refresh": "刷新",
     "error_no_available_seats": "没有可用的座位"

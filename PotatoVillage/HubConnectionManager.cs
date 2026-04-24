@@ -342,7 +342,13 @@ namespace PotatoVillage
                     return false;
                 }
 
-                int appVersion = 17;
+                int appVersion = 18;
+                int appVersionSys = int.MaxValue;
+
+                if (int.TryParse(AppInfo.Current.BuildString, out appVersionSys))
+                {
+                    appVersion = Math.Min(appVersion, appVersionSys);
+                }
 
                 var gameOptions = new Dictionary<string, int>
                 {
@@ -495,11 +501,31 @@ namespace PotatoVillage
 
         public async Task Disconnect()
         {
-            if (connection != null)
+            // Atomically take ownership of the connection so concurrent callers
+            // (e.g. GameStateUpdate sequence-mismatch handler + OnLeaveRoomClicked)
+            // don't both try to stop/dispose the same instance.
+            var conn = System.Threading.Interlocked.Exchange(ref connection, null);
+            if (conn == null)
             {
-                await connection.StopAsync();
-                await connection.DisposeAsync();
-                connection = null;
+                return;
+            }
+
+            try
+            {
+                await conn.StopAsync();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Disconnect: StopAsync failed: {ex.Message}");
+            }
+
+            try
+            {
+                await conn.DisposeAsync();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Disconnect: DisposeAsync failed: {ex.Message}");
             }
         }
 

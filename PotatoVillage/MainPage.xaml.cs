@@ -434,6 +434,13 @@ namespace PotatoVillage
 
             HubConnectionManager? tempConnectionManager = null;
 
+            // Wrapped in array so closures (LoadPendingGames, click/tap handlers,
+            // popup.Disappearing) can both read and update the same flag.
+            // Set to true as soon as the popup starts going away, so any in-flight
+            // ConnectAsync/GetPendingGamesAsync continuation skips touching the
+            // (now disposed) UI elements.
+            var popupDismissed = new bool[1];
+
             try
             {
                 tempConnectionManager = new HubConnectionManager(nickname);
@@ -549,9 +556,15 @@ namespace PotatoVillage
             };
             NavigationPage.SetHasNavigationBar(popup, false);
 
+            // Mark the popup as dismissed as soon as it starts going away, so any
+            // in-flight LoadPendingGames continuation skips UI mutations.
+            popup.Disappearing += (_, _) => popupDismissed[0] = true;
+
             // Function to load pending games
             async Task LoadPendingGames()
             {
+                if (popupDismissed[0]) return;
+
                 pendingGamesContainer.Clear();
                 pendingGamesContainer.Children.Add(loadingLabel);
 
@@ -561,6 +574,16 @@ namespace PotatoVillage
                     if (!tempConnectionManager.IsConnected)
                     {
                         bool connected = await tempConnectionManager.ConnectAsync(currentServerUrl);
+                        if (popupDismissed[0])
+                        {
+                            // User left the popup while we were connecting. Clean up
+                            // and bail out before touching any UI element.
+                            if (connected)
+                            {
+                                try { await tempConnectionManager.Disconnect(); } catch { }
+                            }
+                            return;
+                        }
                         if (!connected)
                         {
                             // Server unreachable / down - show error and stop.
@@ -583,6 +606,8 @@ namespace PotatoVillage
 
                     var pendingGames = await tempConnectionManager.GetPendingGamesAsync();
 
+                    if (popupDismissed[0]) return;
+
                     pendingGamesContainer.Clear();
 
                     if (pendingGames.Count == 0)
@@ -599,13 +624,18 @@ namespace PotatoVillage
                     {
                         foreach (var game in pendingGames)
                         {
-                            var gameBox = CreatePendingGameBox(game, localization, popup, tempConnectionManager);
+                            var gameBox = CreatePendingGameBox(game, localization, popup, tempConnectionManager, popupDismissed);
                             pendingGamesContainer.Children.Add(gameBox);
                         }
                     }
                 }
                 catch (Exception ex)
                 {
+                    if (popupDismissed[0])
+                    {
+                        System.Diagnostics.Debug.WriteLine($"Failed to load pending games (popup already dismissed): {ex.Message}");
+                        return;
+                    }
                     try
                     {
                         pendingGamesContainer.Clear();
@@ -635,23 +665,38 @@ namespace PotatoVillage
 
             refreshBtn.Clicked += async (s, args) =>
             {
+                if (popupDismissed[0]) return;
                 await LoadPendingGames();
             };
 
             backBtn.Clicked += async (s, args) =>
             {
+                if (popupDismissed[0]) return;
+                popupDismissed[0] = true;
+
                 // Remember values for session
                 sessionRoomNumber = roomEntry.Text ?? "";
                 sessionSeatNumber = seatEntry.Text ?? "";
 
-                // Disconnect temp connection
-                await tempConnectionManager.Disconnect();
-
+                // Pop the modal FIRST so the UI is never blocked. We must NOT await
+                // Disconnect() here: if ConnectAsync is still in progress on the temp
+                // manager, HubConnection.StopAsync can block/deadlock waiting for the
+                // in-flight StartAsync, which would freeze the app on a fast Back tap.
                 await Navigation.PopModalAsync();
+
+                // Fire-and-forget cleanup. LoadPendingGames's finally block will also
+                // disconnect once its in-flight ConnectAsync/GetPendingGamesAsync
+                // returns, so this is just best-effort.
+                _ = Task.Run(async () =>
+                {
+                    try { await tempConnectionManager.Disconnect(); } catch { }
+                });
             };
 
             manualJoinBtn.Clicked += async (s, args) =>
             {
+                if (popupDismissed[0]) return;
+
                 // Remember values for session
                 sessionRoomNumber = roomEntry.Text ?? "";
                 sessionSeatNumber = seatEntry.Text ?? "";
@@ -668,10 +713,15 @@ namespace PotatoVillage
                     return;
                 }
 
-                // Disconnect temp connection
-                await tempConnectionManager.Disconnect();
+                popupDismissed[0] = true;
 
+                // Pop modal first; fire-and-forget Disconnect (see backBtn for rationale).
                 await Navigation.PopModalAsync();
+                _ = Task.Run(async () =>
+                {
+                    try { await tempConnectionManager.Disconnect(); } catch { }
+                });
+
                 await JoinGameAsync(roomNumber, seatNumber);
             };
 
@@ -699,7 +749,7 @@ namespace PotatoVillage
             }
         }
 
-        private Border CreatePendingGameBox(HubConnectionManager.PendingGameInfo game, LocalizationManager localization, ContentPage popup, HubConnectionManager tempConnectionManager)
+        private Border CreatePendingGameBox(HubConnectionManager.PendingGameInfo game, LocalizationManager localization, ContentPage popup, HubConnectionManager tempConnectionManager, bool[] popupDismissed)
         {
             var border = new Border
             {
@@ -765,10 +815,17 @@ namespace PotatoVillage
             var tapGesture = new TapGestureRecognizer();
             tapGesture.Tapped += async (s, e) =>
             {
-                // Disconnect temp connection before joining
-                await tempConnectionManager.Disconnect();
+                if (popupDismissed[0]) return;
+                popupDismissed[0] = true;
 
+                // Pop modal first; fire-and-forget Disconnect so a stuck StopAsync
+                // (when ConnectAsync is still in-flight) can't freeze the UI.
                 await Navigation.PopModalAsync();
+                _ = Task.Run(async () =>
+                {
+                    try { await tempConnectionManager.Disconnect(); } catch { }
+                });
+
                 // Join with seat number 0 for auto-assignment
                 await JoinGameAsync(game.GameId, 0);
             };
@@ -888,6 +945,10 @@ namespace PotatoVillage
             selectedAwkSheMengRen = false;
             selectedShiXiangGui = false;
             selectedXueYue = false;
+            selectedMengYan = false;
+            selectedMoShuShi = false;
+            selectedGuiShuShi = false;
+            selectedDingXuWangZi = false;
             selectedAwkYuYanJia = false;
             selectedXunXiangMeiYing = false;
             selectedPingMin.Clear();

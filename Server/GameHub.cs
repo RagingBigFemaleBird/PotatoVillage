@@ -65,10 +65,21 @@ namespace Server
 
                         Console.WriteLine($"Client {clientId} (Player {playerId}) removed from Game {gameId}");
 
-                        // Notify remaining clients about the room state update
-                        string roomState = GetRoomStateJson(gameId);
-                        IHubContext<GameHub> hubContext = Server.Controllers.HomeController.GetGameHubContext();
-                        await hubContext.Clients.Group($"game-{gameId}").SendAsync("RoomStateUpdate", roomState);
+                        // If the room is now empty and the game hasn't started, remove the room entirely
+                        if (game.IdToPlayer.IsEmpty)
+                        {
+                            games.TryRemove(gameId, out _);
+                            gameOwners.TryRemove(gameId, out _);
+                            gameThreads.TryRemove(game, out _);
+                            Console.WriteLine($"Game {gameId} removed because the room is empty and the game has not started");
+                        }
+                        else
+                        {
+                            // Notify remaining clients about the room state update
+                            string roomState = GetRoomStateJson(gameId);
+                            IHubContext<GameHub> hubContext = Server.Controllers.HomeController.GetGameHubContext();
+                            await hubContext.Clients.Group($"game-{gameId}").SendAsync("RoomStateUpdate", roomState);
+                        }
                     }
                 }
             }

@@ -27,8 +27,8 @@
 		<ApplicationId>com.biwuenterprise.potatovillage</ApplicationId>
 
 		<!-- Versions -->
-		<ApplicationDisplayVersion>2.7</ApplicationDisplayVersion>
-		<ApplicationVersion>17</ApplicationVersion>
+		<ApplicationDisplayVersion>2.8</ApplicationDisplayVersion>
+		<ApplicationVersion>18</ApplicationVersion>
 
 		<!-- To develop, package, and publish an app to the Microsoft Store, see: https://aka.ms/MauiTemplateUnpackaged -->
 		<WindowsPackageType>None</WindowsPackageType>

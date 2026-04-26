@@ -10,6 +10,8 @@ namespace PotatoVillage
         private int gameId;
         private int playerId;
         private bool isOwner;
+        private EventHandler? windowResumedHandler;
+        private Window? subscribedWindow;
 
         public RoomView(HubConnectionManager connectionManager, int gameId, int playerId, bool isOwner)
         {
@@ -32,9 +34,50 @@ namespace PotatoVillage
             }
         }
 
+        protected override void OnAppearing()
+        {
+            base.OnAppearing();
+
+            // iOS may have suspended the underlying socket while the room was
+            // idle (the player can sit here for minutes waiting for "Start").
+            // Heal the connection before any state-changing events arrive.
+            _ = EnsureConnectionAliveAsync();
+
+            // Also run the same heal whenever the app returns from background.
+            if (subscribedWindow == null)
+            {
+                subscribedWindow = this.Window;
+                if (subscribedWindow != null)
+                {
+                    windowResumedHandler = (s, e) => _ = EnsureConnectionAliveAsync();
+                    subscribedWindow.Resumed += windowResumedHandler;
+                }
+            }
+        }
+
+        private async Task EnsureConnectionAliveAsync()
+        {
+            if (connectionManager == null) return;
+            try
+            {
+                await connectionManager.EnsureConnectionAsync();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"RoomView EnsureConnection failed: {ex.Message}");
+            }
+        }
+
         protected override void OnDisappearing()
         {
             base.OnDisappearing();
+
+            if (subscribedWindow != null && windowResumedHandler != null)
+            {
+                subscribedWindow.Resumed -= windowResumedHandler;
+                subscribedWindow = null;
+                windowResumedHandler = null;
+            }
 
             if (connectionManager != null)
             {

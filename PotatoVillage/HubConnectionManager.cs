@@ -15,6 +15,10 @@ namespace PotatoVillage
         private TaskCompletionSource<(bool, string)>? joinCompletionSource;
         private TaskCompletionSource<(bool, string)>? switchSeatCompletionSource;
         private int expectedSequenceNumber = 0;
+        // When true, sequence-mismatch checking is suspended because we are
+        // waiting for a fresh RoomCreated snapshot to re-establish the
+        // authoritative sequence number (e.g. just after auto-reconnect).
+        private volatile bool awaitingSnapshot = false;
 
         public event Action? GameStateUpdated;
         public event Action? RoomStateUpdated;
@@ -104,51 +108,73 @@ namespace PotatoVillage
                 registeredPlayerId = 0;
                 expectedSequenceNumber = 0;
 
-                // Retry connection with exponential backoff
+                // Retry connection with exponential backoff. Each attempt
+                // first tries WebSockets-only; if that fails, the same attempt
+                // is repeated allowing LongPolling as a fallback. We prefer
+                // WebSockets because LongPolling on iOS over cellular/VPN can
+                // stall during message bursts (e.g. role distribution at game
+                // start), causing perceived "frozen" games.
                 int maxRetries = 3;
                 int retryDelay = 500;
                 Exception? lastException = null;
 
                 for (int attempt = 0; attempt < maxRetries; attempt++)
                 {
-                    try
+                    foreach (var transports in new[]
                     {
-                        connection = new HubConnectionBuilder()
-                            .WithUrl(hubUrl, options =>
+                        Microsoft.AspNetCore.Http.Connections.HttpTransportType.WebSockets,
+                        Microsoft.AspNetCore.Http.Connections.HttpTransportType.WebSockets |
+                            Microsoft.AspNetCore.Http.Connections.HttpTransportType.LongPolling,
+                    })
+                    {
+                        try
+                        {
+                            connection = new HubConnectionBuilder()
+                                .WithUrl(hubUrl, options =>
+                                {
+                                    options.Transports = transports;
+                                    // Skip negotiation can help with some CORS issues
+                                    options.SkipNegotiation = false;
+                                })
+                                .WithAutomaticReconnect(new[] { TimeSpan.Zero, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(10) })
+                                .Build();
+
+                            // Use timeouts close to SignalR defaults. Long
+                            // KeepAlive/ServerTimeout values cause iOS to silently
+                            // drop the underlying socket (carrier NAT / Low Power
+                            // Mode / VPNs close idle TCP after 30s-2min) without
+                            // SignalR noticing for many minutes; the server then
+                            // fire-and-forgets game-state updates into the void.
+                            connection.ServerTimeout = TimeSpan.FromSeconds(30);
+                            connection.KeepAliveInterval = TimeSpan.FromSeconds(15);
+
+                            SetupConnectionHandlers();
+                            await connection.StartAsync();
+
+                            bool wsOnly = transports == Microsoft.AspNetCore.Http.Connections.HttpTransportType.WebSockets;
+                            System.Diagnostics.Debug.WriteLine(
+                                $"SignalR connected (attempt {attempt + 1}, transport={(wsOnly ? "WebSockets" : "WebSockets+LongPolling fallback")})");
+                            return true;
+                        }
+                        catch (Exception ex)
+                        {
+                            lastException = ex;
+                            bool wsOnly = transports == Microsoft.AspNetCore.Http.Connections.HttpTransportType.WebSockets;
+                            System.Diagnostics.Debug.WriteLine(
+                                $"Connection attempt {attempt + 1} ({(wsOnly ? "WS-only" : "WS+LongPolling")}) failed: {ex.Message}");
+
+                            if (connection != null)
                             {
-                                // Configure transports - prefer WebSockets, fallback to LongPolling
-                                options.Transports = Microsoft.AspNetCore.Http.Connections.HttpTransportType.WebSockets |
-                                                    Microsoft.AspNetCore.Http.Connections.HttpTransportType.LongPolling;
-                                // Skip negotiation can help with some CORS issues
-                                options.SkipNegotiation = false;
-                            })
-                            .WithAutomaticReconnect(new[] { TimeSpan.Zero, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(10) })
-                            .Build();
-
-                        // Increase timeouts to 10 minutes to prevent disconnects during inactivity
-                        connection.ServerTimeout = TimeSpan.FromMinutes(10);
-                        connection.KeepAliveInterval = TimeSpan.FromMinutes(5);
-
-                        SetupConnectionHandlers();
-                        await connection.StartAsync();
-                        return true;
+                                try { await connection.DisposeAsync(); } catch { }
+                                connection = null;
+                            }
+                        }
                     }
-                    catch (Exception ex)
+
+                    if (attempt < maxRetries - 1)
                     {
-                        lastException = ex;
-                        System.Diagnostics.Debug.WriteLine($"Connection attempt {attempt + 1} failed: {ex.Message}");
-
-                        if (connection != null)
-                        {
-                            try { await connection.DisposeAsync(); } catch { }
-                            connection = null;
-                        }
-
-                        if (attempt < maxRetries - 1)
-                        {
-                            await Task.Delay(retryDelay);
-                            retryDelay *= 2; // Exponential backoff
-                        }
+                        await Task.Delay(retryDelay);
+                        retryDelay *= 2; // Exponential backoff
                     }
                 }
 
@@ -180,9 +206,15 @@ namespace PotatoVillage
 
             connection.Reconnected += async (connectionId) =>
             {
-                // Re-join the game after reconnection
+                // Re-join the game after reconnection. The server will reply
+                // with a fresh RoomCreated snapshot whose `sequence` becomes
+                // the new authoritative baseline. Until that snapshot arrives,
+                // any GameStateUpdate that races in would falsely trigger the
+                // sequence-mismatch guard (we are mid-game, so the next valid
+                // sequence is NOT 1), so suspend the check here.
                 if (registeredGameId > 0)
                 {
+                    awaitingSnapshot = true;
                     await connection.InvokeAsync("JoinGame", clientId, nickname, registeredGameId, registeredPlayerId);
                 }
             };
@@ -202,6 +234,9 @@ namespace PotatoVillage
                 {
                     expectedSequenceNumber = 0;
                 }
+
+                // Snapshot received - resume sequence-mismatch checking.
+                awaitingSnapshot = false;
 
                 MergeGameDict(initialState);
                 roomState = JsonSerializer.Deserialize<Dictionary<string, object>>(roomStateJson) ?? new();
@@ -257,18 +292,29 @@ namespace PotatoVillage
                 {
                     var receivedSequence = GetInt32FromObject(seqObj) ?? 0;
 
-                    // Check if sequence is what we expect (current + 1) or a valid reset (0 or 1)
-                    if (receivedSequence != expectedSequenceNumber + 1 && receivedSequence > 1)
+                    // Skip the check while waiting for a post-reconnect snapshot:
+                    // the authoritative sequence will be re-established by the
+                    // upcoming RoomCreated message. Just adopt whatever arrives
+                    // so once the snapshot lands we continue from the right spot.
+                    if (awaitingSnapshot)
                     {
-                        System.Diagnostics.Debug.WriteLine($"Sequence mismatch! Expected {expectedSequenceNumber + 1}, received {receivedSequence}");
-
-                        // Disconnect and notify
-                        SequenceMismatch?.Invoke($"State sync error: expected sequence {expectedSequenceNumber + 1}, got {receivedSequence}. Please rejoin the game.");
-                        await Disconnect();
-                        return;
+                        expectedSequenceNumber = receivedSequence;
                     }
+                    else
+                    {
+                        // Check if sequence is what we expect (current + 1) or a valid reset (0 or 1)
+                        if (receivedSequence != expectedSequenceNumber + 1 && receivedSequence > 1)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"Sequence mismatch! Expected {expectedSequenceNumber + 1}, received {receivedSequence}");
 
-                    expectedSequenceNumber = receivedSequence;
+                            // Disconnect and notify
+                            SequenceMismatch?.Invoke($"State sync error: expected sequence {expectedSequenceNumber + 1}, got {receivedSequence}. Please rejoin the game.");
+                            await Disconnect();
+                            return;
+                        }
+
+                        expectedSequenceNumber = receivedSequence;
+                    }
                 }
 
                 MergeGameDict(diff);

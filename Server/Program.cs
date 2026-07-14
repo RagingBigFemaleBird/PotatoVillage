@@ -77,9 +77,15 @@ builder.Services.AddCors(options =>
 // Add services to the container.
 builder.Services.AddSignalR(options =>
 {
-    // Increase timeouts to 10 minutes to prevent disconnects during inactivity
-    options.ClientTimeoutInterval = TimeSpan.FromMinutes(10);
-    options.KeepAliveInterval = TimeSpan.FromMinutes(5);
+    // These must be coordinated with the client (HubConnectionManager sets
+    // ServerTimeout = 30s): the server must ping more often than the client's
+    // ServerTimeout or the client aborts healthy-but-idle connections (games
+    // have long quiet stretches during speeches). Keep ClientTimeoutInterval
+    // short as well so seats held by dead connections (phone backgrounded,
+    // socket silently dropped by carrier NAT) are released quickly and the
+    // player's rejoin after resume is not confused with a live duplicate.
+    options.ClientTimeoutInterval = TimeSpan.FromSeconds(60);
+    options.KeepAliveInterval = TimeSpan.FromSeconds(15);
 });
 builder.Services.AddControllersWithViews();
 

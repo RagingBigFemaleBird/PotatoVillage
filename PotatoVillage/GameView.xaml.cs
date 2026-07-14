@@ -787,13 +787,37 @@ namespace PotatoVillage
             this.SizeChanged += OnPageSizeChanged;
 
             // Subscribe to game state updates
-            if (connectionManager != null)
-            {
-                connectionManager.GameStateUpdated += UpdateGameStatus;
-                connectionManager.GameEnded += OnGameEnded;
-                connectionManager.SequenceMismatch += OnSequenceMismatch;
-                UpdateGameStatus();
-            }
+            SubscribeConnectionEvents();
+            UpdateGameStatus();
+        }
+
+        // Whether the connection-manager events are currently subscribed.
+        // Needed because on Android the OS backgrounding the app fires
+        // OnDisappearing (which unsubscribes) and returning fires OnAppearing,
+        // so the subscriptions must be re-established there - otherwise the
+        // page silently stops receiving game state updates after a resume.
+        private bool connectionEventsSubscribed = false;
+
+        private void SubscribeConnectionEvents()
+        {
+            if (connectionManager == null || connectionEventsSubscribed)
+                return;
+
+            connectionManager.GameStateUpdated += UpdateGameStatus;
+            connectionManager.GameEnded += OnGameEnded;
+            connectionManager.SequenceMismatch += OnSequenceMismatch;
+            connectionEventsSubscribed = true;
+        }
+
+        private void UnsubscribeConnectionEvents()
+        {
+            if (connectionManager == null || !connectionEventsSubscribed)
+                return;
+
+            connectionManager.GameStateUpdated -= UpdateGameStatus;
+            connectionManager.GameEnded -= OnGameEnded;
+            connectionManager.SequenceMismatch -= OnSequenceMismatch;
+            connectionEventsSubscribed = false;
         }
 
         private async void OnSequenceMismatch(string message)
@@ -827,12 +851,45 @@ namespace PotatoVillage
             // Lock to portrait when entering game view
             OrientationService.LockPortrait();
 
+            // Re-establish connection event subscriptions. On Android,
+            // backgrounding the app fires OnDisappearing (which unsubscribes
+            // everything, including the Window.Resumed handler below), so
+            // OnAppearing after a resume is the only reliable place to hook
+            // everything back up.
+            SubscribeConnectionEvents();
+
             // Subscribe to app lifecycle events for iOS background/foreground handling
             if (Window != null)
             {
+                Window.Resumed -= OnAppResumed;
                 Window.Resumed += OnAppResumed;
             }
+
+            if (isResumingFromBackground)
+            {
+                isResumingFromBackground = false;
+
+                // Force the next UpdateGameStatus to fully rebuild the
+                // action/countdown UI: OnDisappearing cancelled the countdown
+                // task, and if the game state is unchanged since backgrounding
+                // the deadline/hint dedupe would otherwise skip the rebuild,
+                // leaving a frozen countdown.
+                currentDisplayedDeadline = 0;
+                currentDisplayedHint = -1;
+
+                // Repaint from current local state, then verify the connection
+                // and pull a fresh snapshot. On Android this path (not
+                // Window.Resumed, whose handler was unsubscribed during the
+                // background) is what heals the connection after a resume.
+                UpdateGameStatus();
+                _ = ResyncAfterResumeAsync();
+            }
         }
+
+        // True while the page is "gone" because the whole app went to the
+        // background (Android fires OnDisappearing for that), as opposed to
+        // the page being popped from the navigation stack.
+        private bool isResumingFromBackground = false;
 
         protected override void OnDisappearing()
         {
@@ -841,6 +898,8 @@ namespace PotatoVillage
             // Unlock orientation when leaving game view
             OrientationService.LockPortrait();
 
+            isResumingFromBackground = true;
+
             // Unsubscribe from app lifecycle events
             if (Window != null)
             {
@@ -848,14 +907,11 @@ namespace PotatoVillage
             }
 
             // Clean up event subscriptions
-            if (connectionManager != null)
-            {
-                connectionManager.GameStateUpdated -= UpdateGameStatus;
-                connectionManager.GameEnded -= OnGameEnded;
-                connectionManager.SequenceMismatch -= OnSequenceMismatch;
-            }
+            UnsubscribeConnectionEvents();
 
-            this.SizeChanged -= OnPageSizeChanged;
+            // Note: SizeChanged intentionally stays subscribed. OnDisappearing
+            // also fires when Android backgrounds the app, and unsubscribing
+            // here without resubscribing on resume broke font resizing.
 
             // Cancel any running countdown
             countdownCts?.Cancel();
@@ -867,28 +923,44 @@ namespace PotatoVillage
         }
 
         /// <summary>
-        /// Handles app resume from background (especially important for iOS).
-        /// Checks connection state and reconnects if needed.
+        /// Handles app resume from background (fires on iOS; on Android the
+        /// equivalent work happens in OnAppearing because this handler gets
+        /// unsubscribed by OnDisappearing when the app is backgrounded).
         /// </summary>
         private async void OnAppResumed(object? sender, EventArgs e)
         {
             System.Diagnostics.Debug.WriteLine("GameView: App resumed from background");
+            await ResyncAfterResumeAsync();
+        }
 
-            if (connectionManager == null)
+        /// <summary>
+        /// Verifies the connection is alive and pulls a fresh authoritative
+        /// snapshot from the server. Retries a few times because the network
+        /// can take several seconds to come back after the OS unfreezes the
+        /// app; only gives up (and returns to the lobby) once all attempts fail.
+        /// </summary>
+        private bool resyncInProgress = false;
+
+        private async Task ResyncAfterResumeAsync()
+        {
+            if (connectionManager == null || resyncInProgress)
                 return;
 
+            resyncInProgress = true;
             try
             {
-                // Give the system a moment to restore network
-                await Task.Delay(500);
-
-                // Check and ensure connection is active
-                bool isConnected = await connectionManager.EnsureConnectionAsync();
+                bool isConnected = false;
+                for (int attempt = 0; attempt < 3 && !isConnected; attempt++)
+                {
+                    // Give the system a moment to restore network (longer on retries)
+                    await Task.Delay(attempt == 0 ? 500 : 2000);
+                    isConnected = await connectionManager.EnsureConnectionAsync();
+                }
 
                 if (isConnected)
                 {
                     System.Diagnostics.Debug.WriteLine("GameView: Connection restored successfully");
-                    // Force a UI update
+                    // Force a UI update (the fresh snapshot also raises GameStateUpdated)
                     MainThread.BeginInvokeOnMainThread(() => UpdateGameStatus());
                 }
                 else
@@ -908,6 +980,10 @@ namespace PotatoVillage
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"GameView: Error handling app resume: {ex.Message}");
+            }
+            finally
+            {
+                resyncInProgress = false;
             }
         }
 

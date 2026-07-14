@@ -26,17 +26,45 @@ namespace PotatoVillage
             StartGameBtn.IsVisible = isOwner;
 
             // Subscribe to room state updates
-            if (connectionManager != null)
-            {
-                connectionManager.RoomStateUpdated += UpdateRoomState;
-                connectionManager.GameStarted += OnGameStarted;
-                UpdateRoomState();
-            }
+            SubscribeConnectionEvents();
+            UpdateRoomState();
+        }
+
+        // Needed because on Android the OS backgrounding the app fires
+        // OnDisappearing (which unsubscribes) and returning fires OnAppearing,
+        // so subscriptions must be re-established there - otherwise the room
+        // silently stops receiving updates (and misses GameStarted) after a resume.
+        private bool connectionEventsSubscribed = false;
+        private bool navigatedToGame = false;
+
+        private void SubscribeConnectionEvents()
+        {
+            if (connectionManager == null || connectionEventsSubscribed)
+                return;
+
+            connectionManager.RoomStateUpdated += UpdateRoomState;
+            connectionManager.GameStarted += OnGameStarted;
+            connectionEventsSubscribed = true;
+        }
+
+        private void UnsubscribeConnectionEvents()
+        {
+            if (connectionManager == null || !connectionEventsSubscribed)
+                return;
+
+            connectionManager.RoomStateUpdated -= UpdateRoomState;
+            connectionManager.GameStarted -= OnGameStarted;
+            connectionEventsSubscribed = false;
         }
 
         protected override void OnAppearing()
         {
             base.OnAppearing();
+
+            // Re-establish subscriptions lost when Android backgrounded the app
+            // (OnDisappearing fires in that case) and repaint from local state.
+            SubscribeConnectionEvents();
+            UpdateRoomState();
 
             // iOS may have suspended the underlying socket while the room was
             // idle (the player can sit here for minutes waiting for "Start").
@@ -79,11 +107,7 @@ namespace PotatoVillage
                 windowResumedHandler = null;
             }
 
-            if (connectionManager != null)
-            {
-                connectionManager.RoomStateUpdated -= UpdateRoomState;
-                connectionManager.GameStarted -= OnGameStarted;
-            }
+            UnsubscribeConnectionEvents();
         }
 
         private void UpdateRoomState()
@@ -93,6 +117,15 @@ namespace PotatoVillage
                 if (connectionManager == null) return;
 
                 var roomState = connectionManager.RoomState;
+
+                // If the game was started while this app was in the background,
+                // the GameStarted event was missed; the rejoin snapshot's room
+                // state carries the flag instead. Navigate to the game now.
+                if (GetBoolValue(roomState, "gameStarted"))
+                {
+                    OnGameStarted();
+                    return;
+                }
 
                 // Update player ID in case it was switched
                 playerId = connectionManager.RegisteredPlayerId;
@@ -343,12 +376,14 @@ namespace PotatoVillage
         {
             MainThread.BeginInvokeOnMainThread(async () =>
             {
-                if (connectionManager != null)
-                {
-                    // Unsubscribe before navigating
-                    connectionManager.RoomStateUpdated -= UpdateRoomState;
-                    connectionManager.GameStarted -= OnGameStarted;
-                }
+                // Can be reached from both the GameStarted event and the
+                // gameStarted room-state flag after a resync; navigate once.
+                if (navigatedToGame)
+                    return;
+                navigatedToGame = true;
+
+                // Unsubscribe before navigating
+                UnsubscribeConnectionEvents();
 
                 // Navigate to game view
                 await Navigation.PushAsync(new GameView(connectionManager!, gameId, playerId, isOwner));
@@ -431,6 +466,18 @@ namespace PotatoVillage
             if (obj is string str) return str;
             if (obj is JsonElement je && je.ValueKind == JsonValueKind.String) return je.GetString();
             return obj.ToString();
+        }
+
+        private bool GetBoolValue(Dictionary<string, object> dict, string key)
+        {
+            if (!dict.TryGetValue(key, out var obj)) return false;
+            if (obj is bool b) return b;
+            if (obj is JsonElement je)
+            {
+                if (je.ValueKind == JsonValueKind.True) return true;
+                if (je.ValueKind == JsonValueKind.False) return false;
+            }
+            return false;
         }
 
         private Dictionary<string, object> GetDictionaryValue(Dictionary<string, object> dict, string key)

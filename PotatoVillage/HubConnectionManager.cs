@@ -19,6 +19,10 @@ namespace PotatoVillage
         // waiting for a fresh RoomCreated snapshot to re-establish the
         // authoritative sequence number (e.g. just after auto-reconnect).
         private volatile bool awaitingSnapshot = false;
+        // Serializes resync attempts so a Window.Resumed event, a page
+        // OnAppearing and the Closed self-heal loop can't restart/rejoin the
+        // same connection concurrently.
+        private readonly SemaphoreSlim resyncLock = new(1, 1);
 
         public event Action? GameStateUpdated;
         public event Action? RoomStateUpdated;
@@ -196,15 +200,52 @@ namespace PotatoVillage
 
         private void SetupConnectionHandlers()
         {
-            if (connection == null) return;
+            // Capture the instance the handlers belong to: the `connection`
+            // field can be swapped/nulled (ConnectAsync, Disconnect) while a
+            // handler is still running.
+            var conn = connection;
+            if (conn == null) return;
 
-            connection.Closed += async (error) =>
+            conn.Closed += async (error) =>
             {
-                // Connection will auto-reconnect due to WithAutomaticReconnect
+                // Closed only fires after WithAutomaticReconnect has given up
+                // (all retries span ~17s) or after an intentional Stop. If the
+                // app was frozen in the background (Android app freezer, iOS
+                // suspension) the retries can all burn before the network is
+                // back, leaving the connection permanently dead with nothing
+                // to restart it - the UI then silently stops updating. Keep
+                // trying to self-heal while we are still the active connection
+                // for an ongoing game.
                 System.Diagnostics.Debug.WriteLine($"Connection closed: {error?.Message}");
+
+                if (registeredGameId <= 0)
+                {
+                    return;
+                }
+
+                foreach (var delaySeconds in new[] { 1, 2, 5, 10, 15, 15, 15, 15 })
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(delaySeconds));
+
+                    // Stop if this connection was replaced or intentionally
+                    // disconnected, or if something else already healed it.
+                    if (!ReferenceEquals(connection, conn))
+                    {
+                        return;
+                    }
+                    if (conn.State == HubConnectionState.Connected)
+                    {
+                        return;
+                    }
+
+                    if (await EnsureConnectionAsync())
+                    {
+                        return;
+                    }
+                }
             };
 
-            connection.Reconnected += async (connectionId) =>
+            conn.Reconnected += async (connectionId) =>
             {
                 // Re-join the game after reconnection. The server will reply
                 // with a fresh RoomCreated snapshot whose `sequence` becomes
@@ -215,12 +256,20 @@ namespace PotatoVillage
                 if (registeredGameId > 0)
                 {
                     awaitingSnapshot = true;
-                    await connection.InvokeAsync("JoinGame", clientId, nickname, registeredGameId, registeredPlayerId);
+                    // SendAsync (not InvokeAsync): no need to wait for the hub
+                    // method, the RoomCreated snapshot arrives as its own message.
+                    await conn.SendAsync("JoinGame", clientId, nickname, registeredGameId, registeredPlayerId);
                 }
             };
 
-            connection.On<int, int, string, string>("RoomCreated", (gameId, playerId, gameStateJson, roomStateJson) =>
+            conn.On<int, int, string, string>("RoomCreated", (gameId, playerId, gameStateJson, roomStateJson) =>
             {
+                // Only announce a *new* registration. RoomCreated is also the
+                // resync snapshot sent on every rejoin (auto-reconnect, resume
+                // from background); re-firing Registered then would make
+                // MainPage push a duplicate GameView/RoomView page.
+                bool isInitialRegistration = registeredGameId != gameId;
+
                 registeredGameId = gameId;
                 registeredPlayerId = playerId;
                 var initialState = JsonSerializer.Deserialize<Dictionary<string, object>>(gameStateJson) ?? new();
@@ -238,7 +287,12 @@ namespace PotatoVillage
                 // Snapshot received - resume sequence-mismatch checking.
                 awaitingSnapshot = false;
 
-                MergeGameDict(initialState);
+                // The snapshot is the complete authoritative state: REPLACE the
+                // local dictionary instead of merging into it. Merging keeps
+                // keys the server deleted while we were disconnected (deletions
+                // travel as null values in diffs we never received), which
+                // makes the UI show stale moves/buttons after a resume.
+                gameDict = initialState;
                 roomState = JsonSerializer.Deserialize<Dictionary<string, object>>(roomStateJson) ?? new();
 
                 // Check minimum version required
@@ -270,12 +324,15 @@ namespace PotatoVillage
                 // Complete join operation successfully
                 joinCompletionSource?.TrySetResult((true, ""));
 
-                Registered?.Invoke(gameId, playerId, gameStarted);
+                if (isInitialRegistration)
+                {
+                    Registered?.Invoke(gameId, playerId, gameStarted);
+                }
                 GameStateUpdated?.Invoke();
                 RoomStateUpdated?.Invoke();
             });
 
-            connection.On<string>("JoinFailed", (errorMessage) =>
+            conn.On<string>("JoinFailed", (errorMessage) =>
             {
                 // Translate known server error messages
                 var translatedMessage = TranslateServerError(errorMessage);
@@ -283,7 +340,7 @@ namespace PotatoVillage
                 joinCompletionSource?.TrySetResult((false, translatedMessage));
             });
 
-            connection.On<string>("GameStateUpdate", async (stateDiffJson) =>
+            conn.On<string>("GameStateUpdate", async (stateDiffJson) =>
             {
                 var diff = JsonSerializer.Deserialize<Dictionary<string, object>>(stateDiffJson) ?? new();
 
@@ -307,9 +364,37 @@ namespace PotatoVillage
                         {
                             System.Diagnostics.Debug.WriteLine($"Sequence mismatch! Expected {expectedSequenceNumber + 1}, received {receivedSequence}");
 
-                            // Disconnect and notify
-                            SequenceMismatch?.Invoke($"State sync error: expected sequence {expectedSequenceNumber + 1}, got {receivedSequence}. Please rejoin the game.");
-                            await Disconnect();
+                            // A gap means we missed one or more diffs (message
+                            // lost around a background/foreground transition or
+                            // a reconnect). A fresh snapshot fully repairs the
+                            // state, so request one in place before resorting
+                            // to kicking the player back to the lobby.
+                            bool repairRequested = false;
+                            if (registeredGameId > 0 && conn.State == HubConnectionState.Connected)
+                            {
+                                try
+                                {
+                                    awaitingSnapshot = true;
+                                    // Must be SendAsync, not InvokeAsync: this runs on
+                                    // the client's message-dispatch loop, and awaiting
+                                    // an invocation completion here would deadlock it.
+                                    await conn.SendAsync("JoinGame", clientId, nickname, registeredGameId, registeredPlayerId);
+                                    repairRequested = true;
+                                    System.Diagnostics.Debug.WriteLine("Sequence mismatch: requested fresh snapshot via rejoin");
+                                }
+                                catch (Exception ex)
+                                {
+                                    awaitingSnapshot = false;
+                                    System.Diagnostics.Debug.WriteLine($"Sequence mismatch: rejoin failed: {ex.Message}");
+                                }
+                            }
+
+                            if (!repairRequested)
+                            {
+                                // Disconnect and notify
+                                SequenceMismatch?.Invoke($"State sync error: expected sequence {expectedSequenceNumber + 1}, got {receivedSequence}. Please rejoin the game.");
+                                await Disconnect();
+                            }
                             return;
                         }
 
@@ -321,31 +406,31 @@ namespace PotatoVillage
                 GameStateUpdated?.Invoke();
             });
 
-            connection.On<string>("RoomStateUpdate", (roomStateJson) =>
+            conn.On<string>("RoomStateUpdate", (roomStateJson) =>
             {
                 roomState = JsonSerializer.Deserialize<Dictionary<string, object>>(roomStateJson) ?? new();
                 RoomStateUpdated?.Invoke();
             });
 
-            connection.On("GameStarted", () =>
+            conn.On("GameStarted", () =>
             {
                 GameStarted?.Invoke();
             });
 
-            connection.On<string>("GameEnded", (message) =>
+            conn.On<string>("GameEnded", (message) =>
             {
                 // Translate known server messages
                 var translatedMessage = TranslateServerError(message);
                 GameEnded?.Invoke(translatedMessage);
             });
 
-            connection.On<int>("SeatSwitched", (newPlayerId) =>
+            conn.On<int>("SeatSwitched", (newPlayerId) =>
             {
                 registeredPlayerId = newPlayerId;
                 switchSeatCompletionSource?.TrySetResult((true, ""));
             });
 
-            connection.On<string>("SwitchSeatFailed", (errorMessage) =>
+            conn.On<string>("SwitchSeatFailed", (errorMessage) =>
             {
                 switchSeatCompletionSource?.TrySetResult((false, errorMessage));
             });
@@ -581,57 +666,158 @@ namespace PotatoVillage
         public bool IsConnected => connection?.State == HubConnectionState.Connected;
 
         /// <summary>
-        /// Ensures the connection is active. If disconnected, attempts to reconnect and rejoin the game.
-        /// This is useful for handling iOS background/foreground transitions.
+        /// Ensures the connection is alive AND the local game state is in sync
+        /// with the server. Called when the app returns from the background on
+        /// iOS/Android (and on page re-appearance).
+        ///
+        /// Important: after an OS suspension, HubConnection.State can still
+        /// report Connected while the underlying socket is dead (the server or
+        /// a NAT dropped it while the app was frozen, and the client hasn't
+        /// noticed yet). We therefore never trust State alone - when we are
+        /// registered in a game we always perform a verified round-trip rejoin,
+        /// which (a) proves the transport is alive, (b) restores the SignalR
+        /// group membership if the server had dropped us, and (c) yields a
+        /// fresh authoritative snapshot that repairs any missed updates.
         /// </summary>
         public async Task<bool> EnsureConnectionAsync()
         {
-            if (connection == null)
+            var conn = connection;
+            if (conn == null)
             {
                 System.Diagnostics.Debug.WriteLine("EnsureConnectionAsync: No connection object");
                 return false;
             }
 
-            var state = connection.State;
-            System.Diagnostics.Debug.WriteLine($"EnsureConnectionAsync: Current state = {state}");
-
-            if (state == HubConnectionState.Connected)
-            {
-                return true;
-            }
-
-            if (state == HubConnectionState.Connecting || state == HubConnectionState.Reconnecting)
-            {
-                // Wait for connection to complete
-                int waitCount = 0;
-                while ((connection.State == HubConnectionState.Connecting || 
-                        connection.State == HubConnectionState.Reconnecting) && 
-                       waitCount < 10)
-                {
-                    await Task.Delay(500);
-                    waitCount++;
-                }
-                return connection.State == HubConnectionState.Connected;
-            }
-
-            // Connection is disconnected, try to reconnect
+            await resyncLock.WaitAsync();
             try
             {
-                System.Diagnostics.Debug.WriteLine("EnsureConnectionAsync: Attempting to reconnect...");
-                await connection.StartAsync();
-
-                // Re-join the game after reconnection
-                if (registeredGameId > 0 && connection.State == HubConnectionState.Connected)
+                if (!ReferenceEquals(connection, conn))
                 {
-                    System.Diagnostics.Debug.WriteLine($"EnsureConnectionAsync: Rejoining game {registeredGameId} as player {registeredPlayerId}");
-                    await connection.InvokeAsync("JoinGame", clientId, nickname, registeredGameId, registeredPlayerId);
+                    return false;
                 }
 
-                return connection.State == HubConnectionState.Connected;
+                System.Diagnostics.Debug.WriteLine($"EnsureConnectionAsync: Current state = {conn.State}");
+
+                // Give an in-flight automatic reconnect a chance to finish.
+                // The retry schedule spans ~17s (0/2/5/10), so wait slightly
+                // past the final attempt before treating it as failed.
+                int waitedMs = 0;
+                while ((conn.State == HubConnectionState.Connecting ||
+                        conn.State == HubConnectionState.Reconnecting) &&
+                       waitedMs < 15000)
+                {
+                    await Task.Delay(500);
+                    waitedMs += 500;
+                    if (!ReferenceEquals(connection, conn))
+                    {
+                        return false;
+                    }
+                }
+
+                if (conn.State == HubConnectionState.Connected)
+                {
+                    // Not in a game: nothing to resync, being connected is enough.
+                    if (registeredGameId <= 0)
+                    {
+                        return true;
+                    }
+
+                    // Verify liveness + resync with a real round trip.
+                    if (await TryRejoinAsync(conn))
+                    {
+                        return true;
+                    }
+
+                    // Round trip failed => zombie connection. Tear it down and
+                    // fall through to a manual restart.
+                    System.Diagnostics.Debug.WriteLine("EnsureConnectionAsync: Connection is a zombie, restarting...");
+                    try { await conn.StopAsync(); } catch { /* already dead */ }
+                }
+
+                // Connection is (now) disconnected: restart manually. The
+                // network can take a few seconds to come back after a resume,
+                // so retry a couple of times.
+                bool started = false;
+                for (int attempt = 0; attempt < 3 && !started; attempt++)
+                {
+                    if (!ReferenceEquals(connection, conn))
+                    {
+                        return false;
+                    }
+
+                    try
+                    {
+                        System.Diagnostics.Debug.WriteLine($"EnsureConnectionAsync: StartAsync attempt {attempt + 1}...");
+                        await conn.StartAsync();
+                        started = conn.State == HubConnectionState.Connected;
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"EnsureConnectionAsync: StartAsync failed: {ex.Message}");
+                        if (attempt < 2)
+                        {
+                            await Task.Delay(1000 * (attempt + 1));
+                        }
+                    }
+                }
+
+                if (!started)
+                {
+                    return false;
+                }
+
+                if (registeredGameId <= 0)
+                {
+                    return true;
+                }
+
+                return await TryRejoinAsync(conn);
+            }
+            finally
+            {
+                resyncLock.Release();
+            }
+        }
+
+        /// <summary>
+        /// Performs a round-trip rejoin on an (apparently) connected hub and
+        /// waits until the fresh RoomCreated snapshot has actually been
+        /// received and applied. Returns false if the server does not answer
+        /// in time (dead transport) or the rejoin is rejected (e.g. the game
+        /// ended while the app was in the background).
+        /// </summary>
+        private async Task<bool> TryRejoinAsync(HubConnection conn)
+        {
+            var tcs = new TaskCompletionSource<(bool, string)>(TaskCreationOptions.RunContinuationsAsynchronously);
+            joinCompletionSource = tcs;
+            awaitingSnapshot = true;
+
+            try
+            {
+                System.Diagnostics.Debug.WriteLine($"TryRejoinAsync: Rejoining game {registeredGameId} as player {registeredPlayerId}");
+
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+                await conn.InvokeAsync("JoinGame", clientId, nickname, registeredGameId, registeredPlayerId, cts.Token);
+
+                // The invoke completing only proves the request went out; wait
+                // for the RoomCreated snapshot (or JoinFailed) to come back.
+                var completed = await Task.WhenAny(tcs.Task, Task.Delay(5000));
+                if (completed != tcs.Task)
+                {
+                    System.Diagnostics.Debug.WriteLine("TryRejoinAsync: Timed out waiting for snapshot");
+                    return false;
+                }
+
+                var (success, error) = await tcs.Task;
+                if (!success)
+                {
+                    System.Diagnostics.Debug.WriteLine($"TryRejoinAsync: Rejoin rejected: {error}");
+                }
+                return success;
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"EnsureConnectionAsync: Reconnection failed: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"TryRejoinAsync: Failed: {ex.Message}");
                 return false;
             }
         }

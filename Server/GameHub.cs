@@ -238,8 +238,7 @@ namespace Server
                 }
             }
 
-            var dict = games[gameId].GetGameDictionary();
-            string dictString = JsonSerializer.Serialize(dict);
+            string dictString = SerializeGameStateSnapshot(games[gameId]);
             string roomState = GetRoomStateJson(gameId);
             return Clients.Caller.SendAsync("RoomCreated", gameId, playerId, dictString, roomState);
         }
@@ -331,8 +330,7 @@ namespace Server
             ClientIdToGameId[clientId] = gameId;
             await Groups.AddToGroupAsync(Context.ConnectionId, $"game-{gameId}");
 
-            var dict = games[gameId].GetGameDictionary();
-            string dictString = JsonSerializer.Serialize(dict);
+            string dictString = SerializeGameStateSnapshot(games[gameId]);
             string roomState = GetRoomStateJson(gameId);
 
             // Notify the joining client
@@ -590,6 +588,20 @@ namespace Server
 
             // Notify all clients in the room about the room state update
             await Clients.Group($"game-{gameId}").SendAsync("RoomStateUpdate", roomState);
+        }
+
+        /// <summary>
+        /// Serializes the full game state under the game's state lock. The game
+        /// thread mutates the state dictionary concurrently; without the lock a
+        /// snapshot taken for a (re)joining client can be torn (keys from one
+        /// sequence, sequence number from another), which desyncs that client.
+        /// </summary>
+        private static string SerializeGameStateSnapshot(Game game)
+        {
+            lock (game.stateLock)
+            {
+                return JsonSerializer.Serialize(game.GetGameDictionary());
+            }
         }
 
         private string GetRoomStateJson(int gameId)

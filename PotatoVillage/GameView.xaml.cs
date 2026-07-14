@@ -629,6 +629,23 @@ namespace PotatoVillage
         }
 
         /// <summary>
+        /// Creates a span for ParseColoredText. FontAutoScalingEnabled must be
+        /// disabled explicitly: spans do not pick up the app-wide implicit
+        /// styles, and on iOS an auto-scaling span ignores the font sizes this
+        /// page computes from the screen dimensions, blowing up the layout
+        /// when the system text size is set to large.
+        /// </summary>
+        private static Span MakeSpan(string text, Color color)
+        {
+            return new Span
+            {
+                Text = text,
+                TextColor = color,
+                FontAutoScalingEnabled = false
+            };
+        }
+
+        /// <summary>
         /// Parses text containing color codes and returns a FormattedString.
         /// Supported format: [c:ColorName]colored text[/c]
         /// Example: "Normal text [c:Red]red text[/c] more normal"
@@ -655,7 +672,7 @@ namespace PotatoVillage
                     // No more color tags, add remaining text
                     if (currentIndex < text.Length)
                     {
-                        formattedString.Spans.Add(new Span { Text = text.Substring(currentIndex), TextColor = Colors.Black });
+                        formattedString.Spans.Add(MakeSpan(text.Substring(currentIndex), Colors.Black));
                     }
                     break;
                 }
@@ -663,7 +680,7 @@ namespace PotatoVillage
                 // Add text before the color tag
                 if (tagStart > currentIndex)
                 {
-                    formattedString.Spans.Add(new Span { Text = text.Substring(currentIndex, tagStart - currentIndex), TextColor = Colors.Black });
+                    formattedString.Spans.Add(MakeSpan(text.Substring(currentIndex, tagStart - currentIndex), Colors.Black));
                 }
 
                 // Find the end of the color name
@@ -671,7 +688,7 @@ namespace PotatoVillage
                 if (colorEnd == -1)
                 {
                     // Malformed tag, add rest as plain text
-                    formattedString.Spans.Add(new Span { Text = text.Substring(tagStart), TextColor = Colors.Black });
+                    formattedString.Spans.Add(MakeSpan(text.Substring(tagStart), Colors.Black));
                     break;
                 }
 
@@ -683,7 +700,7 @@ namespace PotatoVillage
                 if (closeTag == -1)
                 {
                     // No closing tag, add rest as plain text
-                    formattedString.Spans.Add(new Span { Text = text.Substring(tagStart), TextColor = Colors.Black });
+                    formattedString.Spans.Add(MakeSpan(text.Substring(tagStart), Colors.Black));
                     break;
                 }
 
@@ -694,7 +711,7 @@ namespace PotatoVillage
                 Color textColor = ParseColor(colorName);
 
                 // Add the colored span
-                formattedString.Spans.Add(new Span { Text = coloredText, TextColor = textColor });
+                formattedString.Spans.Add(MakeSpan(coloredText, textColor));
 
                 // Move past the closing tag
                 currentIndex = closeTag + 4;

@@ -164,7 +164,8 @@ namespace ProcedureCore.LangRenSha
         LangRen_OpenEyes = 124,
         LangRen_SelectTarget = 125,
         LangRen_ConfirmKill = 126,
-        LangMeiRen_Act = 127,
+        LangRen_AwkShiXiangGui = 127,
+        LangMeiRen_Act = 128,
         LangRen_CloseEyes = 131,
         LangRen_Kill = 220,
 

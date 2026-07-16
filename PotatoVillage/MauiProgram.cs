@@ -6,6 +6,9 @@ namespace PotatoVillage
     {
         public static MauiApp CreateMauiApp()
         {
+            // Capture unhandled exceptions to AppData/CrashLogs on every platform.
+            Services.CrashLogService.Initialize();
+
             var builder = MauiApp.CreateBuilder();
             builder
                 .UseMauiApp<App>()

@@ -25,6 +25,13 @@ namespace PotatoVillage
         // Track currently displayed target selection to avoid flickering rebuilds
         private int currentDisplayedDeadline = 0;
         private int currentDisplayedHint = -1;
+        // Content key of the displayed prompt: when only the deadline changes
+        // (e.g. per-speaker during the day vote) the buttons are identical and
+        // must NOT be recreated - see the fast path in DisplayTargetSelection.
+        private List<int>? currentDisplayedTargets;
+        private string currentDisplayedUserInfo = "";
+        private string currentDisplayedUserInfo2 = "";
+        private string currentDisplayedUserInfo3 = "";
 
         // Monotonic counter incremented every time the target-selection UI is rebuilt.
         // Each Button.Clicked closure captures the generation that was current when it
@@ -161,7 +168,9 @@ namespace PotatoVillage
         private static string SkillUseAnnouncementHandler(string userInfo, string userInfo2)
         {
             // userInfo format: "from;to1,to2,...;skill;result"
-            // result is "0" (failed) or "1" (succeeded)
+            // result is "0" (failed), "1" (succeeded) or "2" (succeeded, and
+            // the server keeps the announcement up for the full speech
+            // duration instead of 5s - used by DingXuWangZi's reveal).
             var parts = userInfo.Split(';');
             if (parts.Length < 4)
                 return userInfo;
@@ -171,8 +180,7 @@ namespace PotatoVillage
             var skill = parts[2];
             var result = parts[3];
 
-            // Parse result: "0" = Failed, "1" = Succeeded
-            var resultText = result == "1"
+            var resultText = result == "1" || result == "2"
                 ? LocalizationManager.Instance.GetString("skill_succeeded", "Succeeded")
                 : LocalizationManager.Instance.GetString("skill_failed", "Failed");
 
@@ -646,6 +654,18 @@ namespace PotatoVillage
         }
 
         /// <summary>
+        /// Adds a span unless its text is empty - empty spans are one of the
+        /// shapes that break WinUI's RecalculateSpanPositions (see ApplyColoredText).
+        /// </summary>
+        private static void AddSpan(FormattedString fs, string text, Color color)
+        {
+            if (!string.IsNullOrEmpty(text))
+            {
+                fs.Spans.Add(MakeSpan(text, color));
+            }
+        }
+
+        /// <summary>
         /// Parses text containing color codes and returns a FormattedString.
         /// Supported format: [c:ColorName]colored text[/c]
         /// Example: "Normal text [c:Red]red text[/c] more normal"
@@ -656,6 +676,17 @@ namespace PotatoVillage
             var formattedString = new FormattedString();
 
             if (string.IsNullOrEmpty(text))
+            {
+                return formattedString;
+            }
+
+            // A span whose text ends in a newline (and empty spans, guarded in
+            // AddSpan) can send WinUI's RecalculateSpanPositions into a runaway
+            // loop that kills the process with OutOfMemoryException - see
+            // ApplyColoredText. Trailing newlines carry no visible content, so
+            // trim them defensively.
+            text = text.TrimEnd('\n', '\r');
+            if (text.Length == 0)
             {
                 return formattedString;
             }
@@ -672,7 +703,7 @@ namespace PotatoVillage
                     // No more color tags, add remaining text
                     if (currentIndex < text.Length)
                     {
-                        formattedString.Spans.Add(MakeSpan(text.Substring(currentIndex), Colors.Black));
+                        AddSpan(formattedString, text.Substring(currentIndex), Colors.Black);
                     }
                     break;
                 }
@@ -680,7 +711,7 @@ namespace PotatoVillage
                 // Add text before the color tag
                 if (tagStart > currentIndex)
                 {
-                    formattedString.Spans.Add(MakeSpan(text.Substring(currentIndex, tagStart - currentIndex), Colors.Black));
+                    AddSpan(formattedString, text.Substring(currentIndex, tagStart - currentIndex), Colors.Black);
                 }
 
                 // Find the end of the color name
@@ -688,7 +719,7 @@ namespace PotatoVillage
                 if (colorEnd == -1)
                 {
                     // Malformed tag, add rest as plain text
-                    formattedString.Spans.Add(MakeSpan(text.Substring(tagStart), Colors.Black));
+                    AddSpan(formattedString, text.Substring(tagStart), Colors.Black);
                     break;
                 }
 
@@ -700,7 +731,7 @@ namespace PotatoVillage
                 if (closeTag == -1)
                 {
                     // No closing tag, add rest as plain text
-                    formattedString.Spans.Add(MakeSpan(text.Substring(tagStart), Colors.Black));
+                    AddSpan(formattedString, text.Substring(tagStart), Colors.Black);
                     break;
                 }
 
@@ -711,7 +742,7 @@ namespace PotatoVillage
                 Color textColor = ParseColor(colorName);
 
                 // Add the colored span
-                formattedString.Spans.Add(MakeSpan(coloredText, textColor));
+                AddSpan(formattedString, coloredText, textColor);
 
                 // Move past the closing tag
                 currentIndex = closeTag + 4;
@@ -762,13 +793,63 @@ namespace PotatoVillage
             return result;
         }
 
+        // Last raw text applied to each label. Rebuilding a FormattedString
+        // allocates one native WinUI Run per span, and on Windows every such
+        // wrapper must later be released by the finalizer via a marshaled
+        // call back onto the UI thread's COM apartment. Rebuilding on every
+        // GameStateUpdate outpaces that release path: the finalizer queue
+        // grows until the process dies with OutOfMemory (crash dumps show the
+        // finalizer stuck in WinRT ObjectReferenceWithContext.Release with
+        // thousands of objects pending). Only rebuild when the text changed.
+        private string? lastGameStatusText;
+        private string? lastTargetInstructionText;
+
+        /// <summary>
+        /// Applies color-coded text to a label. Text without color tags is
+        /// assigned as plain Text rather than FormattedText: on Windows a
+        /// Label with FormattedText runs MAUI's RecalculateSpanPositions on
+        /// every arrange pass, which has a runaway loop for some span shapes
+        /// (see the crash logs: OutOfMemoryException "Array dimensions
+        /// exceeded supported range" in FormattedStringExtensions.
+        /// RecalculateSpanPositions killed the process with 0xc000027b).
+        /// Plain text never enters that code path.
+        /// </summary>
+        private static void ApplyColoredText(Label label, string text)
+        {
+            if (text.Contains("[c:"))
+            {
+                // The label MUST be visible before FormattedText is assigned.
+                // MAUI's Windows mapper measures each span's line height on the
+                // live TextBlock at assignment time; a collapsed TextBlock
+                // measures to height 0, and RecalculateSpanPositions later
+                // loops forever on any WRAPPED span whose measured line height
+                // is 0 (yaxis += 0), dying with the "Array dimensions exceeded
+                // supported range" OutOfMemoryException. This is exactly what
+                // happened when a long role name (e.g. 觉醒石像鬼) made the
+                // colored span wrap while TargetInstructionLabel was still
+                // hidden from the previous HideTargetSelection.
+                label.IsVisible = true;
+                label.FormattedText = ParseColoredText(text);
+            }
+            else
+            {
+                label.FormattedText = null;
+                label.Text = text;
+            }
+        }
+
         /// <summary>
         /// Sets the GameStatusLabel text, supporting color codes.
+        /// Returns true if the text changed (and the label was rebuilt).
         /// </summary>
-        private void SetGameStatusText(string text)
+        private bool SetGameStatusText(string text)
         {
-            GameStatusLabel.FormattedText = ParseColoredText(text);
+            if (text == lastGameStatusText)
+                return false;
+            lastGameStatusText = text;
+            ApplyColoredText(GameStatusLabel, text);
             UpdateGameStatusFontSize();
+            return true;
         }
 
         /// <summary>
@@ -776,7 +857,10 @@ namespace PotatoVillage
         /// </summary>
         private void SetTargetInstructionText(string text)
         {
-            TargetInstructionLabel.FormattedText = ParseColoredText(text);
+            if (text == lastTargetInstructionText)
+                return;
+            lastTargetInstructionText = text;
+            ApplyColoredText(TargetInstructionLabel, text);
         }
 
         public GameView(HubConnectionManager connectionManager, int gameId, int playerId, bool isOwner = false)
@@ -893,6 +977,7 @@ namespace PotatoVillage
                 // leaving a frozen countdown.
                 currentDisplayedDeadline = 0;
                 currentDisplayedHint = -1;
+                currentDisplayedTargets = null;
 
                 // Repaint from current local state, then verify the connection
                 // and pull a fresh snapshot. On Android this path (not
@@ -1357,7 +1442,12 @@ namespace PotatoVillage
                               localization.GetString("phase_unknown");
                 var dayNum = gameDict.TryGetValue("day", out var dayNum2) ? GetInt32Value(dayNum2)?.ToString() ?? "?" : "?";
                 var dayString = localization.GetString("day").Replace("{0}", dayNum);
-                SetGameStatusText($"{dayString} {phaseStr}\n");
+                // Note: the day/phase text is only applied further below when
+                // no action is in progress - when userAction != 0,
+                // DisplayCurrentlyActing overwrites the status label anyway,
+                // and assigning both per update rebuilds the FormattedString
+                // twice for nothing (see comment on SetGameStatusText).
+                var dayPhaseText = $"{dayString} {phaseStr}\n";
 
                 // Show/hide Reveal button based on day time (phaseValue == 1)
                 RevealBtn.IsVisible = (phaseValue == 1);
@@ -1413,6 +1503,7 @@ namespace PotatoVillage
                 }
                 else
                 {
+                    SetGameStatusText(dayPhaseText);
                     HideCurrentlyActing();
                 }
 
@@ -1444,10 +1535,13 @@ namespace PotatoVillage
                     userInfo = LocalizationManager.Instance.GetString(userInfo);
                     statusText = hintText.Replace("{0}", userInfo);
                 }
-                SetGameStatusText(statusText);
+                bool statusChanged = SetGameStatusText(statusText);
 
-                // Play voiceover (strip color codes for speech)
-                if (IsAnnouncerEnabled)
+                // Play voiceover (strip color codes for speech). Only when the
+                // announcement actually changed - unrelated state diffs re-run
+                // this method with the same text, and re-playing the clip each
+                // time overlaps/repeats the audio.
+                if (statusChanged && IsAnnouncerEnabled)
                 {
                     _ = PlayVoiceoverAsync(StripColorCodes(statusText));
                 }
@@ -1580,9 +1674,35 @@ namespace PotatoVillage
                 availableTargets.Add(-101);
             }
 
+            // Fast path: the prompt content is identical and only the deadline
+            // moved (the day vote gets a new deadline on every speaker change).
+            // Rebuilding here would recreate every target Button; on Windows
+            // each Button drags several native event-handler COM wrappers
+            // through the finalizer, whose releases must be marshaled one at a
+            // time onto the UI thread - rebuilding identical buttons every few
+            // seconds is what backed that queue up until the process died with
+            // OutOfMemory. Just restart the countdown with the new deadline.
+            if (hintIndex == currentDisplayedHint &&
+                currentDisplayedTargets != null &&
+                currentDisplayedTargets.SequenceEqual(availableTargets) &&
+                userInfo == currentDisplayedUserInfo &&
+                userInfo2 == currentDisplayedUserInfo2 &&
+                userInfo3 == currentDisplayedUserInfo3)
+            {
+                currentDisplayedDeadline = userActionDeadline;
+                countdownCts?.Cancel();
+                countdownCts = new CancellationTokenSource();
+                StartCountdown(userActionDeadline, countdownCts.Token);
+                return;
+            }
+
             // Track the current displayed state
             currentDisplayedDeadline = userActionDeadline;
             currentDisplayedHint = hintIndex;
+            currentDisplayedTargets = new List<int>(availableTargets);
+            currentDisplayedUserInfo = userInfo;
+            currentDisplayedUserInfo2 = userInfo2;
+            currentDisplayedUserInfo3 = userInfo3;
 
             // Bump the display generation BEFORE we clear selectedTargets and the
             // button containers. Any click events that were already queued against
@@ -1955,6 +2075,15 @@ namespace PotatoVillage
             confirmBlinkCts = new CancellationTokenSource();
             var ct = confirmBlinkCts.Token;
 
+            // Set the "armed" look once; the loop below only toggles Opacity.
+            // Toggling BackgroundColor/TextColor/Scale every 500ms allocated a
+            // fresh native brush/transform wrapper per tick on Windows, feeding
+            // the finalizer backlog that crashes the app with OutOfMemory
+            // (see the comment on SetGameStatusText).
+            ConfirmButton.BackgroundColor = Color.FromArgb("#228B22"); // Forest green
+            ConfirmButton.TextColor = Colors.White;
+            ConfirmButton.Scale = 1.0;
+
             _ = Task.Run(async () =>
             {
                 bool isLit = true;
@@ -1963,21 +2092,9 @@ namespace PotatoVillage
                     await MainThread.InvokeOnMainThreadAsync(() =>
                     {
                         if (ct.IsCancellationRequested) return;
-
-                        if (isLit)
-                        {
-                            // Bright/lit state - green glow
-                            ConfirmButton.BackgroundColor = Color.FromArgb("#228B22"); // Forest green
-                            ConfirmButton.TextColor = Colors.White;
-                            ConfirmButton.Scale = 1.05;
-                        }
-                        else
-                        {
-                            // Dim state
-                            ConfirmButton.BackgroundColor = Color.FromArgb("#006400"); // Dark green
-                            ConfirmButton.TextColor = Colors.LightGreen;
-                            ConfirmButton.Scale = 1.0;
-                        }
+                        // Pulse between full and dimmed - a plain double
+                        // property change, no native object allocation.
+                        ConfirmButton.Opacity = isLit ? 1.0 : 0.55;
                     });
 
                     isLit = !isLit;
@@ -2000,6 +2117,7 @@ namespace PotatoVillage
                 ConfirmButton.BackgroundColor = Colors.Transparent;
                 ConfirmButton.TextColor = Colors.White;
                 ConfirmButton.Scale = 1.0;
+                ConfirmButton.Opacity = 1.0;
             });
         }
 
@@ -2079,6 +2197,10 @@ namespace PotatoVillage
             {
                 currentDisplayedDeadline = 0;
                 currentDisplayedHint = -1;
+                currentDisplayedTargets = null;
+                currentDisplayedUserInfo = "";
+                currentDisplayedUserInfo2 = "";
+                currentDisplayedUserInfo3 = "";
             }
 
             // Invalidate any in-flight click handlers so they cannot mutate

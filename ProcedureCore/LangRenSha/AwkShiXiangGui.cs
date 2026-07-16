@@ -31,7 +31,7 @@ namespace ProcedureCore.LangRenSha
             (int)ActionConstant.AwkShiXiangGui_ConvertedOpenEyes,      // 0: 16 - Day 1+ converted check
             (int)ActionConstant.AwkShiXiangGui_ConvertedCheckAttack,   // 1: 17
             (int)ActionConstant.AwkShiXiangGui_ConvertedCloseEyes,     // 2: 18
-            125,                                                       // 3: 125 - Day 0 selection (shares LangRen open/close eyes)
+            (int)ActionConstant.LangRen_AwkShiXiangGui,                // 3: 127 - Day 0 selection (shares LangRen open/close eyes)
             (int)ActionConstant.AwkShiXiangGui_LuckyOneOpenEyes,       // 4: 305 - Day 0 lucky one check (very last)
             (int)ActionConstant.AwkShiXiangGui_CheckConversion,        // 5: 306 - Actual conversion happens here
             (int)ActionConstant.AwkShiXiangGui_LuckyOneCloseEyes,      // 6: 307

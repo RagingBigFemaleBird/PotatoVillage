@@ -1345,6 +1345,8 @@ namespace PotatoVillage
                 case "DingXuWangZi": selectedDingXuWangZi = selected; break;
                 case "AwkYuYanJia": selectedAwkYuYanJia = selected; break;
                 case "XunXiangMeiYing": selectedXunXiangMeiYing = selected; break;
+                case "MoShuShi": selectedMoShuShi = selected; break;
+                case "GuiShuShi": selectedGuiShuShi = selected; break;
             }
         }
 
